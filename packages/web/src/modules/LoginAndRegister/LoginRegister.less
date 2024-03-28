@@ -1,0 +1,94 @@
+.loginRegister {
+    height: 260px;
+    display: flex;
+    flex-direction: column;
+    padding: 0 30px;
+}
+
+.title {
+    font-size: 14px;
+        font-weight: normal;
+        line-height: 27px;
+        margin-top: 20px;
+        color: #666;
+}
+
+.input {
+    height: 40px;
+    & > input {
+        line-height: 40px;
+    }
+}
+
+//.button {
+//    background-color: var(--primary-color-10);
+//    color: var(--primary-text-color-10);
+//    height: 40px;
+//    border: none;
+//    margin-top: 30px;
+//    transition: background-color 0.2s;
+//    border-radius: 6px;
+//
+//    &:hover {
+//        background-color: var(--primary-color-9);
+//    }
+//}
+
+.button {
+    margin-top: 80px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 0px 15px;
+    background-color: red;
+    border-radius: 10px;
+    border: none;
+    color: white;
+    position: relative;
+    cursor: pointer;
+    font-weight: 900;
+    transition-duration: .2s;
+    background: linear-gradient(0deg, #000, #272727);
+}
+
+.button:before, .button:after {
+    content: '';
+    position: absolute;
+    left: -2px;
+    top: -2px;
+    border-radius: 10px;
+    background: linear-gradient(45deg, #fb0094, #0000ff, #00ff00,#ffff00, #ff0000, #fb0094,
+    #0000ff, #00ff00,#ffff00, #ff0000);
+    background-size: 400%;
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
+    z-index: -1;
+    animation: steam 20s linear infinite;
+}
+
+@keyframes steam {
+    0% {
+        background-position: 0 0;
+    }
+
+    50% {
+        background-position: 400% 0;
+    }
+
+    100% {
+        background-position: 0 0;
+    }
+}
+
+.button:after {
+    filter: blur(50px);
+}
+
+
+
+.href {
+    color: #18a058;
+    text-decoration: none;
+}

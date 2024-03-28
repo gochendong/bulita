@@ -1,0 +1,11 @@
+version: '3.2'
+
+services:
+  bulita-redis:
+    image: redis
+    restart: always
+    ports:
+      - 6379:6379
+    volumes:
+      - ./data/redis:/data
+
