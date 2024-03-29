@@ -630,16 +630,18 @@ export async function changePassword(
  * @param ctx Context
  */
 export async function changeUsername(ctx: Context<{ username: string }>) {
+    const self = await User.findOne({ _id: ctx.socket.user });
+    if (!self) {
+        throw new AssertionError({ message: '用户不存在' });
+    }
+    if (!self.password) {
+        throw new AssertionError({ message:'请先设置密码'});
+    }
     const { username } = ctx.data;
     assert(username, '新用户名不能为空');
 
     const user = await User.findOne({ username });
     assert(!user, '该用户名已存在, 换一个试试吧');
-
-    const self = await User.findOne({ _id: ctx.socket.user });
-    if (!self) {
-        throw new AssertionError({ message: '用户不存在' });
-    }
 
     self.username = username;
     await self.save();

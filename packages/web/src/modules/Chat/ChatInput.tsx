@@ -528,9 +528,6 @@ function ChatInput() {
             e.preventDefault();
         } else if (e.key === 'Enter' && !inputIME) {
             sendTextMessage();
-        } else if (e.altKey && (e.key === 's' || e.key === 'ß')) {
-            sendHuaji();
-            e.preventDefault();
         } else if (e.altKey && (e.key === 'd' || e.key === '∂')) {
             toggleExpressionDialog(true);
             e.preventDefault();
@@ -715,7 +712,6 @@ function ChatInput() {
                 overlay={
                     <div className={Style.featureDropdown}>
                         <Menu onClick={handleFeatureMenuClick}>
-                            {/* <MenuItem key="huaji">发送滑稽</MenuItem> */}
                             <MenuItem key="code">发送代码</MenuItem>
                             <MenuItem key="image">发送图片</MenuItem>
                             <MenuItem key="file">发送文件</MenuItem>
