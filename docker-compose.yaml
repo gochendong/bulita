@@ -10,6 +10,7 @@ services:
       - ./data/ImageMessage:/usr/app/bulita/packages/server/public/ImageMessage
       - ./data/FileMessage:/usr/app/bulita/packages/server/public/FileMessage
       - ./data/GroupAvatar:/usr/app/bulita/packages/server/public/GroupAvatar
+      - ./data/Avatar:/usr/app/bulita/packages/server/public/Avatar
 
 
 
