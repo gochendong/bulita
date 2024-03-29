@@ -271,15 +271,17 @@ function SelfInfo(props: SelfInfoProps) {
                             className={Style.input}
                             value={oldPassword}
                             onChange={setOldPassword}
-                            type="password"
+                            // type="password"
                             placeholder="新密码"
+                            showClearBtn={false}
                         />
                         <Input
                             className={Style.input}
                             value={newPassword}
                             onChange={setNewPassword}
-                            type="password"
+                            // type="password"
                             placeholder="重复新密码"
+                            showClearBtn={false}
                         />
                         <Button
                             className={Style.button}

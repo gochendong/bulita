@@ -9,6 +9,7 @@ interface InputProps {
     placeholder?: string;
     className?: string;
     autoComplete?: string;
+    showClearBtn?: boolean;
     onChange: (value: string) => void;
     onEnter?: (value: string) => void;
     onFocus?: () => void;
@@ -21,6 +22,7 @@ function Input(props: InputProps) {
         placeholder = '',
         className = '',
         autoComplete = 'off',
+        showClearBtn = true,
         onChange,
         onEnter = () => {},
         onFocus = () => {},
@@ -57,7 +59,7 @@ function Input(props: InputProps) {
                 placeholder={placeholder}
                 autoComplete={autoComplete}
             />
-            {value && (
+            {value && showClearBtn && (
                 <IconButton
                     className={Style.inputIconButton}
                     width={32}

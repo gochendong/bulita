@@ -61,6 +61,7 @@ function Login() {
                 onChange={setUsername}
                 onEnter={handleLogin}
                 autoComplete="on"
+                showClearBtn={false}
             />
             <h3 className={Style.title}>密码</h3>
             <Input
@@ -70,6 +71,7 @@ function Login() {
                 onChange={setPassword}
                 onEnter={handleLogin}
                 autoComplete="on"
+                showClearBtn={false}
             />
         </div>
     );
