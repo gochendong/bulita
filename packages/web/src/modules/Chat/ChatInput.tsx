@@ -185,9 +185,9 @@ function ChatInput() {
             percent: type === 'image' || type === 'file' ? 0 : 100,
         };
         // @ts-ignore
-        // if (type !== "text") {
-        // action.addLinkmanMessage(focus, message);
-        // }
+        if (type !== "text") {
+            action.addLinkmanMessage(focus, message);
+        }
         // 停用
         return _id;
 
