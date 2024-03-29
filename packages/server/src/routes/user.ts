@@ -177,7 +177,7 @@ export async function register(
     if (BOTS.includes(username)) {
         tag = 'bot';
     } else if (IP_LOCATION_API) {
-        const url = `${IP_LOCATION_API}ip?ip=${ctx.socket.ip.split(',')[0]}`;
+        const url = `${IP_LOCATION_API}${ctx.socket.ip.split(',')[0]}`;
         const xhr = new XMLHttpRequest();
         xhr.open('GET', url);
         xhr.timeout = 3000;
