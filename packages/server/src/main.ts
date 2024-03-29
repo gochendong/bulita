@@ -23,17 +23,17 @@ import app from './app';
     let adminsArray = [];
     let originalAdmin = null;
     const snowflake = new Snowflake(1n, 1n, 0n);
+    const salt = await bcrypt.genSalt(SALT_ROUNDS);
+    const hash = await bcrypt.hash(
+        process.env.DEFAULT_PASSWORD,
+        salt,
+    );
     if (admins) {
         const defaultAdminsArray = admins.split(',');
         for (let i = 0; i < defaultAdminsArray.length; i++) {
             const defaultAdmin = defaultAdminsArray[i];
             let admin = await User.findOne({ username: defaultAdmin });
             if (!admin) {
-                const salt = await bcrypt.genSalt(SALT_ROUNDS);
-                const hash = await bcrypt.hash(
-                    process.env.DEFAULT_PASSWORD,
-                    salt,
-                );
                 admin = await User.create({
                     username: defaultAdmin,
                     id: snowflake.nextId().toString(),
@@ -89,6 +89,8 @@ import app from './app';
                         username: defaultBot,
                         id: snowflake.nextId().toString(),
                         avatar: getRandomAvatar(),
+                        salt: salt,
+                        password: hash,
                         tag: 'bot',
                     } as UserDocument);
                     if (!bot) {
