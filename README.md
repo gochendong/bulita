@@ -1,7 +1,7 @@
 # [Bulita](https://chat.bulita.net/)
 
 
-Bulita is an interesting open source chat application. It is developed based on [node.js](https://nodejs.org/), [react](https://reactjs.org/) and [socket.io](https://socket.io/) technologies
+Bulita is an interesting open source chatroom. It is developed based on [node.js](https://nodejs.org/), [react](https://reactjs.org/) and [socket.io](https://socket.io/) technologies
 
 Online Example: [https://chat.bulita.net/](https://chat.bulita.net)
 
@@ -21,6 +21,7 @@ Github: [https://github.com/gochendong/bulita](https://github.com/gochendong/bul
 3. ```docker-compose -f docker-compose-redis.yaml up --build -d``` Start the Redis service. If it is already running, you can skip this step.
 4. ```docker-compose -f docker-compose-mongo.yaml up --build -d``` Start the MongoDB service. If it is already running, you can skip this step.
 5. ```docker-compose -f docker-compose.yaml up --build -d``` Start the chatroom service.
+6. Now you can access the chatroom through http://your-ip:8111
 
 ## Referenced project
 

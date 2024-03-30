@@ -191,44 +191,6 @@ function Setting(props: SettingProps) {
                                         checked={notificationSwitch}
                                     />
                                 </div>
-                                {/*<div className={Style.switch}>*/}
-                                {/*    <p className={Style.switchText}>ChatGPT优先（开启：所有消息发送给ChatGPT除了以句号结尾；关闭：只有以问号结尾发送给ChatGPT）</p>*/}
-                                {/*    <Switch*/}
-                                {/*        onChange={(value) =>*/}
-                                {/*            action.setStatus(*/}
-                                {/*                'voiceSwitch',*/}
-                                {/*                value,*/}
-                                {/*            )*/}
-                                {/*        }*/}
-                                {/*        checked={voiceSwitch}*/}
-                                {/*    />*/}
-                                {/*</div>*/}
-                                {/*<div className={Style.switch}>*/}
-                                {/*    <p className={Style.switchText}>语音播报</p>*/}
-                                {/*    <Switch*/}
-                                {/*        onChange={(value) =>*/}
-                                {/*            action.setStatus(*/}
-                                {/*                'voiceSwitch',*/}
-                                {/*                value,*/}
-                                {/*            )*/}
-                                {/*        }*/}
-                                {/*        checked={voiceSwitch}*/}
-                                {/*    />*/}
-                                {/*</div>*/}
-                                {/*<div className={Style.switch}>*/}
-                                {/*    <p className={Style.switchText}>*/}
-                                {/*        播报自己消息*/}
-                                {/*    </p>*/}
-                                {/*    <Switch*/}
-                                {/*        onChange={(value) =>*/}
-                                {/*            action.setStatus(*/}
-                                {/*                'selfVoiceSwitch',*/}
-                                {/*                value,*/}
-                                {/*            )*/}
-                                {/*        }*/}
-                                {/*        checked={selfVoiceSwitch}*/}
-                                {/*    />*/}
-                                {/*</div>*/}
                                 <div className={Style.switch}>
                                     <p className={Style.switchText}>
                                         根据输入内容推荐表情
