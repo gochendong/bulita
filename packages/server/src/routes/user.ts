@@ -306,7 +306,7 @@ export async function login(
     user.tag = tag;
     await user.save();
 
-    await addDefaultLinkmans(user);
+    // await addDefaultLinkmans(user);
 
     const groups = await Group.find(
         { members: user._id },
@@ -431,7 +431,7 @@ export async function loginByToken(
     user.tag = tag;
     await user.save();
 
-    await addDefaultLinkmans(user);
+    // await addDefaultLinkmans(user);
 
     const groups = await Group.find(
         { members: user._id },
