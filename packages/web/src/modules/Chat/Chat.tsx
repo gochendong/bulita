@@ -109,7 +109,6 @@ function Chat() {
         return <div className={Style.chat} />;
     }
     if (!linkman) {
-        window.location.reload();
         return (
             <div className={Style.chat}>
                 <HeaderBar
@@ -122,7 +121,7 @@ function Chat() {
                 />
                 <div className={Style.noLinkman}>
                     {/* <div className={Style.noLinkmanImage} /> */}
-                    <h2 className={Style.noLinkmanText}>刷新一下试试~~</h2>
+                    <h2 className={Style.noLinkmanText}>去左上角搜索一下吧~~</h2>
                 </div>
             </div>
         );
