@@ -25,7 +25,6 @@ const UserSchema = new Schema({
     password: {
         type: String,
         trim: true,
-        index: true,
     },
     avatar: String,
     tag: {

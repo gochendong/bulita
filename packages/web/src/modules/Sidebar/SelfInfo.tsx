@@ -24,6 +24,10 @@ import socket from '../../socket';
 import Style from './SelfInfo.less';
 import Common from './Common.less';
 
+const PASSWORD_REGEX = process.env.PASSWORD_REGEX || '';
+const PASSWORD_TIPS = process.env.PASSWORD_TIPS || '';
+const pattern = new RegExp(PASSWORD_REGEX);
+
 interface SelfInfoProps {
     visible: boolean;
     onClose: () => void;
@@ -123,6 +127,10 @@ function SelfInfo(props: SelfInfoProps) {
         if (oldPassword !== newPassword) {
             Message.warning('两次密码输入不一致');
             return;
+        }
+        if (PASSWORD_REGEX && !pattern.test(newPassword)) {
+            Message.warning(PASSWORD_TIPS);
+            return
         }
         const isSuccess = await changePassword(oldPassword, newPassword);
         if (isSuccess) {

@@ -35,6 +35,10 @@ const { isValid } = Types.ObjectId;
 /** 一天时间 */
 const OneDay = 1000 * 60 * 60 * 24;
 
+const PASSWORD_REGEX = process.env.PASSWORD_REGEX || '';
+const PASSWORD_TIPS = process.env.PASSWORD_TIPS || '';
+const pattern = new RegExp(PASSWORD_REGEX);
+
 interface Environment {
     /** 客户端系统 */
     os: string;
@@ -607,7 +611,9 @@ export async function changePassword(
     const { oldPassword, newPassword } = ctx.data;
     assert(newPassword, '新密码不能为空');
     assert(oldPassword === newPassword, '两次密码输入不一致');
-
+    if (PASSWORD_REGEX) {
+        assert(pattern.test(newPassword), PASSWORD_TIPS);
+    }
     const user = await User.findOne({ _id: ctx.socket.user });
     if (!user) {
         throw new AssertionError({ message: '用户不存在' });
