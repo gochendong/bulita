@@ -1,12 +1,8 @@
 /** 封禁后提示文案 */
-// export const SEAL_TEXT = '你已经被关进小黑屋中, 请稍后再试';
-export const SEAL_TEXT = '说话太快, 已自动禁言, 请稍后再试';
+export const SEAL_TEXT = '你已经被关进小黑屋中, 请稍后再试';
 
-/** 封禁用户释放时间 */
-export const SEAL_USER_TIMEOUT = 1000 * 60 * 10; // 10分钟
-
-/** 封禁ip释放时间 */
-export const SEAL_IP_TIMEOUT = 1000 * 60 * 60 * 6; // 6小时
+/** 封禁时间 */
+export const SEAL_TIMEOUT = 1000 * 60; // 1分钟
 
 /** 透明图 */
 export const TRANSPARENT_IMAGE =

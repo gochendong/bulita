@@ -1,7 +1,7 @@
 import Message from '../components/Message';
 import socket from '../socket';
 
-import { SEAL_TEXT, SEAL_USER_TIMEOUT } from '../../../utils/const';
+import { SEAL_TEXT, SEAL_TIMEOUT } from '../../../utils/const';
 
 /** 用户是否被封禁 */
 let isSeal = false;
@@ -29,10 +29,9 @@ export default function fetch<T = any>(
                  */
                 if (res === SEAL_TEXT) {
                     isSeal = true;
-                    // 用户封禁和ip封禁时效不同, 这里用的短时间
                     setTimeout(() => {
                         isSeal = false;
-                    }, SEAL_USER_TIMEOUT);
+                    }, SEAL_TIMEOUT);
                 }
                 resolve([res, null]);
             } else {
