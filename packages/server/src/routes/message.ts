@@ -227,7 +227,7 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
     }
 
     const lastMessageKey = `chat:lastMessage:${user._id}`;
-    const lastMessage = await Redis.setnx(lastMessageKey);
+    const lastMessage = await Redis.get(lastMessageKey);
     if (lastMessage && lastMessage === messageContent) {
         throw new AssertionError({ message: '已过滤重复的消息' });
     }
