@@ -16,22 +16,25 @@ Github: [https://github.com/gochendong/bulita](https://github.com/gochendong/bul
 
 ## Install
 
-```
-1. cd bulita
-
+1. Switch to the code folder
+    ```
+    cd bulita
+    ```
 2. copy the .env.example to .env and edit it
-
-# Start the Redis service. If it is already running, skip this step
-3. docker-compose -f docker-compose-redis.yaml up --build -d
-
-# Start the Redis service. If it is already running, skip this step
-4. docker-compose -f docker-compose-mongo.yaml up --build -d
-
-# Start the chatroom service
-5. docker-compose -f docker-compose.yaml up --build -d
-
+3. Start the Redis service. If it is already running, skip this step
+    ```
+    docker-compose -f docker-compose-redis.yaml up --build -d
+    ```
+4. Start the MongoDB service. If it is already running, skip this step
+    ```
+    docker-compose -f docker-compose-mongo.yaml up --build -d
+    ```
+5. Start the chatroom service
+    ```
+    docker-compose -f docker-compose.yaml up --build -d
+    ```
 6. Now you can access the chatroom through http://your-ip:8111
-```
+
 
 ## Referenced project
 
