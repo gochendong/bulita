@@ -242,7 +242,7 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         { sort: { createTime: -1 }, limit: 1 }
     );
 
-    if (lastDBMessage.content === messageContent) {
+    if (lastDBMessage && lastDBMessage.content === messageContent) {
         throw new AssertionError({ message: '已过滤重复的消息' });
     }
 
