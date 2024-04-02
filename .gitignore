@@ -4,14 +4,14 @@ dist/
 coverage/
 .idea/
 .linaria-cache/
-.data
+data
 
 npm-debug.log
 yarn-error.log
 .eslintcache
 lerna-debug.log
 
-#.env
+.env
 
 packages/server/public/*
 !packages/server/public/avatar/

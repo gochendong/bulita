@@ -233,6 +233,19 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
     }
     await Redis.set(lastMessageKey, messageContent, 5);
 
+    const lastDBMessage = await Message.findOne(
+        {
+            from: ctx.socket.user,
+            to: to,
+        },
+        { content: 1 },
+        { sort: { createTime: -1 }, limit: 1 }
+    );
+
+    if (lastDBMessage.content === messageContent) {
+        throw new AssertionError({ message: '已过滤重复的消息' });
+    }
+
     if (toUser) {
         const friend = await Friend.find({ from: toUser._id, to: user });
         if (friend.length === 0) {
