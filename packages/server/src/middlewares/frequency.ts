@@ -13,9 +13,8 @@ const MaxCallPerMinutes = parseInt(process.env.MAX_CALL_PER_MINUTES);
 const NewUserMaxCallPerMinutes = parseInt(
     process.env.NEW_USER_MAX_CALL_PER_MINUTES,
 );
-const ClearDataInterval = parseInt(process.env.CLEAR_DATA_INTERVAL);
 
-const AutoSealDuration = 1; // minutes
+const AutoSealDuration = parseInt(process.env.LIFT_BAN_DURATION);
 
 type Options = {
     maxCallPerMinutes?: number;
@@ -31,7 +30,6 @@ export default function frequency(
     {
         maxCallPerMinutes = MaxCallPerMinutes,
         newUserMaxCallPerMinutes = NewUserMaxCallPerMinutes,
-        clearDataInterval = ClearDataInterval,
     }: Options = {},
 ) {
     let callTimes: Record<string, number> = {};
@@ -39,7 +37,7 @@ export default function frequency(
     // 每60s清空一次次数统计
     setInterval(() => {
         callTimes = {};
-    }, clearDataInterval * 1000);
+    }, Redis.Minute * 1000);
 
     return async ([event, , cb]: MiddlewareArgs, next: MiddlewareNext) => {
         if (event !== 'sendMessage') {
@@ -57,16 +55,18 @@ export default function frequency(
                 await Redis.set(
                     getSealUserKey(socket.data.user),
                     socket.data.user,
-                    Redis.Minute * AutoSealDuration,
+                    AutoSealDuration,
                 );
+                callTimes = {};
             } else if (count >= maxCallPerMinutes) {
                 // normal user limit
                 cb(CALL_SERVICE_FREQUENTLY);
                 await Redis.set(
                     getSealUserKey(socket.data.user),
                     socket.data.user,
-                    Redis.Minute * AutoSealDuration,
+                    AutoSealDuration,
                 );
+                callTimes = {};
             } else {
                 callTimes[socketId] = count + 1;
                 next();
