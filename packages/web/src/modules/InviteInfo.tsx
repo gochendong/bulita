@@ -118,7 +118,7 @@ function InviteInfo() {
                                     )
                                 }
                             >
-                                AI聊天室
+                                登录
                             </Button>
                         )}
                     </div>

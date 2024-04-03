@@ -130,7 +130,7 @@ function ChatInput() {
                         }
                         role="button"
                     >
-                        AI聊天室
+                        登录
                     </b>
                 </p>
             </div>
