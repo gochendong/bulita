@@ -155,8 +155,9 @@ async function addDefaultLinkmans(user: UserDocument) {
 export async function register(
     ctx: Context<{ username: string; password: string } & Environment>,
 ) {
-    const disableRegisterUser = await Redis.get(DisableRegisterUserKey);
-    assert(disableRegisterUser !== 'true', '游客登录禁用中');
+    if (process.env.ENABLE_REGISTER_USER !== 'true') {
+        throw AssertionError({message: '本站暂不开放注册'});
+    }
 
     let { username, password, os, browser, environment } = ctx.data;
 
@@ -639,9 +640,6 @@ export async function changeUsername(ctx: Context<{ username: string }>) {
     const self = await User.findOne({ _id: ctx.socket.user });
     if (!self) {
         throw new AssertionError({ message: '用户不存在' });
-    }
-    if (!self.password) {
-        throw new AssertionError({ message:'请先设置密码'});
     }
     const { username } = ctx.data;
     assert(username, '新用户名不能为空');

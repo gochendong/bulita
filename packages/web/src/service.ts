@@ -31,8 +31,6 @@ export async function register(
     if (err) {
         return null;
     }
-
-    saveUsername(user.username);
     window.location.reload();
     return user;
 }
@@ -63,9 +61,6 @@ export async function login(
     if (err) {
         return null;
     }
-
-    saveUsername(user.username);
-    // window.location.reload()
     return user;
 }
 
@@ -97,8 +92,6 @@ export async function loginByToken(
         window.localStorage.removeItem('token');
         return null;
     }
-
-    saveUsername(user.username);
     return user;
 }
 

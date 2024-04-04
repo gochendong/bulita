@@ -148,8 +148,9 @@ function SelfInfo(props: SelfInfoProps) {
     async function handleChangeUsername() {
         const isSuccess = await changeUsername(username);
         if (isSuccess) {
+            Message.success('修改用户名成功');
             onClose();
-            reLogin('修改用户名成功, 请使用新用户名重新登录');
+            window.location.reload();
         }
     }
 
