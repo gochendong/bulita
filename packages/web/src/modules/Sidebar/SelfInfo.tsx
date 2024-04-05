@@ -20,6 +20,10 @@ import {
 } from '../../service';
 import useAction from '../../hooks/useAction';
 import socket from '../../socket';
+import { ActionTypes } from "../../state/action";
+import store from '../../state/store';
+const { dispatch } = store;
+
 
 import Style from './SelfInfo.less';
 import Common from './Common.less';
@@ -148,9 +152,14 @@ function SelfInfo(props: SelfInfoProps) {
     async function handleChangeUsername() {
         const isSuccess = await changeUsername(username);
         if (isSuccess) {
+            dispatch({
+                type: ActionTypes.UpdateUserInfo,
+                payload: {
+                    username: username
+                },
+            });
             Message.success('修改用户名成功');
             onClose();
-            window.location.reload();
         }
     }
 
@@ -160,9 +169,14 @@ function SelfInfo(props: SelfInfoProps) {
     async function handleChangeSignature() {
         const isSuccess = await changeSignature(signature);
         if (isSuccess) {
+            dispatch({
+                type: ActionTypes.UpdateUserInfo,
+                payload: {
+                    signature: signature
+                },
+            });
             Message.success('修改个性签名成功');
             onClose();
-            window.location.reload();
         }
     }
 
@@ -245,7 +259,7 @@ function SelfInfo(props: SelfInfoProps) {
                             value={username}
                             onChange={setUsername}
                             type="text"
-                            placeholder={username}
+                            // placeholder={username}
                         />
                         <Button
                             className={Style.button}
@@ -263,7 +277,7 @@ function SelfInfo(props: SelfInfoProps) {
                             value={signature}
                             onChange={setSignature}
                             type="text"
-                            placeholder={signature}
+                            // placeholder={signature}
                         />
                         <Button
                             className={Style.button}
