@@ -4,8 +4,9 @@ services:
   bulita:
     build: .
     restart: always
+    network_mode: host
     ports:
-      - "8111:9200"
+      - "9200:9200"
     volumes:
       - ./data/ImageMessage:/usr/app/bulita/packages/server/public/ImageMessage
       - ./data/FileMessage:/usr/app/bulita/packages/server/public/FileMessage

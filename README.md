@@ -18,7 +18,7 @@ Github: [https://github.com/gochendong/bulita](https://github.com/gochendong/bul
 
 1. Switch to the code folder
     ```
-    cd bulita
+    git clone https://github.com/gochendong/bulita && cd bulita
     ```
 2. copy the .env.example to .env and edit it
 3. Start the Redis service. If it is already running, skip this step
@@ -33,7 +33,7 @@ Github: [https://github.com/gochendong/bulita](https://github.com/gochendong/bul
     ```
     docker-compose -f docker-compose.yaml up --build -d
     ```
-6. Now you can access the chatroom through http://your-ip:8111
+6. Now you can access the chatroom through http://localhost:9200
 
 
 ## Referenced project
