@@ -1,5 +1,6 @@
 # [Bulita](https://chat.bulita.net/)
 
+English / [简体中文](./README_ZH.md)
 
 Bulita is an interesting open source chatroom. It is developed based on [node.js](https://nodejs.org/), [react](https://reactjs.org/) and [socket.io](https://socket.io/) technologies
 
@@ -9,10 +10,10 @@ Github: [https://github.com/gochendong/bulita](https://github.com/gochendong/bul
 
 ## Features
 
-1. No registration required, one-click login.
-2. Set multiple robots for automatic replies, Render the message of the robot using Markdown.
-3. All parameters can be customized through configuration file.
-4. Active official website and proactive project maintenance.
+1. 100% fully open source frontend and backend, allowing for rapid construction based on the source code.
+2. Set up automatic replies for robots, set up separate APIs for each robot, and use Markdown to render the content of robot replies.
+3. One-click initialization of groups, contacts, bots, etc. through configuration files.
+4. You can find developers on the official website who can answer your questions in a timely manner.
 
 ## Install
 
