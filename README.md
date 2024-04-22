@@ -1,4 +1,5 @@
-# [Bulita](https://chat.bulita.net/)
+<div align="center">
+<h1> Bulita </h1>
 
 English / [简体中文](./README_ZH.md)
 
@@ -7,6 +8,7 @@ Bulita is an interesting open source chatroom. It is developed based on [node.js
 Online Example: [https://chat.bulita.net/](https://chat.bulita.net)
 
 Github: [https://github.com/gochendong/bulita](https://github.com/gochendong/bulita)
+</div>
 
 ## Features
 

@@ -1,4 +1,5 @@
-# [布里塔](https://chat.bulita.net/)
+<div align="center">
+<h1> 布里塔 </h1>
 
 [English](./README.md) / 简体中文
 
@@ -7,6 +8,7 @@
 官方网站: [https://chat.bulita.net/](https://chat.bulita.net)
 
 Github: [https://github.com/gochendong/bulita](https://github.com/gochendong/bulita)
+</div>
 
 ## 特色
 
@@ -41,6 +43,6 @@ Github: [https://github.com/gochendong/bulita](https://github.com/gochendong/bul
 
 [https://github.com/yinxin630/fiora](https://github.com/yinxin630/fiora)
 
-## License
+## 开源协议
 
 布里塔 is [MIT licensed](./LICENSE)
