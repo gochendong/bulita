@@ -39,7 +39,7 @@ interface CodeEditorProps {
 function CodeEditor(props: CodeEditorProps) {
     const { visible, onClose, onSend } = props;
 
-    const [language, setLanguage] = useState('python');
+    const [language, setLanguage] = useState('text');
     const [value, setValue] = useState('');
     const [timestamp, setTimestamp] = useState(0);
 
