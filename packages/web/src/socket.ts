@@ -85,6 +85,9 @@ socket.on('connect', async () => {
             platform.description,
         );
         if (user) {
+            if (user.bot) {
+                window.localStorage.setItem('botAvatar', user.bot.avatar);
+            }
             dispatch({
                 type: ActionTypes.SetUser,
                 payload: user,

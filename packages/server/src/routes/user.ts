@@ -467,6 +467,11 @@ export async function loginByToken(
         },
     );
 
+    let bot = null;
+    if (process.env.DEFAULT_BOT_NAME) {
+        bot = await User.findOne({ username: process.env.DEFAULT_BOT_NAME })
+    }
+
     const notificationTokens = await getUserNotificationTokens(user);
 
     return {
@@ -479,6 +484,7 @@ export async function loginByToken(
         tag: user.tag,
         groups,
         friends,
+        bot,
         isAdmin: config.administrators.includes(user.username),
         notificationTokens,
     };

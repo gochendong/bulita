@@ -168,6 +168,44 @@ function ChatInput() {
         insertAtCursor(`#(${expression})`);
     }
 
+    function addBotMessage(type: string, content: string) {
+        const _id = focus + Date.now();
+        const message = {
+            _id,
+            type,
+            content,
+            createTime: Date.now(),
+            from: {
+                _id: linkman._id,
+                username: linkman.name,
+                avatar: linkman.avatar,
+                tag: 'bot'
+            },
+            loading: true,
+        };
+        action.addLinkmanMessage(focus, message);
+        return _id;
+    }
+
+    function addGroupBotMessage(type: string, content: string) {
+        const _id = focus + Date.now();
+        const message = {
+            _id,
+            type,
+            content,
+            createTime: Date.now(),
+            from: {
+                _id: linkman._id,
+                username: process.env.DEFAULT_BOT_NAME,
+                avatar: window.localStorage.getItem('botAvatar'),
+                tag: 'bot'
+            },
+            loading: true,
+        };
+        action.addLinkmanMessage(focus, message);
+        return _id;
+    }
+
     function addSelfMessage(type: string, content: string) {
         const _id = focus + Date.now();
         const message = {
@@ -207,22 +245,6 @@ function ChatInput() {
         return _id;
     }
 
-    async function handleSendBotMessage(
-        localId: string,
-        type: string,
-        content: string,
-        linkmanId = focus,
-    ) {
-        const [error, message] = await sendBotMessage(linkmanId, type, content);
-        if (error) {
-            // action.deleteMessage(focus, localId, true);
-        } else {
-            message.loading = false;
-            action.updateMessage(focus, localId, message);
-            action.setLinkmanProperty(linkman._id, 'unread', 0);
-            action.setLinkmanProperty(focus, 'unread', 0);
-        }
-    }
 
     // eslint-disable-next-line react/destructuring-assignment
     async function handleSendMessage(
@@ -253,7 +275,8 @@ function ChatInput() {
         setExpressions([]);
         message.loading = false;
         action.updateMessage(focus, localId, message);
-        if (linkman.type !== 'group' && linkman.tag == 'bot') {
+        if (linkman.type !== 'group' && linkman.tag === 'bot') {
+            const botMessageId = addBotMessage('text', `${linkman.name}正在思考中...`);
             const [error, message] = await sendBotMessage(
                 linkmanId,
                 type,
@@ -263,9 +286,10 @@ function ChatInput() {
                 console.log(error);
                 return;
             }
-            action.updateMessage(focus, localId, message);
+            action.updateMessage(focus, botMessageId, message);
         }
         if (linkman.type === 'group' && status.groupAISwitch) {
+            const botMessageId = addGroupBotMessage('text', `${process.env.DEFAULT_BOT_NAME}正在回复${username}...`);
             const [error, message] = await sendGroupBotMessage(
                 linkmanId,
                 type,
@@ -275,7 +299,7 @@ function ChatInput() {
                 console.log(error);
                 return;
             }
-            action.updateMessage(focus, localId, message);
+            action.updateMessage(focus, botMessageId, message);
         }
     }
 
@@ -675,9 +699,9 @@ function ChatInput() {
                             onChange={(value) => {
                                 action.setStatus('groupAISwitch', value);
                                 if (value) {
-                                    Message.success('已开启AI回复');
+                                    Message.success('已开启自动回复');
                                 } else {
-                                    Message.warning('已关闭AI回复');
+                                    Message.info('已关闭自动回复');
                                 }
                             }}
                             checked={groupAISwitch}
