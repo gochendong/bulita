@@ -57,12 +57,13 @@
     position: relative;
 }
 
-
 .input {
     flex: 1;
-    padding: 0px 8px;
-    height: 40px;
-    line-height: 40px;
+    padding: 10px 90px 10px 14px;
+    height: 100%;
+    width: 100%;
+    border-radius: 10px;
+    line-height: normal;
     outline: none;
     border: 1px solid rgba(208, 208, 208, 0.5);
     font-size: 14px;
@@ -70,8 +71,13 @@
     user-select: auto;
     resize: none;
 
+
     &::placeholder {
         color: #999;
+    }
+
+    &:focus {
+        border-color: var(--primary-color-8);
     }
 }
 

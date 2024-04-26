@@ -16,6 +16,7 @@ function TextMessage(props: TextMessageProps) {
     const content = props.content
         .replace(/<[^>]*?>/gi, '')
         .replace(/(.*?)<\/[^>]*?>/gi, '')
+        .replace(/\n/g, '<br>')
         .replace(
             /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{2,256}(\.[a-z]{2,6})?\b(:[0-9]{2,5})?([-a-zA-Z0-9@:%_+.~#?&//=]*)/g,
             (r) =>

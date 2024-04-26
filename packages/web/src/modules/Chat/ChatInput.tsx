@@ -1,4 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, {
+    useState,
+    useRef,
+    useEffect,
+    KeyboardEvent,
+} from 'react';
 import { useSelector } from 'react-redux';
 import loadable from '@loadable/component';
 
@@ -7,6 +12,7 @@ import xss from '@bulita/utils/xss';
 import compressImage from '@bulita/utils/compressImage';
 import config from '@bulita/config/client';
 import { isMobile } from '@bulita/utils/ua';
+import Switch from 'react-switch';
 import fetch from '../../utils/fetch';
 import voice from '../../utils/voice';
 import readDiskFile, { ReadFileResult } from '../../utils/readDiskFile';
@@ -27,27 +33,32 @@ import {
 } from '../../service';
 import Tooltip from '../../components/Tooltip';
 import useAero from '../../hooks/useAero';
-import Switch from 'react-switch';
-import { LocalStorageKey } from '../../localStorage';
+
+interface InputAreaProps {
+    readonly busy: boolean;
+    readonly minHeight: number;
+    readonly maxHeight?: number;
+    readonly onSubmit: (prompt: string) => void;
+}
 
 const expressionList = css`
-    display: flex;
-    width: 100%;
-    height: 80px;
-    position: absolute;
-    left: 0;
-    top: -80px;
-    background-color: inherit;
-    overflow-x: auto;
+  display: flex;
+  width: 100%;
+  height: 80px;
+  position: absolute;
+  left: 0;
+  top: -80px;
+  background-color: inherit;
+  overflow-x: auto;
 `;
 const expressionImageContainer = css`
-    min-width: 80px;
-    height: 80px;
+  min-width: 80px;
+  height: 80px;
 `;
 const expressionImage = css`
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 `;
 
 const ExpressionAsync = loadable(
@@ -64,7 +75,7 @@ let searchExpressionTimer: number = 0;
 
 let inputIME = false;
 
-function ChatInput() {
+function ChatInput(props: InputAreaProps) {
     const action = useAction();
     const isLogin = useIsLogin();
     const connect = useSelector((state: State) => state.connect);
@@ -96,24 +107,35 @@ function ChatInput() {
         { image: string; width: number; height: number }[]
     >([]);
 
-    /** 全局输入框聚焦快捷键 */
+    const { minHeight, maxHeight } = props;
+
     function focusInput(e: KeyboardEvent) {
-        const $target: HTMLElement = e.target as HTMLElement;
-        if (
-            $target.tagName === 'INPUT' ||
-            $target.tagName === 'TEXTAREA' ||
-            e.key !== 'i'
-        ) {
-            return;
+        if ($input.current.value === '' && e.key === 'Enter') {
+            e.preventDefault();
+            // @ts-ignore
+            $input.current.focus(e);
         }
-        e.preventDefault();
-        // @ts-ignore
-        $input.current.focus(e);
     }
     useEffect(() => {
         window.addEventListener('keydown', focusInput);
         return () => window.removeEventListener('keydown', focusInput);
     }, []);
+
+    const setTextAreaHeight = (
+        current: HTMLTextAreaElement | null,
+        minHeight: number = 40,
+        maxHeight: number = 400,
+    ) => {
+        current!.style.height = '0px';
+        current!.style.height =
+            current!.scrollHeight < maxHeight
+                ? `${
+                    current!.scrollHeight > minHeight
+                        ? current!.scrollHeight
+                        : minHeight
+                }px`
+                : `${maxHeight}px`;
+    };
 
     useEffect(() => {
         setExpressions([]);
@@ -179,7 +201,7 @@ function ChatInput() {
                 _id: linkman._id,
                 username: linkman.name,
                 avatar: linkman.avatar,
-                tag: 'bot'
+                tag: 'bot',
             },
             loading: true,
         };
@@ -198,7 +220,7 @@ function ChatInput() {
                 _id: linkman._id,
                 username: process.env.DEFAULT_BOT_NAME,
                 avatar: window.localStorage.getItem('botAvatar'),
-                tag: 'bot'
+                tag: 'bot',
             },
             loading: true,
         };
@@ -223,7 +245,7 @@ function ChatInput() {
             percent: type === 'image' || type === 'file' ? 0 : 100,
         };
         // @ts-ignore
-        if (type !== "text") {
+        if (type !== 'text') {
             action.addLinkmanMessage(focus, message);
         }
         // 停用
@@ -245,7 +267,6 @@ function ChatInput() {
         return _id;
     }
 
-
     // eslint-disable-next-line react/destructuring-assignment
     async function handleSendMessage(
         localId: string,
@@ -256,15 +277,19 @@ function ChatInput() {
         // if (linkman.unread > 0) {
         //     action.setLinkmanProperty(linkman._id, 'unread', 0);
         // }
-        let ai_content = content;
+        let prefixContent = content;
         if (
             linkman.type === 'group' &&
             status.groupAISwitch &&
-            type == 'text'
+            type === 'text'
         ) {
-            ai_content = '❓' + content;
+            prefixContent = `❓${content}`;
         }
-        const [error, message] = await sendMessage(linkmanId, type, ai_content);
+        const [error, message] = await sendMessage(
+            linkmanId,
+            type,
+            prefixContent,
+        );
         if (error) {
             console.log(error);
             action.deleteMessage(focus, localId, true);
@@ -275,8 +300,12 @@ function ChatInput() {
         setExpressions([]);
         message.loading = false;
         action.updateMessage(focus, localId, message);
+        setTextAreaHeight($input.current, minHeight, maxHeight);
         if (linkman.type !== 'group' && linkman.tag === 'bot') {
-            const botMessageId = addBotMessage('text', `${linkman.name}正在思考中...`);
+            const botMessageId = addBotMessage(
+                'text',
+                `${linkman.name}正在思考中...`,
+            );
             const [error, message] = await sendBotMessage(
                 linkmanId,
                 type,
@@ -289,7 +318,10 @@ function ChatInput() {
             action.updateMessage(focus, botMessageId, message);
         }
         if (linkman.type === 'group' && status.groupAISwitch) {
-            const botMessageId = addGroupBotMessage('text', `${process.env.DEFAULT_BOT_NAME}正在回复${username}...`);
+            const botMessageId = addGroupBotMessage(
+                'text',
+                `${process.env.DEFAULT_BOT_NAME}正在回复${username}...`,
+            );
             const [error, message] = await sendGroupBotMessage(
                 linkmanId,
                 type,
@@ -410,9 +442,9 @@ function ChatInput() {
     }
 
     function handleFeatureMenuClick({
-        key,
-        domEvent,
-    }: {
+                                        key,
+                                        domEvent,
+                                    }: {
         key: string;
         domEvent: any;
     }) {
@@ -426,6 +458,10 @@ function ChatInput() {
                 handleSendImage();
                 break;
             }
+            // case 'huaji': {
+            //     sendHuaji();
+            //     break;
+            // }
             case 'code': {
                 toggleCodeEditorDialog(true);
                 break;
@@ -445,7 +481,7 @@ function ChatInput() {
             return Message.error('发送消息失败, 您当前处于离线状态');
         }
         const { items, types } =
-            e.clipboardData || e.originalEvent.clipboardData;
+        e.clipboardData || e.originalEvent.clipboardData;
 
         // 如果包含文件内容
         if (types.indexOf('Files') > -1) {
@@ -548,10 +584,13 @@ function ChatInput() {
     }
 
     async function handleInputKeyDown(e: any) {
+        const { shiftKey, key } = e;
+        if (!shiftKey && key === 'Enter' && !inputIME) {
+            e.preventDefault();
+            sendTextMessage();
+        }
         if (e.key === 'Tab') {
             e.preventDefault();
-        } else if (e.key === 'Enter' && !inputIME) {
-            sendTextMessage();
         } else if (e.altKey && (e.key === 'd' || e.key === '∂')) {
             toggleExpressionDialog(true);
             e.preventDefault();
@@ -713,11 +752,10 @@ function ChatInput() {
                 autoComplete="off"
                 onSubmit={(e) => e.preventDefault()}
             >
-                <input
+                <textarea
                     className={Style.input}
-                    // type="text"
-                    placeholder=""
-                    maxLength={10240}
+                    autoFocus
+                    placeholder="Enter 发送，Shift + Enter 换行"
                     ref={$input}
                     onKeyDown={handleInputKeyDown}
                     onPaste={handlePaste}
@@ -729,6 +767,9 @@ function ChatInput() {
                     }}
                     onFocus={() => toggleInputFocus(true)}
                     onBlur={() => toggleInputFocus(false)}
+                    onInput={({ currentTarget }) =>
+                        setTextAreaHeight(currentTarget, minHeight, maxHeight)
+                    }
                 />
             </form>
             <Dropdown
@@ -753,14 +794,14 @@ function ChatInput() {
                     iconSize={25}
                 />
             </Dropdown>
-            {/*<IconButton*/}
-            {/*    className={Style.iconButton}*/}
-            {/*    width={32}*/}
-            {/*    height={32}*/}
-            {/*    icon="send"*/}
-            {/*    iconSize={25}*/}
-            {/*    onClick={sendTextMessage}*/}
-            {/*/>*/}
+            {/* <IconButton */}
+            {/*    className={Style.iconButton} */}
+            {/*    width={32} */}
+            {/*    height={32} */}
+            {/*    icon="send" */}
+            {/*    iconSize={25} */}
+            {/*    onClick={sendTextMessage} */}
+            {/* /> */}
 
             <div className={Style.atPanel}>
                 {at.enable &&
