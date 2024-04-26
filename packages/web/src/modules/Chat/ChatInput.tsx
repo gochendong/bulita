@@ -152,7 +152,7 @@ function ChatInput(props: InputAreaProps) {
                         }
                         role="button"
                     >
-                        登录
+                        注册 / 登录
                     </b>
                 </p>
             </div>
@@ -754,8 +754,8 @@ function ChatInput(props: InputAreaProps) {
             >
                 <textarea
                     className={Style.input}
-                    autoFocus
-                    placeholder="Enter 发送，Shift + Enter 换行"
+                    autoFocus={!isMobile}
+                    placeholder={isMobile ? "" : "Enter 发送，Shift + Enter 换行"}
                     ref={$input}
                     onKeyDown={handleInputKeyDown}
                     onPaste={handlePaste}

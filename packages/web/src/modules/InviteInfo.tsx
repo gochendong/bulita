@@ -118,7 +118,7 @@ function InviteInfo() {
                                     )
                                 }
                             >
-                                登录
+                                注册 / 登录
                             </Button>
                         )}
                     </div>

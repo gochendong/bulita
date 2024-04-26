@@ -73,6 +73,13 @@ function Login() {
                 autoComplete="on"
                 showClearBtn={false}
             />
+            <button
+                className={Style.loginButton}
+                onClick={handleLogin}
+                type="button"
+            >
+                登录
+            </button>
         </div>
     );
 }

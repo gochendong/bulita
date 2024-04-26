@@ -58,7 +58,7 @@ function Register() {
                 onClick={handleRegister}
                 type="button"
             >
-                立即进入
+                一键注册
             </button>
         </div>
     );
