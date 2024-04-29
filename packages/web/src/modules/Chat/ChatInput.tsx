@@ -123,8 +123,8 @@ function ChatInput(props: InputAreaProps) {
 
     const setTextAreaHeight = (
         current: HTMLTextAreaElement | null,
-        minHeight: number = 40,
-        maxHeight: number = 400,
+        minHeight: number = 50,
+        maxHeight: number = 500,
     ) => {
         current!.style.height = '0px';
         current!.style.height =
