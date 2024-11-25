@@ -340,6 +340,29 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
             });
             await Redis.lpush(notifyKey, jsonStr);
         }
+
+        if (
+            toUser &&
+            toUser.pushToken &&
+            toUser.tag !== 'bot' &&
+            user.username !== toUser.username
+        ) {
+            const domain = process.env.PRIVATE_MSG_CALLBACK_DOMAIN || 'https://chat.bulita.net'
+            const jsonStr = JSON.stringify({
+                title: "收到来自 " + user.username + " 的新消息",
+                content: `<a href='${domain}'>去回复（请先在浏览器中打开）</a>`,
+            });
+            const lastPushKey = `chat:pushMessage:${user._id}`;
+            const lastPush = await Redis.get(lastPushKey);
+            if (!lastPush) {
+                await Redis.set(lastPushKey, 'true', 60);
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', `https://push.showdoc.com.cn/server/api/push/${toUser.pushToken}`);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.timeout = 10000;
+                xhr.send(jsonStr);
+            }
+        }
     }
 
     createOrUpdateHistory(ctx.socket.user.toString(), to, message._id);

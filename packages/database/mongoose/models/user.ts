@@ -22,6 +22,7 @@ const UserSchema = new Schema({
     },
     level: Number,
     signature: String,
+    pushToken: String,
     password: {
         type: String,
         trim: true,
@@ -52,6 +53,8 @@ export interface UserDocument extends Document {
     level: Number;
     /** 签名 */
     signature: string;
+    /** 推送token */
+    pushToken: string;
     /** 密码加密盐 */
     salt: string;
     /** 加密的密码 */

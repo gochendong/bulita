@@ -92,6 +92,7 @@ export interface User {
     email: string;
     signature: string;
     tag: string;
+    pushToken: string;
 }
 
 /** redux store state */
@@ -106,6 +107,7 @@ export interface State {
         level: number;
         email: string;
         signature: string;
+        pushToken: string;
     } | null;
     linkmans: LinkmansMap;
     /** 聚焦的联系人 */
@@ -334,6 +336,7 @@ function reducer(state: State = initialState, action: Action): State {
                 email,
                 level,
                 signature,
+                pushToken,
                 groups,
                 friends,
                 isAdmin,
@@ -361,6 +364,7 @@ function reducer(state: State = initialState, action: Action): State {
                     email,
                     level,
                     signature,
+                    pushToken,
                     tag,
                     isAdmin,
                 },

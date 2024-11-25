@@ -154,6 +154,17 @@ export async function changeSignature(signature: string) {
 }
 
 /**
+ * 修改私聊通知token
+ * @param pushToken 新私聊通知token
+ */
+export async function changePushToken(pushToken: string) {
+    const [error] = await fetch('changePushToken', {
+        pushToken,
+    });
+    return !error;
+}
+
+/**
  * 修改群组名
  * @param groupId 目标群组
  * @param name 新名字

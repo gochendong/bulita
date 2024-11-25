@@ -50,6 +50,7 @@ export type SetUserPayload = {
     email: string;
     level: number;
     signature: string;
+    pushToken: string;
     groups: Group[];
     friends: Friend[];
     isAdmin: boolean;

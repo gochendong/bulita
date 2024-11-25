@@ -17,6 +17,7 @@ import {
     changePassword,
     changeUsername,
     changeSignature,
+    changePushToken
 } from '../../service';
 import useAction from '../../hooks/useAction';
 import socket from '../../socket';
@@ -43,8 +44,9 @@ function SelfInfo(props: SelfInfoProps) {
     const action = useAction();
     const userId = useSelector((state: State) => state.user?._id);
     const avatar = useSelector((state: State) => state.user?.avatar);
-    let currentUsername = useSelector((state: State) => state.user?.username);
-    let currentSignature = useSelector((state: State) => state.user?.signature);
+    const currentUsername = useSelector((state: State) => state.user?.username);
+    const currentSignature = useSelector((state: State) => state.user?.signature);
+    const currentPushToken = useSelector((state: State) => state.user?.pushToken);
 
     const primaryColor = useSelector(
         (state: State) => state.status.primaryColor,
@@ -145,6 +147,7 @@ function SelfInfo(props: SelfInfoProps) {
 
     const [username, setUsername] = useState(currentUsername);
     const [signature, setSignature] = useState(currentSignature);
+    const [pushToken, setPushToken] = useState(currentPushToken);
 
     /**
      * 修改用户名
@@ -155,7 +158,7 @@ function SelfInfo(props: SelfInfoProps) {
             dispatch({
                 type: ActionTypes.UpdateUserInfo,
                 payload: {
-                    username: username
+                    username
                 },
             });
             Message.success('修改用户名成功');
@@ -172,10 +175,27 @@ function SelfInfo(props: SelfInfoProps) {
             dispatch({
                 type: ActionTypes.UpdateUserInfo,
                 payload: {
-                    signature: signature
+                    signature
                 },
             });
             Message.success('修改个性签名成功');
+            onClose();
+        }
+    }
+
+    /**
+     * 修改私聊通知token
+     */
+    async function handleChangePushToken() {
+        const isSuccess = await changePushToken(pushToken);
+        if (isSuccess) {
+            dispatch({
+                type: ActionTypes.UpdateUserInfo,
+                payload: {
+                    pushToken
+                },
+            });
+            Message.success('修改私聊通知token成功');
             onClose();
         }
     }
@@ -282,6 +302,33 @@ function SelfInfo(props: SelfInfoProps) {
                         <Button
                             className={Style.button}
                             onClick={handleChangeSignature}
+                        >
+                            确认修改
+                        </Button>
+                    </div>
+                </div>
+                <div className={Common.block}>
+                    <p className={Common.title}>
+                        设置私聊通知token
+                        <a
+                            className={Common.href}
+                            href="https://push.showdoc.com.cn/#/push"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            （去获取）
+                        </a>
+                    </p>
+                    <div>
+                        <Input
+                            className={Style.input}
+                            value={pushToken}
+                            onChange={setPushToken}
+                            type="text"
+                        />
+                        <Button
+                            className={Style.button}
+                            onClick={handleChangePushToken}
                         >
                             确认修改
                         </Button>

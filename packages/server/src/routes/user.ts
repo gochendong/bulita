@@ -357,6 +357,7 @@ export async function login(
         email: user.email,
         level: user.level,
         signature: user.signature,
+        pushToken: user.pushToken,
         tag: user.tag,
         groups,
         friends,
@@ -399,6 +400,7 @@ export async function loginByToken(
             email: 1,
             level: 1,
             signature: 1,
+            pushToken: 1,
             tag: 1,
             createTime: 1,
         },
@@ -469,7 +471,14 @@ export async function loginByToken(
 
     let bot = null;
     if (process.env.DEFAULT_BOT_NAME) {
-        bot = await User.findOne({ username: process.env.DEFAULT_BOT_NAME })
+        bot = await User.findOne({ username: process.env.DEFAULT_BOT_NAME }, {
+            _id: 1,
+            username: 1,
+            avatar: 1,
+            tag: 1,
+            level: 1,
+            signature: 1,
+        });
     }
 
     const notificationTokens = await getUserNotificationTokens(user);
@@ -481,6 +490,7 @@ export async function loginByToken(
         email: user.email,
         level: user.level,
         signature: user.signature,
+        pushToken: user.pushToken,
         tag: user.tag,
         groups,
         friends,
@@ -676,6 +686,23 @@ export async function changeSignature(ctx: Context<{ signature: string }>) {
     self.signature = signature;
     await self.save();
 
+    return {
+        msg: 'ok',
+    };
+}
+
+/**
+ * 修改私聊通知token
+ * @param ctx Context
+ */
+export async function changePushToken(ctx: Context<{ pushToken: string }>) {
+    const { pushToken } = ctx.data;
+    const self = await User.findOne({ _id: ctx.socket.user });
+    if (!self) {
+        throw new AssertionError({ message: '用户不存在' });
+    }
+    self.pushToken = pushToken;
+    await self.save();
     return {
         msg: 'ok',
     };
