@@ -46,3 +46,7 @@ Github: [https://github.com/gochendong/bulita](https://github.com/gochendong/bul
 ## 开源协议
 
 布里塔 is [MIT licensed](./LICENSE)
+
+## 赞助本项目
+
+![](https://docs.bulita.net/media/202412/usdt_1733018911.png)

@@ -46,3 +46,7 @@ Github: [https://github.com/gochendong/bulita](https://github.com/gochendong/bul
 ## License
 
 bulita is [MIT licensed](./LICENSE)
+
+## Sponsor this project
+
+![](https://docs.bulita.net/media/202412/usdt_1733018911.png)
