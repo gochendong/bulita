@@ -319,20 +319,6 @@ export async function sendBotMessage(
 }
 
 /**
- * 发送群组Bot消息
- * @param to 目标
- * @param type 消息类型
- * @param content 消息内容
- */
-export async function sendGroupBotMessage(
-    to: string,
-    type: string,
-    content: string,
-) {
-    return fetch('sendGroupBotMessage', { to, type, content });
-}
-
-/**
  * 删除消息
  * @param messageId 要删除的消息id
  */

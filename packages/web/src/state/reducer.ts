@@ -139,8 +139,6 @@ export interface State {
         voiceSwitch: boolean;
         /** 是否朗读个人发送的消息开关 */
         selfVoiceSwitch: boolean;
-        /** 是否开启群聊AI开关*/
-        groupAISwitch: boolean;
         /**
          * 用户标签颜色模式
          * singleColor: 固定颜色
@@ -273,7 +271,6 @@ export const initialState: State = {
         notificationSwitch: localStorage.notificationSwitch,
         voiceSwitch: localStorage.voiceSwitch,
         selfVoiceSwitch: localStorage.selfVoiceSwitch,
-        groupAISwitch: localStorage.groupAISwitch,
         tagColorMode: localStorage.tagColorMode,
         sidebarVisible: !isMobile,
         functionBarAndLinkmanListVisible: !isMobile,

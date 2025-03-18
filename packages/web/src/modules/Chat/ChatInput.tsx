@@ -29,7 +29,6 @@ import { State } from '../../state/reducer';
 import {
     sendMessage,
     sendBotMessage,
-    sendGroupBotMessage,
 } from '../../service';
 import Tooltip from '../../components/Tooltip';
 import useAero from '../../hooks/useAero';
@@ -88,9 +87,6 @@ function ChatInput(props: InputAreaProps) {
     const status = useSelector((state: State) => state.status);
     const linkman = useSelector((state: State) => state.linkmans[focus]);
     const voiceSwitch = useSelector((state: State) => state.status.voiceSwitch);
-    const groupAISwitch = useSelector(
-        (state: State) => state.status.groupAISwitch,
-    );
     const selfVoiceSwitch = useSelector(
         (state: State) => state.status.selfVoiceSwitch,
     );
@@ -277,18 +273,10 @@ function ChatInput(props: InputAreaProps) {
         // if (linkman.unread > 0) {
         //     action.setLinkmanProperty(linkman._id, 'unread', 0);
         // }
-        let prefixContent = content;
-        if (
-            linkman.type === 'group' &&
-            status.groupAISwitch &&
-            type === 'text'
-        ) {
-            prefixContent = `❓${content}`;
-        }
         const [error, message] = await sendMessage(
             linkmanId,
             type,
-            prefixContent,
+            content,
         );
         if (error) {
             console.log(error);
@@ -307,22 +295,6 @@ function ChatInput(props: InputAreaProps) {
                 `${linkman.name}正在思考中...`,
             );
             const [error, message] = await sendBotMessage(
-                linkmanId,
-                type,
-                content,
-            );
-            if (error) {
-                console.log(error);
-                return;
-            }
-            action.updateMessage(focus, botMessageId, message);
-        }
-        if (linkman.type === 'group' && status.groupAISwitch) {
-            const botMessageId = addGroupBotMessage(
-                'text',
-                `${process.env.DEFAULT_BOT_NAME}正在回复${username}...`,
-            );
-            const [error, message] = await sendGroupBotMessage(
                 linkmanId,
                 type,
                 content,
@@ -731,22 +703,28 @@ function ChatInput(props: InputAreaProps) {
                     iconSize={25}
                 />
             </Dropdown>
-            {process.env.GROUP_AI_SWITCH === 'true' &&
-                linkman.type === 'group' && (
-                    <div className={Style.switch}>
-                        <Switch
-                            onChange={(value) => {
-                                action.setStatus('groupAISwitch', value);
-                                if (value) {
-                                    Message.success('已开启自动回复');
-                                } else {
-                                    Message.info('已关闭自动回复');
-                                }
-                            }}
-                            checked={groupAISwitch}
-                        />
+            <Dropdown
+                trigger={['click']}
+                overlay={
+                    <div className={Style.featureDropdown}>
+                        <Menu onClick={handleFeatureMenuClick}>
+                            <MenuItem key="code">发送代码</MenuItem>
+                            <MenuItem key="image">发送图片</MenuItem>
+                            <MenuItem key="file">发送文件</MenuItem>
+                        </Menu>
                     </div>
-                )}
+                }
+                animation="slide-up"
+                placement="topLeft"
+            >
+                <IconButton
+                    className={Style.iconButton}
+                    width={32}
+                    height={32}
+                    icon="add"
+                    iconSize={25}
+                />
+            </Dropdown>
             <form
                 className={Style.form}
                 autoComplete="off"
@@ -772,37 +750,6 @@ function ChatInput(props: InputAreaProps) {
                     }
                 />
             </form>
-            <Dropdown
-                trigger={['click']}
-                overlay={
-                    <div className={Style.featureDropdown}>
-                        <Menu onClick={handleFeatureMenuClick}>
-                            <MenuItem key="code">发送代码</MenuItem>
-                            <MenuItem key="image">发送图片</MenuItem>
-                            <MenuItem key="file">发送文件</MenuItem>
-                        </Menu>
-                    </div>
-                }
-                animation="slide-up"
-                placement="topLeft"
-            >
-                <IconButton
-                    className={Style.iconButton}
-                    width={32}
-                    height={32}
-                    icon="add"
-                    iconSize={25}
-                />
-            </Dropdown>
-            {/* <IconButton */}
-            {/*    className={Style.iconButton} */}
-            {/*    width={32} */}
-            {/*    height={32} */}
-            {/*    icon="send" */}
-            {/*    iconSize={25} */}
-            {/*    onClick={sendTextMessage} */}
-            {/* /> */}
-
             <div className={Style.atPanel}>
                 {at.enable &&
                     getSuggestion().map((member) => (

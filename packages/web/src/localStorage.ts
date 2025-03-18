@@ -15,7 +15,6 @@ export enum LocalStorageKey {
     SelfVoiceSwitch = 'selfVoiceSwitch',
     TagColorMode = 'tagColorMode',
     EnableSearchExpression = 'enableSearchExpression',
-    GroupAISwitch = 'groupAISwitch',
 }
 
 /**
@@ -78,10 +77,6 @@ export default function getData() {
         notificationSwitch: getSwitchValue(LocalStorageKey.NotificationSwitch),
         voiceSwitch: getSwitchValue(LocalStorageKey.VoiceSwitch),
         selfVoiceSwitch: getSwitchValue(LocalStorageKey.SelfVoiceSwitch, false),
-        groupAISwitch: getSwitchValue(
-            LocalStorageKey.GroupAISwitch,
-            process.env.GROUP_AI_SWITCH === 'true',
-        ),
         tagColorMode: getTextValue(
             LocalStorageKey.TagColorMode,
             config.tagColorMode,
