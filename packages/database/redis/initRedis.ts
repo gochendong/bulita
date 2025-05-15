@@ -84,7 +84,7 @@ export function getSealUserKey(user: string) {
 
 export async function getAllSealUser() {
     const allSealUserKeys = await keys(`${Prefix}:SealUser:*`);
-    return allSealUserKeys.map((key) => key.split(':')[1]);
+    return allSealUserKeys.map((key) => key.replace(`${Prefix}:SealUser:`, ''));
 }
 
 const Minute = 60;
