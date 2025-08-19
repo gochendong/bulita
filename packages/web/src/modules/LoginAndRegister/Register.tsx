@@ -8,7 +8,8 @@ import Style from './LoginRegister.less';
 import Input from '../../components/Input';
 import useAction from '../../hooks/useAction';
 import { register, getLinkmansLastMessagesV2 } from '../../service';
-import { Message } from '../../state/reducer';
+// import { Message } from '../../state/reducer';
+import Message from '../../components/Message';
 import { ActionTypes } from '../../state/action';
 
 /** 登录框 */

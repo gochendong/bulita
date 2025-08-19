@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ReactLoading from 'react-loading';
 import Cropper from 'react-cropper';
 import 'cropperjs/dist/cropper.css';
@@ -21,13 +21,15 @@ import {
 } from '../../service';
 import useAction from '../../hooks/useAction';
 import socket from '../../socket';
-import { ActionTypes } from "../../state/action";
-import store from '../../state/store';
-const { dispatch } = store;
-
 
 import Style from './SelfInfo.less';
 import Common from './Common.less';
+import {ActionTypes} from "../../state/action";
+import store from '../../state/store';
+// import useAction from "./hooks/useAction";
+
+const { dispatch } = store;
+
 
 const PASSWORD_REGEX = process.env.PASSWORD_REGEX || '';
 const PASSWORD_TIPS = process.env.PASSWORD_TIPS || '';
@@ -149,6 +151,10 @@ function SelfInfo(props: SelfInfoProps) {
     const [signature, setSignature] = useState(currentSignature);
     const [pushToken, setPushToken] = useState(currentPushToken);
 
+    useEffect(() => {
+        setSignature(currentSignature);
+    }, [currentSignature]);
+
     /**
      * 修改用户名
      */
@@ -218,7 +224,7 @@ function SelfInfo(props: SelfInfoProps) {
         >
             <div className={Common.container}>
                 <div className={Common.block}>
-                    {/*<p className={Common.title}>修改头像</p>*/}
+                    {/* <p className={Common.title}>修改头像</p> */}
                     <div className={Style.changeAvatar}>
                         {cropper.enable ? (
                             <div className={Style.cropper}>
@@ -279,7 +285,6 @@ function SelfInfo(props: SelfInfoProps) {
                             value={username}
                             onChange={setUsername}
                             type="text"
-                            // placeholder={username}
                         />
                         <Button
                             className={Style.button}
@@ -297,7 +302,6 @@ function SelfInfo(props: SelfInfoProps) {
                             value={signature}
                             onChange={setSignature}
                             type="text"
-                            // placeholder={signature}
                         />
                         <Button
                             className={Style.button}

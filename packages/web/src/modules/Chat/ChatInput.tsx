@@ -41,23 +41,23 @@ interface InputAreaProps {
 }
 
 const expressionList = css`
-  display: flex;
-  width: 100%;
-  height: 80px;
-  position: absolute;
-  left: 0;
-  top: -80px;
-  background-color: inherit;
-  overflow-x: auto;
+    display: flex;
+    width: 100%;
+    height: 80px;
+    position: absolute;
+    left: 0;
+    top: -80px;
+    background-color: inherit;
+    overflow-x: auto;
 `;
 const expressionImageContainer = css`
-  min-width: 80px;
-  height: 80px;
+    min-width: 80px;
+    height: 80px;
 `;
 const expressionImage = css`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 `;
 
 const ExpressionAsync = loadable(
@@ -126,9 +126,9 @@ function ChatInput(props: InputAreaProps) {
         current!.style.height =
             current!.scrollHeight < maxHeight
                 ? `${
-                    current!.scrollHeight > minHeight
-                        ? current!.scrollHeight
-                        : minHeight
+                      current!.scrollHeight > minHeight
+                          ? current!.scrollHeight
+                          : minHeight
                 }px`
                 : `${maxHeight}px`;
     };
@@ -414,9 +414,9 @@ function ChatInput(props: InputAreaProps) {
     }
 
     function handleFeatureMenuClick({
-                                        key,
-                                        domEvent,
-                                    }: {
+        key,
+        domEvent,
+    }: {
         key: string;
         domEvent: any;
     }) {
@@ -453,7 +453,7 @@ function ChatInput(props: InputAreaProps) {
             return Message.error('发送消息失败, 您当前处于离线状态');
         }
         const { items, types } =
-        e.clipboardData || e.originalEvent.clipboardData;
+            e.clipboardData || e.originalEvent.clipboardData;
 
         // 如果包含文件内容
         if (types.indexOf('Files') > -1) {

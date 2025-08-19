@@ -237,6 +237,7 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         {
             from: ctx.socket.user,
             to: to,
+            createTime: { $gte: new Date(Date.now() - 5000) } // 查询createTime在5秒内的消息
         },
         { content: 1 },
         { sort: { createTime: -1 }, limit: 1 }
@@ -361,7 +362,7 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
                 xhr.setRequestHeader('Content-Type', 'application/json');
                 xhr.timeout = 10000;
                 xhr.send(jsonStr);
-            }
+        }
         }
     }
 

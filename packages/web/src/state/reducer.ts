@@ -91,8 +91,8 @@ export interface User {
     level: number;
     email: string;
     signature: string;
-    tag: string;
     pushToken: string;
+    tag: string;
 }
 
 /** redux store state */

@@ -110,9 +110,9 @@ socket.on('connect', async () => {
                 payload: linkmanMessages,
             });
             return;
-        } else {
-            // window.localStorage.removeItem('token');
-        }
+        } 
+        // window.localStorage.removeItem('token');
+        
     }
     loginFailback();
 });
@@ -264,8 +264,8 @@ socket.on('message', async (message: any) => {
             const from =
                 linkman && linkman.type === 'group'
                     ? `${message.from.username}${
-                          linkman.name === prevName ? '' : `在${linkman.name}`
-                      }说`
+                        linkman.name === prevName ? '' : `在${linkman.name}`
+                    }说`
                     : `${message.from.username}对你说`;
             if (text) {
                 voice.push(
