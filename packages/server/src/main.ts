@@ -20,7 +20,7 @@ import app from './app';
 
     // 判断管理员是否存在, 不存在就创建
     const admins = process.env.ADMINS;
-    let adminsArray = [];
+    const adminsArray = [];
     let originalAdmin = null;
     const snowflake = new Snowflake(1n, 1n, 0n);
     const salt = await bcrypt.genSalt(SALT_ROUNDS);
@@ -38,7 +38,7 @@ import app from './app';
                     username: defaultAdmin,
                     id: snowflake.nextId().toString(),
                     avatar: getRandomAvatar(),
-                    salt: salt,
+                    salt,
                     password: hash,
                 } as UserDocument);
                 if (!admin) {
@@ -89,10 +89,10 @@ import app from './app';
                         username: defaultBot,
                         id: snowflake.nextId().toString(),
                         avatar: getRandomAvatar(),
-                        salt: salt,
+                        salt,
                         password: hash,
                         tag: 'bot',
-                    } as UserDocument);
+                    } as UserDocument)
                     if (!bot) {
                         logger.error('[bot]', `create bot ${defaultBot} fail`);
                         return process.exit(1);

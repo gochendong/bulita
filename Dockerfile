@@ -4,6 +4,7 @@ WORKDIR /usr/app/bulita
 
 COPY packages ./packages
 COPY .env ./packages/web
+
 COPY package.json tsconfig.json yarn.lock lerna.json .env ./
 
 RUN yarn install

@@ -28,7 +28,7 @@ import chalk from 'chalk';
 const { XMLHttpRequest } = require('xmlhttprequest');
 
 const BOTS = process.env.BOTS ? process.env.BOTS.split(',') : [];
-const IP_LOCATION_API = process.env.IP_LOCATION_API;
+const {IP_LOCATION_API} = process.env;
 
 const { isValid } = Types.ObjectId;
 
@@ -158,7 +158,6 @@ export async function register(
     if (process.env.ENABLE_REGISTER_USER !== 'true') {
         throw AssertionError({message: '本站暂不开放注册'});
     }
-
     let { username, password, os, browser, environment } = ctx.data;
 
     for (let i = 3; i < 10; i++) {
@@ -200,7 +199,7 @@ export async function register(
             id: snowflake.nextId().toString(),
             avatar: getRandomAvatar(),
             lastLoginIp: ctx.socket.ip,
-            tag: tag,
+            tag,
         } as UserDocument);
     } catch (err) {
         if ((err as Error).name === 'ValidationError') {
@@ -657,6 +656,9 @@ export async function changeUsername(ctx: Context<{ username: string }>) {
     if (!self) {
         throw new AssertionError({ message: '用户不存在' });
     }
+    // if (!self.password) {
+    //     throw new AssertionError({ message:'请先设置密码'});
+    // }
     const { username } = ctx.data;
     assert(username, '新用户名不能为空');
 
@@ -697,12 +699,15 @@ export async function changeSignature(ctx: Context<{ signature: string }>) {
  */
 export async function changePushToken(ctx: Context<{ pushToken: string }>) {
     const { pushToken } = ctx.data;
+
     const self = await User.findOne({ _id: ctx.socket.user });
     if (!self) {
         throw new AssertionError({ message: '用户不存在' });
     }
+
     self.pushToken = pushToken;
     await self.save();
+
     return {
         msg: 'ok',
     };
