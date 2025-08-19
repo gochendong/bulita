@@ -13,6 +13,7 @@ interface InputProps {
     onChange: (value: string) => void;
     onEnter?: (value: string) => void;
     onFocus?: () => void;
+    onBlur?: () => void;
 }
 
 function Input(props: InputProps) {
@@ -26,9 +27,11 @@ function Input(props: InputProps) {
         onChange,
         onEnter = () => {},
         onFocus = () => {},
+        onBlur = () => {},
     } = props;
 
     const $input = useRef(null);
+    const [focused, setFocused] = useState(false);
 
     function handleInput(e: any) {
         onChange(e.target.value);
@@ -40,33 +43,53 @@ function Input(props: InputProps) {
         }
     }
 
-    function handleClickClear() {
+    function handleClickClear(e?: React.MouseEvent) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         onChange('');
         // @ts-ignore
-        $input.current.focus();
+        if ($input.current) {
+            $input.current.focus();
+        }
+    }
+
+    function handleFocus(e: any) {
+        setFocused(true);
+        onFocus();
+    }
+
+    function handleBlur(e: any) {
+        setFocused(false);
+        onBlur();
     }
 
     return (
-        <div className={`${Style.inputContainer} ${className}`}>
+        <div
+            className={`${Style.inputContainer} ${className}`}
+            data-has-value={!!(value && value.toString().trim())}
+        >
             <input
                 className={Style.input}
                 type={type}
                 value={value}
                 onChange={handleInput}
                 onKeyDown={handleKeyDown}
-                onFocus={onFocus}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
                 ref={$input}
                 placeholder={placeholder}
                 autoComplete={autoComplete}
             />
-            {value && showClearBtn && (
+            {value && showClearBtn && focused && (
                 <IconButton
                     className={Style.inputIconButton}
                     width={32}
                     height={32}
                     iconSize={18}
                     icon="clear"
-                    onClick={handleClickClear}
+                    onMouseDown={(e) => handleClickClear(e)}
                 />
             )}
         </div>

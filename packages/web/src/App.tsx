@@ -19,6 +19,7 @@ import { ShowUserOrGroupInfoContext } from './context';
 import Chat from './modules/Chat/Chat';
 import globalStyles from './globalStyles';
 import InviteInfo from './modules/InviteInfo';
+import useAction from './hooks/useAction';
 
 /**
  * 获取窗口宽度百分比
@@ -59,19 +60,31 @@ function App() {
         ? getOSSFileUrl(backgroundImageUrl, `image/quality,q_95`)
         : '#';
     const $app = useRef(null);
+    const action = useAction();
 
     // 计算窗口高度/宽度百分比
     const [width, setWidth] = useState(getWidthPercent());
     const [height, setHeight] = useState(getHeightPercent());
     useEffect(() => {
-        window.onresize = () => {
+        function handleResize() {
             setWidth(getWidthPercent());
             setHeight(getHeightPercent());
-        };
+            // 在宽屏（PC 布局）下，强制显示左侧好友列表
+            if (window.innerWidth >= 900) {
+                action.setStatus('functionBarAndLinkmanListVisible', true);
+            }
+        }
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
 
         // @ts-ignore
         inobounce($app.current);
-    }, []);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, [action]);
 
     // 获取底图尺寸
     const [backgroundWidth, setBackgroundWidth] = useState(window.innerWidth);

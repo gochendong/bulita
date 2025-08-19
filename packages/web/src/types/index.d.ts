@@ -48,6 +48,12 @@ declare module '*.mp3';
 
 declare var __TEST__: false;
 
+declare namespace NodeJS {
+    interface ProcessEnv {
+        BUNDLER?: string;
+    }
+}
+
 declare interface Window {
     Notification: any;
     __REDUX_DEVTOOLS_EXTENSION__: any;

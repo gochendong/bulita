@@ -1,7 +1,7 @@
 import Message from '../components/Message';
 import socket from '../socket';
 
-import { SEAL_TEXT } from '../../../utils/const';
+
 export default function fetch<T = any>(
     event: string,
     data = {},

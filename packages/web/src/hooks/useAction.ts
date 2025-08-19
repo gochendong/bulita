@@ -122,7 +122,13 @@ export default function useAction() {
                     value,
                 },
             });
-            window.localStorage.setItem(key, value);
+            if (key !== 'pendingRetryMessage') {
+                try {
+                    window.localStorage.setItem(key, value);
+                } catch (_) {
+                    // ignore non-string or quota
+                }
+            }
         },
 
         toggleLoginRegisterDialog(visible: boolean) {

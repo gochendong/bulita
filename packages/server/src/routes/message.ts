@@ -22,9 +22,11 @@ import Socket from '@bulita/database/mongoose/models/socket';
 import {
     DisableSendMessageKey,
     DisableNewUserSendMessageKey,
+    GroupAISwitchKey,
     Redis,
     DisableRegisterUserSendMessageKey,
 } from '@bulita/database/redis/initRedis';
+import { getConfig, getConfigWithDefault } from '../utils/runtimeConfig';
 import Friend, {
     FriendDocument,
 } from '@bulita/database/mongoose/models/friend';
@@ -107,6 +109,7 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         assert(toUser, '用户不存在');
     }
 
+    // 根据 Redis 中的禁言开关（全员禁言 / 新用户禁言 / 未注册用户禁言）限制发言
     if (
         toGroup ||
         (toUser &&
@@ -134,9 +137,10 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         if (disableNoRegisterUserSendMessage === 'true') {
             const user = await User.findById(ctx.socket.user);
             const isRegisterUser = user && user.email;
+            const defaultUsername = await getConfigWithDefault('DEFAULT_USERNAME');
             assert(
                 ctx.socket.isAdmin || isRegisterUser,
-                `${process.env.DEFAULT_USERNAME}禁言中`,
+                `${defaultUsername}禁言中`,
             );
         }
     }
@@ -203,7 +207,8 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         });
     }
 
-    const banedIPLocs = process.env.BANED_IP_LOCS;
+    const banedIPLocs = await getConfigWithDefault('BANED_IP_LOCS');
+    const defaultUsername = await getConfigWithDefault('DEFAULT_USERNAME');
 
     if (banedIPLocs) {
         const banedIPLocsArray = banedIPLocs.split(',');
@@ -212,17 +217,9 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
             toGroup.isDefault &&
             banedIPLocsArray.includes(user.tag)
         ) {
-            if (process.env.BANED_ONLY_UNSET_PASSWORD === 'true') {
-                if (!user.password) {
-                    throw new AssertionError({
-                        message: `${user.tag}的${process.env.DEFAULT_USERNAME}不能在群组中发言, 请先在左上角设置密码`,
-                    });
-                }
-            } else {
-                throw new AssertionError({
-                    message: `${user.tag}的${process.env.DEFAULT_USERNAME}不能在群组中发言`,
-                });
-            }
+            throw new AssertionError({
+                message: `${user.tag}的${defaultUsername}不能在群组中发言`,
+            });
         }
     }
 
@@ -237,6 +234,7 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         {
             from: ctx.socket.user,
             to: to,
+            createTime: { $gte: new Date(Date.now() - 5000) } // 查询createTime在5秒内的消息
         },
         { content: 1 },
         { sort: { createTime: -1 }, limit: 1 }
@@ -323,31 +321,13 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
             );
         }
 
-        const notifyKey = process.env.NOTIFY_KEY;
-        if (
-            notifyKey &&
-            toUser &&
-            toUser.tag !== 'bot' &&
-            toUser.password &&
-            user.username !== toUser.username
-        ) {
-            const jsonStr = JSON.stringify({
-                from_user_id: user.id,
-                to_user_id: toUser?.id,
-                from_username: user.username,
-                msg_type: type,
-                content: message.content,
-            });
-            await Redis.lpush(notifyKey, jsonStr);
-        }
-
         if (
             toUser &&
             toUser.pushToken &&
             toUser.tag !== 'bot' &&
             user.username !== toUser.username
         ) {
-            const domain = process.env.PRIVATE_MSG_CALLBACK_DOMAIN || 'https://chat.bulita.net'
+            const domain = await getConfigWithDefault('PRIVATE_MSG_CALLBACK_DOMAIN') || 'https://chat.bulita.net'
             const jsonStr = JSON.stringify({
                 title: "收到来自 " + user.username + " 的新消息",
                 content: `<a href='${domain}'>去回复（请先在浏览器中打开）</a>`,
@@ -361,7 +341,7 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
                 xhr.setRequestHeader('Content-Type', 'application/json');
                 xhr.timeout = 10000;
                 xhr.send(jsonStr);
-            }
+        }
         }
     }
 
@@ -433,6 +413,139 @@ export async function sendBotMessage(ctx: Context<SendMessageData>) {
     if (selfSocketIdList.length) {
         ctx.socket.emit(selfSocketIdList, 'message', messageData);
     }
+
+    return messageData;
+}
+
+/**
+ * 发送群组 BOT 消息
+ * 当群聊 AI 开关开启时，用户发送群消息后可调用此接口触发默认机器人回复
+ * @param ctx Context
+ */
+export async function sendGroupBotMessage(ctx: Context<SendMessageData>) {
+    const groupAISwitch = (await Redis.get(GroupAISwitchKey)) ?? 'false';
+    if (groupAISwitch !== 'true') {
+        throw new AssertionError({ message: '群聊 AI 已关闭' });
+    }
+
+    const { to, content } = ctx.data;
+    let { type } = ctx.data;
+    assert(to, 'to不能为空');
+
+    let toGroup: GroupDocument | null = null;
+    if (isValid(to)) {
+        toGroup = await Group.findOne({ _id: to });
+        assert(toGroup, '群组不存在');
+    } else {
+        throw new AssertionError({ message: '群聊 AI 仅支持群组' });
+    }
+
+    let messageContent = content;
+    if (type === 'text') {
+        assert(messageContent.length <= 10240, '消息长度过长');
+
+        const rollRegex = /^-roll( ([0-9]*))?$/;
+        if (rollRegex.test(messageContent)) {
+            const regexResult = rollRegex.exec(messageContent);
+            if (regexResult) {
+                let numberStr = regexResult[1] || '100';
+                if (numberStr.length > 5) {
+                    numberStr = '99999';
+                }
+                const number = parseInt(numberStr, 10);
+                type = 'system';
+                messageContent = JSON.stringify({
+                    command: 'roll',
+                    value: Math.floor(Math.random() * (number + 1)),
+                    top: number,
+                });
+            }
+        } else if (/^-rps$/.test(messageContent)) {
+            type = 'system';
+            messageContent = JSON.stringify({
+                command: 'rps',
+                value: RPS[Math.floor(Math.random() * RPS.length)],
+            });
+        }
+        messageContent = xss(messageContent);
+    } else if (type === 'file') {
+        const file: { size: number } = JSON.parse(content);
+        assert(file.size < client.maxFileSize, '要发送的文件过大');
+        messageContent = content;
+    } else if (type === 'inviteV2') {
+        const shareTargetGroup = await Group.findOne({ _id: content });
+        if (!shareTargetGroup) {
+            throw new AssertionError({ message: '目标群组不存在' });
+        }
+        const user = await User.findOne({ _id: ctx.socket.user });
+        if (!user) {
+            throw new AssertionError({ message: '用户不存在' });
+        }
+        messageContent = JSON.stringify({
+            inviter: user._id,
+            group: shareTargetGroup._id,
+        });
+    }
+
+    const user = await User.findOne(
+        { _id: ctx.socket.user },
+        { username: 1, avatar: 1, tag: 1, id: 1 },
+    );
+    if (!user) {
+        throw new AssertionError({ message: '用户不存在' });
+    }
+
+    const botName = await getConfigWithDefault('DEFAULT_BOT_NAME');
+    assert(botName, '未配置群聊机器人，请在管理台设置 DEFAULT_BOT_NAME');
+    const botAPIName = botName + '_API';
+    const botAPI = process.env[botAPIName];
+
+    const bot = await User.findOne({ username: botName });
+    if (!bot) {
+        throw new AssertionError({ message: `${botName}不存在` });
+    }
+
+    if (toGroup.members.indexOf(bot._id) === -1) {
+        toGroup.members.push(bot._id);
+        await toGroup.save();
+    }
+
+    let reply = `🔴${botName}暂不可用, 请稍后再试`;
+
+    if (botAPI && type === 'text') {
+        const data = {
+            prompt: content,
+            group: toGroup._id.toString(),
+            uid: user.id.toString(),
+        };
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', botAPI);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.timeout = 10000;
+        xhr.send(JSON.stringify(data));
+        await new Promise((resolve) => (xhr.onload = resolve));
+        if (xhr.status === 200) {
+            reply = xhr.responseText;
+        }
+    }
+
+    const message = await Message.create({
+        from: bot._id,
+        to,
+        type: 'text',
+        content: reply,
+    } as MessageDocument);
+
+    const messageData = {
+        _id: message._id,
+        createTime: message.createTime,
+        from: bot.toObject(),
+        to,
+        type: 'text',
+        content: message.content,
+    };
+
+    ctx.socket.emit(toGroup._id.toString(), 'message', messageData);
 
     return messageData;
 }

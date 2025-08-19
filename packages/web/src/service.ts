@@ -31,7 +31,7 @@ export async function register(
     if (err) {
         return null;
     }
-    window.location.reload();
+    // 不再立即刷新页面，让前端处理登录状态后再决定是否刷新
     return user;
 }
 
@@ -185,6 +185,22 @@ export async function changeGroupAvatar(groupId: string, avatar: string) {
 }
 
 /**
+ * 修改群公告
+ * @param groupId 目标群组
+ * @param announcement 新公告内容
+ */
+export async function changeGroupAnnouncement(
+    groupId: string,
+    announcement: string,
+) {
+    const [error] = await fetch('changeGroupAnnouncement', {
+        groupId,
+        announcement,
+    });
+    return !error;
+}
+
+/**
  * 创建群组
  * @param name 群组名
  */
@@ -319,6 +335,20 @@ export async function sendBotMessage(
 }
 
 /**
+ * 发送群组 Bot 消息（群聊 AI 回复）
+ * @param to 群组 id
+ * @param type 消息类型
+ * @param content 消息内容
+ */
+export async function sendGroupBotMessage(
+    to: string,
+    type: string,
+    content: string,
+) {
+    return fetch('sendGroupBotMessage', { to, type, content });
+}
+
+/**
  * 删除消息
  * @param messageId 要删除的消息id
  */
@@ -373,6 +403,42 @@ export async function getDefaultGroupOnlineMembers() {
 }
 
 /**
+ * 获取默认群组的所有成员（含在线状态、群主、最后登录时间）
+ * 无需登录态
+ */
+export async function getDefaultGroupAllMembers(): Promise<GroupAllMemberItem[]> {
+    const [, result] = await fetch('getDefaultGroupAllMembers');
+    if (!result || !result.members) {
+        return [];
+    }
+    return result.members;
+}
+
+/** 群内成员（含在线状态、群主、最后登录时间） */
+export interface GroupAllMemberItem {
+    user: {
+        _id: string;
+        username: string;
+        avatar: string;
+        createTime: string | null;
+        lastLoginTime: string | null;
+        tag?: string;
+    };
+    isCreator: boolean;
+    isOnline: boolean;
+}
+
+/**
+ * 获取群内所有成员
+ */
+export async function getGroupAllMembers(
+    groupId: string,
+): Promise<GroupAllMemberItem[]> {
+    const [, result] = await fetch('getGroupAllMembers', { groupId });
+    return result?.members ?? [];
+}
+
+/**
  * 封禁用户
  * @param username 目标用户名
  */
@@ -413,6 +479,27 @@ export async function getSystemConfig() {
 }
 
 /**
+ * 获取公开系统配置（群聊 AI 开关等，供聊天区使用）
+ */
+export async function getPublicSystemConfig() {
+    const [, config] = await fetch('getPublicSystemConfig');
+    return config;
+}
+
+export async function toggleGroupAI(enable: boolean) {
+    const [, result] = await fetch('toggleGroupAI', { enable });
+    return !!result;
+}
+
+/**
+ * 设置系统配置项（管理员）
+ */
+export async function setSystemConfig(key: string, value: string) {
+    const [, result] = await fetch('setSystemConfig', { key, value });
+    return !!result;
+}
+
+/**
  * 重置指定用户的密码
  * @param username 目标用户名
  */
@@ -440,9 +527,9 @@ export async function getUserIps(userId: string) {
     return res;
 }
 
-export async function getUserOnlineStatus(userId: string) {
+export async function getUserOnlineStatus(userId: string): Promise<{ isOnline: boolean; lastLoginTime?: string | null } | null> {
     const [, res] = await fetch('getUserOnlineStatus', { userId });
-    return res && res.isOnline;
+    return res ? { isOnline: res.isOnline, lastLoginTime: res.lastLoginTime } : null;
 }
 
 export async function updateHistory(linkmanId: string, messageId: string) {
@@ -458,4 +545,27 @@ export async function toggleSendMessage(enable: boolean) {
 export async function toggleNewUserSendMessage(enable: boolean) {
     const [, result] = await fetch('toggleNewUserSendMessage', { enable });
     return !!result;
+}
+
+/**
+ * 管理员按用户名查找用户（用于删除前校验）
+ * @param username 目标用户名
+ */
+export async function getAdminUserByUsername(
+    username: string,
+): Promise<{ exists: boolean; username?: string; _id?: string } | null> {
+    const [err, res] = await fetch('getAdminUserByUsername', {
+        username: username.trim(),
+    });
+    if (err) return null;
+    return res;
+}
+
+/**
+ * 删除用户
+ * @param username 目标用户名
+ */
+export async function deleteUser(username: string) {
+    const [err] = await fetch('deleteUser', { username });
+    return !err;
 }

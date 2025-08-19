@@ -1,12 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import { css } from 'linaria';
+import Switch from 'react-switch';
 import Style from './Admin.less';
 import Common from './Common.less';
 import Dialog from '../../components/Dialog';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 import Message from '../../components/Message';
+import store from '../../state/store';
+import { ActionTypes } from '../../state/action';
 import {
     getSealList,
     resetUserPassword,
@@ -15,7 +18,11 @@ import {
     sealIp,
     toggleSendMessage,
     toggleNewUserSendMessage,
+    toggleGroupAI,
     getSystemConfig,
+    setSystemConfig as setSystemConfigApi,
+    getAdminUserByUsername,
+    deleteUser,
 } from '../../service';
 
 const styles = {
@@ -30,6 +37,11 @@ const styles = {
 type SystemConfig = {
     disableSendMessage: boolean;
     disableNewUserSendMessage: boolean;
+    groupAISwitch?: boolean;
+    adminConfig?: Record<string, string>;
+    adminConfigLabels?: Record<string, string>;
+    /** 修改后需重启服务才能生效的配置键 */
+    restartRequiredKeys?: string[];
 };
 
 interface AdminProps {
@@ -44,9 +56,15 @@ function Admin(props: AdminProps) {
     const [tag, setTag] = useState('');
     const [resetPasswordUsername, setResetPasswordUsername] = useState('');
     const [sealUsername, setSealUsername] = useState('');
+    const [deleteUsername, setDeleteUsername] = useState('');
+    const deleteUsernameRef = useRef(deleteUsername);
+    deleteUsernameRef.current = deleteUsername;
     const [sealList, setSealList] = useState({ users: [], ips: [] });
     const [sealIpAddress, setSealIpAddress] = useState('');
     const [systemConfig, setSystemConfig] = useState<SystemConfig>();
+    const [adminConfigValues, setAdminConfigValues] = useState<Record<string, string>>({});
+    const adminConfigValuesRef = useRef<Record<string, string>>({});
+    adminConfigValuesRef.current = adminConfigValues;
 
     async function handleGetSealList() {
         const sealListRes = await getSealList();
@@ -58,6 +76,9 @@ function Admin(props: AdminProps) {
         const systemConfigRes = await getSystemConfig();
         if (systemConfigRes) {
             setSystemConfig(systemConfigRes);
+            if (systemConfigRes.adminConfig) {
+                setAdminConfigValues(systemConfigRes.adminConfig);
+            }
         }
     }
     useEffect(() => {
@@ -143,6 +164,62 @@ function Admin(props: AdminProps) {
         }
     }
 
+    async function handleToggleGroupAI(enable: boolean) {
+        const isSuccess = await toggleGroupAI(enable);
+        if (isSuccess) {
+            store.dispatch({
+                type: ActionTypes.SetStatus,
+                payload: { key: 'groupAISwitch', value: enable },
+            });
+            Message.success(enable ? '已开启群聊 AI' : '已关闭群聊 AI');
+            handleGetSystemConfig();
+        }
+    }
+
+    async function handleSetSystemConfig(key: string, value: string) {
+        const isSuccess = await setSystemConfigApi(key, value);
+        if (isSuccess) {
+            const needRestart = systemConfig?.restartRequiredKeys?.includes(key);
+            Message.success('已保存');
+            if (needRestart) {
+                Message.warning('该配置需重启服务后生效');
+            }
+            handleGetSystemConfig();
+        } else {
+            Message.error('保存失败');
+        }
+    }
+
+    /**
+     * 失焦时查找用户是否存在
+     */
+    async function handleLookupDeleteUser() {
+        const name = deleteUsernameRef.current.trim();
+        if (!name) return;
+        const res = await getAdminUserByUsername(name);
+        if (res?.exists) {
+            Message.success(`用户「${res.username}」存在`);
+        } else {
+            Message.warning('用户不存在');
+        }
+    }
+
+    async function handleDeleteUser() {
+        if (!deleteUsername) {
+            Message.warning('请输入要删除的用户名');
+            return;
+        }
+        // eslint-disable-next-line no-restricted-globals
+        if (!confirm(`确定要删除用户 ${deleteUsername} 吗？此操作不可恢复！`)) {
+            return;
+        }
+        const isSuccess = await deleteUser(deleteUsername);
+        if (isSuccess) {
+            Message.success(`用户 ${deleteUsername} 已被删除`);
+            setDeleteUsername('');
+        }
+    }
+
     return (
         <Dialog
             className={Style.admin}
@@ -150,125 +227,239 @@ function Admin(props: AdminProps) {
             title="管理员控制台"
             onClose={onClose}
         >
-            <div className={Common.container}>
-                <div className={Common.block}>
-                    {!systemConfig?.disableSendMessage ? (
-                        <Button
-                            className={styles.button}
-                            type="danger"
-                            onClick={handleDisableSendMessage}
-                        >
-                            开启禁言
-                        </Button>
-                    ) : (
-                        <Button
-                            className={styles.button}
-                            onClick={handleEnableSendMessage}
-                        >
-                            关闭禁言
-                        </Button>
-                    )}
-                    {!systemConfig?.disableNewUserSendMessage ? (
-                        <Button
-                            className={styles.button}
-                            type="danger"
-                            onClick={handleDisableSNewUserendMessage}
-                        >
-                            开启新用户禁言
-                        </Button>
-                    ) : (
-                        <Button
-                            className={styles.button}
-                            onClick={handleEnableNewUserSendMessage}
-                        >
-                            关闭新用户禁言
-                        </Button>
-                    )}
-                </div>
-                <div className={Common.block}>
-                    <p className={Common.title}>重置用户密码</p>
-                    <div className={Style.inputBlock}>
-                        <Input
-                            className={Style.input}
-                            value={resetPasswordUsername}
-                            onChange={setResetPasswordUsername}
-                            placeholder="要重置密码的用户名"
-                        />
-                        <Button
-                            className={Style.button}
-                            onClick={handleResetPassword}
-                        >
-                            确定
-                        </Button>
-                    </div>
-                </div>
-                <div className={Common.block}>
-                    <p className={Common.title}>更新用户标签</p>
-                    <div className={Style.inputBlock}>
-                        <Input
-                            className={`${Style.input} ${Style.tagUsernameInput}`}
-                            value={tagUsername}
-                            onChange={setTagUsername}
-                            placeholder="要更新标签的用户名"
-                        />
-                        <Input
-                            className={`${Style.input} ${Style.tagInput}`}
-                            value={tag}
-                            onChange={setTag}
-                            placeholder="标签内容"
-                        />
-                        <Button className={Style.button} onClick={handleSetTag}>
-                            确定
-                        </Button>
-                    </div>
-                </div>
-                <div className={Common.block}>
-                    <p className={Common.title}>封禁用户</p>
-                    <div className={Style.inputBlock}>
-                        <Input
-                            className={Style.input}
-                            value={sealUsername}
-                            onChange={setSealUsername}
-                            placeholder="要封禁的用户名"
-                        />
-                        <Button className={Style.button} onClick={handleSeal}>
-                            确定
-                        </Button>
-                    </div>
-                </div>
-                <div className={Common.block}>
-                    <p className={Common.title}>封禁用户列表</p>
-                    <div className={Style.sealList}>
-                        {sealList.users.map((username) => (
-                            <span className={Style.sealUsername} key={username}>
-                                {username}
-                            </span>
-                        ))}
-                    </div>
-                </div>
+            <div className={Style.adminColumns}>
+                <div className={Style.adminCol}>
+                    <div className={Common.container}>
+                        {systemConfig?.adminConfig && systemConfig?.adminConfigLabels && (
+                            <div className={Common.block}>
+                                <p className={Common.title}>系统配置</p>
+                                <p className={Style.configTip}>以下配置优先写入 Redis。输入框留空表示该项设为空（不会使用 .env）。点击输入框外即保存。标注「需重启」的项修改后需重启服务生效。</p>
+                                <div className={Style.configList}>
+                                    {Object.keys(systemConfig.adminConfig).map((key) => {
+                                        const label =
+                                            systemConfig.adminConfigLabels[key] || key;
+                                        const isBoolConfig =
+                                            ['ENABLE_REGISTER_USER', 'ONLY_SEARCH_DEFAULT_GROUP'].includes(
+                                                key,
+                                            );
+                                        const rawValue =
+                                            adminConfigValues[key] ??
+                                            systemConfig.adminConfig[key] ??
+                                            '';
+                                        const boolValue =
+                                            rawValue === 'true' || rawValue === true;
 
+                                        return (
+                                            <div key={key} className={Style.configRow}>
+                                                <label className={Style.configLabel}>
+                                                    {label}
+                                                    {systemConfig.restartRequiredKeys?.includes(
+                                                        key,
+                                                    )
+                                                        ? ' (需重启)'
+                                                        : ''}
+                                                </label>
+                                                {isBoolConfig ? (
+                                                    <div className={Style.configSwitch}>
+                                                        <Switch
+                                                            onColor="#52d88a"
+                                                            offColor="#d4d4d8"
+                                                            uncheckedIcon={false}
+                                                            checkedIcon={false}
+                                                            onChange={(value: boolean) => {
+                                                                const strVal = value
+                                                                    ? 'true'
+                                                                    : 'false';
+                                                                setAdminConfigValues(
+                                                                    (prev) => ({
+                                                                        ...prev,
+                                                                        [key]: strVal,
+                                                                    }),
+                                                                );
+                                                                handleSetSystemConfig(
+                                                                    key,
+                                                                    strVal,
+                                                                );
+                                                            }}
+                                                            checked={boolValue}
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <Input
+                                                        className={Style.configInput}
+                                                        value={String(rawValue)}
+                                                        onChange={(v) =>
+                                                            setAdminConfigValues(
+                                                                (prev) => ({
+                                                                    ...prev,
+                                                                    [key]: v,
+                                                                }),
+                                                            )
+                                                        }
+                                                        onBlur={() =>
+                                                            handleSetSystemConfig(
+                                                                key,
+                                                                adminConfigValuesRef
+                                                                    .current[key] ?? '',
+                                                            )
+                                                        }
+                                                        placeholder="留空表示该项为空"
+                                                    />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                 <div className={Common.block}>
-                    <p className={Common.title}>封禁ip</p>
-                    <div className={Style.inputBlock}>
-                        <Input
-                            className={Style.input}
-                            value={sealIpAddress}
-                            onChange={setSealIpAddress}
-                            placeholder="要封禁的ip"
-                        />
-                        <Button className={Style.button} onClick={handleSealIp}>
-                            确定
-                        </Button>
+                    <p className={Common.title}>快捷开关（全局）</p>
+                    <div className={Style.buttonWrap}>
+                            {!systemConfig?.disableSendMessage ? (
+                                <Button
+                                    className={styles.button}
+                                    onClick={handleDisableSendMessage}
+                                >
+                                    开启全局禁言
+                                </Button>
+                            ) : (
+                                <Button
+                                    className={styles.button}
+                                    onClick={handleEnableSendMessage}
+                                >
+                                    关闭全局禁言
+                                </Button>
+                            )}
+                            {!systemConfig?.disableNewUserSendMessage ? (
+                                <Button
+                                    className={styles.button}
+                                    onClick={handleDisableSNewUserendMessage}
+                                >
+                                    开启新用户禁言
+                                </Button>
+                            ) : (
+                                <Button
+                                    className={styles.button}
+                                    onClick={handleEnableNewUserSendMessage}
+                                >
+                                    关闭新用户禁言
+                                </Button>
+                            )}
+                            {!systemConfig?.groupAISwitch ? (
+                                <Button
+                                    className={`${Style.groupAIButton}`}
+                                    onClick={() => handleToggleGroupAI(true)}
+                                >
+                                    开启群聊 AI
+                                </Button>
+                            ) : (
+                                <Button
+                                    className={`${Style.groupAIButton} ${Style.groupAIButtonOff}`}
+                                    onClick={() => handleToggleGroupAI(false)}
+                                >
+                                    关闭群聊 AI
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </div>
-                <div className={Common.block}>
-                    <p className={Common.title}>封禁ip列表</p>
-                    <div className={Style.sealList}>
-                        {sealList.ips.map((ip) => (
-                            <span className={Style.sealUsername} key={ip}>
-                                {ip}
-                            </span>
-                        ))}
+                </div>
+                <div className={Style.adminCol}>
+                    <div className={Common.container}>
+                        <div className={Common.block}>
+                            <p className={Common.title}>重置用户密码</p>
+                            <div className={Style.inputBlock}>
+                                <Input
+                                    className={Style.input}
+                                    value={resetPasswordUsername}
+                                    onChange={setResetPasswordUsername}
+                                    onBlur={() => resetPasswordUsername.trim() && handleResetPassword()}
+                                    placeholder="要重置密码的用户名"
+                                />
+                            </div>
+                        </div>
+                        <div className={Common.block}>
+                            <p className={Common.title}>更新用户标签</p>
+                            <div className={Style.inputBlock}>
+                                <Input
+                                    className={`${Style.input} ${Style.tagUsernameInput}`}
+                                    value={tagUsername}
+                                    onChange={setTagUsername}
+                                    onBlur={() => tagUsername.trim() && tag.trim() && handleSetTag()}
+                                    placeholder="要更新标签的用户名"
+                                />
+                                <Input
+                                    className={`${Style.input} ${Style.tagInput}`}
+                                    value={tag}
+                                    onChange={setTag}
+                                    onBlur={() => tagUsername.trim() && tag.trim() && handleSetTag()}
+                                    placeholder="标签内容"
+                                />
+                            </div>
+                        </div>
+                        <div className={Common.block}>
+                            <p className={Common.title}>删除用户</p>
+                            <div className={Style.inputBlock}>
+                                <Input
+                                    className={Style.input}
+                                    value={deleteUsername}
+                                    onChange={setDeleteUsername}
+                                    onBlur={() => handleLookupDeleteUser()}
+                                    placeholder="要删除的用户名"
+                                />
+                                <Button
+                                    className={Style.button}
+                                    type="danger"
+                                    onClick={handleDeleteUser}
+                                >
+                                    删除
+                                </Button>
+                            </div>
+                        </div>
+                        <div className={Common.block}>
+                            <p className={Common.title}>封禁用户</p>
+                            <div className={Style.inputBlock}>
+                                <Input
+                                    className={Style.input}
+                                    value={sealUsername}
+                                    onChange={setSealUsername}
+                                    onBlur={() => sealUsername.trim() && handleSeal()}
+                                    placeholder="要封禁的用户名"
+                                />
+                            </div>
+                        </div>
+                        <div className={Common.block}>
+                            <p className={Common.title}>封禁用户列表</p>
+                            <div className={Style.sealList}>
+                                {sealList.users.map((username) => (
+                                    <span className={Style.sealUsername} key={username}>
+                                        {username}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                        <div className={Common.block}>
+                            <p className={Common.title}>封禁ip</p>
+                            <div className={Style.inputBlock}>
+                                <Input
+                                    className={Style.input}
+                                    value={sealIpAddress}
+                                    onChange={setSealIpAddress}
+                                    onBlur={() => sealIpAddress.trim() && handleSealIp()}
+                                    placeholder="要封禁的ip"
+                                />
+                            </div>
+                        </div>
+                        <div className={Common.block}>
+                            <p className={Common.title}>封禁ip列表</p>
+                            <div className={Style.sealList}>
+                                {sealList.ips.map((ip) => (
+                                    <span className={Style.sealUsername} key={ip}>
+                                        {ip}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -21,15 +21,36 @@ interface LinkmanProps {
     unread: number;
     time: Date;
     tag: string;
+    /** 好友是否在线（仅好友） */
+    isOnline?: boolean;
+    /** 好友最后在线时间（仅好友、离线时） */
+    lastLoginTime?: string | null;
+    /** 用于彩色左边条的索引（0–7 循环） */
+    colorIndex?: number;
 }
 
 function Linkman(props: LinkmanProps) {
-    const { id, name, avatar, preview, unread, time, tag } = props;
+    const { id, name, avatar, preview, unread, time, tag, isOnline, lastLoginTime, colorIndex = 0 } = props;
 
     const action = useAction();
     const focus = useSelector((state: State) => state.focus);
     const aero = useAero();
     const { linkmans } = useStore();
+
+    function formatLastOnline(dateStr: string | null | undefined): string {
+        if (!dateStr) return '从未登录';
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffM = Math.floor(diffMs / 60000);
+        const diffH = Math.floor(diffMs / 3600000);
+        const diffD = Math.floor(diffMs / 86400000);
+        if (diffM < 1) return '刚刚';
+        if (diffM < 60) return `${diffM} 分钟前`;
+        if (diffH < 24) return `${diffH} 小时前`;
+        if (diffD < 30) return `${diffD} 天前`;
+        return date.toLocaleDateString();
+    }
 
     function formatTime() {
         const nowTime = new Date();
@@ -65,6 +86,7 @@ function Linkman(props: LinkmanProps) {
     return (
         <div
             className={`${Style.linkman} ${id === focus ? Style.focus : ''}`}
+            data-color-index={colorIndex % 8}
             onClick={handleClick}
             role="button"
             {...aero}
@@ -75,6 +97,17 @@ function Linkman(props: LinkmanProps) {
                     <p className={Style.name}>{name}</p>
                     <p className={Style.time}>{formatTime()}</p>
                 </div>
+                {(isOnline !== undefined || tag === 'bot') && (
+                    <div className={Style.onlineStatus}>
+                        {tag === 'bot' || isOnline ? (
+                            <span className={Style.onlineText}>在线</span>
+                        ) : lastLoginTime != null ? (
+                            <span className={Style.offlineText}>
+                                离线 {formatLastOnline(lastLoginTime)}
+                            </span>
+                        ) : null}
+                    </div>
+                )}
                 <div
                     className={`${Style.rowContainer} ${Style.previewUnreadBlock}`}
                 >

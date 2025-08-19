@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
 import getFriendId from '@bulita/utils/getFriendId';
-import { getOSSFileUrl } from '../utils/uploadFile';
+import { getAvatarUrl } from '../utils/uploadFile';
 import Style from './InfoDialog.less';
 import Dialog from '../components/Dialog';
 import Avatar from '../components/Avatar';
@@ -17,6 +17,7 @@ import {
     sealUser,
     getUserIps,
     sealUserOnlineIp,
+    getUserOnlineStatus,
 } from '../service';
 
 interface UserInfoProps {
@@ -26,10 +27,12 @@ interface UserInfoProps {
         username: string;
         avatar: string;
         ip: string;
-        isOnline?: string;
+        isOnline?: boolean;
+        lastLoginTime?: string | null;
         email: string;
         level: number;
         signature: string;
+        tag?: string;
     };
     onClose: () => void;
 }
@@ -57,6 +60,8 @@ function UserInfo(props: UserInfoProps) {
     const [largerAvatar, toggleLargetAvatar] = useState(false);
 
     const [userIps, setUserIps] = useState([]);
+    /** 管理员查看时拉取的在线/最后在线（即使用户不是好友也能看到） */
+    const [adminOnlineStatus, setAdminOnlineStatus] = useState<{ isOnline: boolean; lastLoginTime: string | null } | null>(null);
 
     useEffect(() => {
         if (isAdmin && user && user._id) {
@@ -66,6 +71,23 @@ function UserInfo(props: UserInfoProps) {
             })();
         }
     }, [isAdmin, selfId, user]);
+
+    useEffect(() => {
+        if (!visible || !user || !isAdmin) {
+            setAdminOnlineStatus(null);
+            return;
+        }
+        const rawUserId = user._id.replace(selfId, '');
+        if (!rawUserId) return;
+        getUserOnlineStatus(rawUserId).then((status) => {
+            if (status) {
+                setAdminOnlineStatus({
+                    isOnline: status.isOnline,
+                    lastLoginTime: status.lastLoginTime ?? null,
+                });
+            }
+        });
+    }, [visible, user, isAdmin, selfId]);
 
     if (!user) {
         return null;
@@ -137,6 +159,21 @@ function UserInfo(props: UserInfoProps) {
         }
     }
 
+    function formatLastOnline(dateStr: string | null): string {
+        if (!dateStr) return '从未登录';
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffM = Math.floor(diffMs / 60000);
+        const diffH = Math.floor(diffMs / 3600000);
+        const diffD = Math.floor(diffMs / 86400000);
+        if (diffM < 1) return '刚刚';
+        if (diffM < 60) return `${diffM} 分钟前`;
+        if (diffH < 24) return `${diffH} 小时前`;
+        if (diffD < 30) return `${diffD} 天前`;
+        return date.toLocaleDateString();
+    }
+
     function searchIp(ip: string) {
         window.open(`https://www.baidu.com/s?wd=${ip}`);
     }
@@ -166,10 +203,25 @@ function UserInfo(props: UserInfoProps) {
                                 className={`${Style.largeAvatar} ${
                                     largerAvatar ? 'show' : 'hide'
                                 }`}
-                                src={getOSSFileUrl(user.avatar)}
+                                src={getAvatarUrl(user.avatar)}
                                 alt="用户头像"
                             />
                             <p>{user.username}</p>
+                            {(() => {
+                                const isOnline = adminOnlineStatus?.isOnline ?? user.isOnline;
+                                const lastLoginTime = adminOnlineStatus?.lastLoginTime ?? user.lastLoginTime;
+                                if (user.tag === 'bot' || isOnline === true) {
+                                    return <p className={Style.onlineStatus}>当前在线</p>;
+                                }
+                                if (lastLoginTime != null) {
+                                    return (
+                                        <p className={Style.lastOnline}>
+                                            最后在线：{formatLastOnline(lastLoginTime)}
+                                        </p>
+                                    );
+                                }
+                                return null;
+                            })()}
                             <p className={Style.ip}>
                                 {userIps.map((ip) => (
                                     <span

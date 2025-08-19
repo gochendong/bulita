@@ -19,8 +19,18 @@ import {
     getSealUserKey,
     DisableSendMessageKey,
     DisableNewUserSendMessageKey,
+    GroupAISwitchKey,
     Redis,
 } from '@bulita/database/redis/initRedis';
+import {
+    getConfig,
+    getConfigWithDefault,
+    setConfig,
+    getAllAdminConfig,
+    ADMIN_CONFIG_KEYS,
+    ADMIN_CONFIG_LABELS,
+    RESTART_REQUIRED_KEYS,
+} from '../utils/runtimeConfig';
 
 /** 百度语言合成token */
 let baiduToken = '';
@@ -42,19 +52,35 @@ export async function search(ctx: Context<{ keywords: string }>) {
 
     const escapedKeywords = RegexEscape(keywords);
     const users = await User.find(
-        { username: { $regex: escapedKeywords } },
-        { avatar: 1, username: 1 },
+        { username: { $regex: escapedKeywords, $options: 'i' } },
+        { avatar: 1, username: 1, lastLoginTime: 1 },
     );
+    const userIds = users.map((u) => u._id.toString());
+    const sockets = await Socket.find({ user: { $in: userIds } });
+    const onlineIds = new Set(sockets.map((s) => s.user.toString()));
+    const usersWithStatus = users.map((u) => {
+        const obj = u.toObject();
+        return {
+            _id: obj._id,
+            avatar: obj.avatar,
+            username: obj.username,
+            isOnline: onlineIds.has(u._id.toString()),
+            lastLoginTime: obj.lastLoginTime
+                ? (obj.lastLoginTime as Date).toISOString()
+                : null,
+        };
+    });
+    const onlyDefault = await getConfigWithDefault('ONLY_SEARCH_DEFAULT_GROUP');
     const groups = await Group.find(
         {
-            name: { $regex: escapedKeywords },
-            isDefault: process.env.ONLY_SEARCH_DEFAULT_GROUP === 'true',
+            name: { $regex: escapedKeywords, $options: 'i' },
+            isDefault: onlyDefault === 'true',
         },
         { avatar: 1, name: 1, members: 1 },
     );
 
     return {
-        users,
+        users: usersWithStatus,
         groups: groups.map((group) => ({
             _id: group._id,
             avatar: group.avatar,
@@ -157,10 +183,11 @@ export async function sealUser(ctx: Context<{ username: string }>) {
     const isSealUser = await Redis.has(getSealUserKey(userId));
     assert(!isSealUser, '用户已在封禁名单');
 
+    const duration = await getConfigWithDefault('SEAL_USER_DURATION');
     await Redis.set(
         getSealUserKey(userId),
         userId,
-        process.env.SEAL_USER_DURATION,
+        duration,
     );
 
     return {
@@ -233,7 +260,8 @@ export async function sealUserOnlineIp(ctx: Context<{ userId: string }>) {
 
     await Promise.all(
         ipList.map(async (ip) => {
-            await Redis.set(getSealIpKey(ip), ip, process.env.SEAL_IP_DURATION);
+            const duration = await getConfigWithDefault('SEAL_IP_DURATION');
+    await Redis.set(getSealIpKey(ip), ip, duration);
         }),
     );
 
@@ -352,9 +380,55 @@ export async function toggleNewUserSendMessage(
 }
 
 export async function getSystemConfig() {
+    const groupAISwitch =
+        (await Redis.get(GroupAISwitchKey)) ?? 'false';
+    const adminConfig = await getAllAdminConfig();
     return {
         disableSendMessage: (await Redis.get(DisableSendMessageKey)) === 'true',
         disableNewUserSendMessage:
             (await Redis.get(DisableNewUserSendMessageKey)) === 'true',
+        groupAISwitch: groupAISwitch === 'true',
+        adminConfig,
+        adminConfigLabels: ADMIN_CONFIG_LABELS,
+        restartRequiredKeys: [...RESTART_REQUIRED_KEYS],
     };
+}
+
+/**
+ * 获取公开系统配置（供前端聊天区使用，无需管理员）
+ */
+export async function getPublicSystemConfig() {
+    const groupAISwitch =
+        (await Redis.get(GroupAISwitchKey)) ?? 'false';
+    const defaultTitle = await getConfigWithDefault('DEFAULT_TITLE');
+    const defaultBotName = await getConfigWithDefault('DEFAULT_BOT_NAME');
+    const maxGroupNumStr = await getConfigWithDefault('MAX_GROUP_NUM');
+    const maxGroupNum = parseInt(maxGroupNumStr, 10) || 0;
+    return {
+        groupAISwitch: groupAISwitch === 'true',
+        defaultTitle,
+        defaultBotName: defaultBotName || '',
+        maxGroupNum,
+    };
+}
+
+/**
+ * 切换群聊 AI 开关，需要管理员权限
+ */
+export async function toggleGroupAI(ctx: Context<{ enable: boolean }>) {
+    const { enable } = ctx.data;
+    await Redis.set(GroupAISwitchKey, enable ? 'true' : 'false');
+    return { msg: 'ok' };
+}
+
+/**
+ * 设置系统配置项（仅允许 ADMIN_CONFIG_KEYS），需要管理员权限
+ */
+export async function setSystemConfig(ctx: Context<{ key: string; value: string }>) {
+    const { key, value } = ctx.data;
+    if (!ADMIN_CONFIG_KEYS.includes(key as any)) {
+        throw new AssertionError({ message: `不允许修改配置: ${key}` });
+    }
+    await setConfig(key, value);
+    return { msg: 'ok' };
 }

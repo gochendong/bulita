@@ -23,21 +23,16 @@ import {
     getNewUserKey,
     Redis,
 } from '@bulita/database/redis/initRedis';
+import { getConfig, getConfigWithDefault } from '../utils/runtimeConfig';
 import chalk from 'chalk';
 
 const { XMLHttpRequest } = require('xmlhttprequest');
-
-const BOTS = process.env.BOTS ? process.env.BOTS.split(',') : [];
-const IP_LOCATION_API = process.env.IP_LOCATION_API;
+const {IP_LOCATION_API} = process.env;
 
 const { isValid } = Types.ObjectId;
 
 /** 一天时间 */
 const OneDay = 1000 * 60 * 60 * 24;
-
-const PASSWORD_REGEX = process.env.PASSWORD_REGEX || '';
-const PASSWORD_TIPS = process.env.PASSWORD_TIPS || '';
-const pattern = new RegExp(PASSWORD_REGEX);
 
 interface Environment {
     /** 客户端系统 */
@@ -78,13 +73,14 @@ async function handleNewUser(user: UserDocument, ip = '') {
         await Redis.set(getNewUserKey(userId), userId, Redis.Day);
 
         if (ip) {
+            const registerIpInterval = await getConfigWithDefault('REGISTER_IP_INTERVAL');
             const registeredCount = await Redis.get(
                 getNewRegisteredUserIpKey(ip),
             );
             await Redis.set(
                 getNewRegisteredUserIpKey(ip),
                 (parseInt(registeredCount || '0', 10) + 1).toString(),
-                process.env.REGISTER_IP_INTERVAL,
+                registerIpInterval,
             );
         }
     }
@@ -120,7 +116,7 @@ async function addDefaultLinkmans(user: UserDocument) {
     }
     await defaultGroup.save();
 
-    const defaultLinkmans = process.env.DEFAULT_LINKMANS;
+    const defaultLinkmans = await getConfigWithDefault('DEFAULT_LINKMANS');
 
     if (defaultLinkmans) {
         const defaultLinkmansArray = defaultLinkmans.split(',');
@@ -155,14 +151,15 @@ async function addDefaultLinkmans(user: UserDocument) {
 export async function register(
     ctx: Context<{ username: string; password: string } & Environment>,
 ) {
-    if (process.env.ENABLE_REGISTER_USER !== 'true') {
+    const enableRegister = await getConfigWithDefault('ENABLE_REGISTER_USER');
+    if (enableRegister !== 'true') {
         throw AssertionError({message: '本站暂不开放注册'});
     }
-
     let { username, password, os, browser, environment } = ctx.data;
+    const defaultUsername = await getConfigWithDefault('DEFAULT_USERNAME');
 
     for (let i = 3; i < 10; i++) {
-        username = `${process.env.DEFAULT_USERNAME}${randomString(i)}`;
+        username = `${defaultUsername}${randomString(i)}`;
         const user = await User.findOne({ username });
         if (user) {
             continue;
@@ -179,7 +176,8 @@ export async function register(
     );
 
     let tag = '';
-    if (BOTS.includes(username)) {
+    const botsList = (await getConfigWithDefault('BOTS')).split(',').map((s: string) => s.trim()).filter(Boolean);
+    if (botsList.includes(username)) {
         tag = 'bot';
     } else if (IP_LOCATION_API) {
         const url = `${IP_LOCATION_API}${ctx.socket.ip.split(',')[0]}`;
@@ -200,7 +198,7 @@ export async function register(
             id: snowflake.nextId().toString(),
             avatar: getRandomAvatar(),
             lastLoginIp: ctx.socket.ip,
-            tag: tag,
+            tag,
         } as UserDocument);
     } catch (err) {
         if ((err as Error).name === 'ValidationError') {
@@ -223,6 +221,7 @@ export async function register(
         signature: 1,
         level: 1,
         tag: 1,
+        createTime: 1,
     });
 
     const token = generateToken(
@@ -241,6 +240,61 @@ export async function register(
             environment,
         },
     );
+
+    // 创建欢迎消息并保存到数据库
+    if (defaultGroup) {
+        try {
+            // 先让用户加入默认群组的 room，这样才能收到消息
+            ctx.socket.join(defaultGroup._id.toString());
+            
+            // 查找或创建系统用户
+            let systemUser = await User.findOne({ username: '系统' });
+            if (!systemUser) {
+                // 如果系统用户不存在，使用新用户作为发送者（前端会处理显示）
+                systemUser = newUser;
+            }
+            
+            // 欢迎文案不包含用户名，由前端 SystemMessage 用 originUsername 展示为「用户名 + 欢迎加入！…」
+            const welcomeContent = '欢迎加入！开始你的聊天吧～';
+            const welcomeMessage = await Message.create({
+                from: systemUser._id,
+                to: defaultGroup._id.toString(),
+                type: 'system',
+                content: welcomeContent,
+            } as MessageDocument);
+
+            // 广播欢迎消息到群组
+            // 注意：from 对象需要包含前端需要的所有字段，originUsername 为新用户名供前端展示
+            const messageData = {
+                _id: welcomeMessage._id,
+                createTime: welcomeMessage.createTime,
+                from: {
+                    _id: systemUser._id.toString(),
+                    username: '系统',
+                    avatar: systemUser.avatar || '',
+                    originUsername: newUser.username,
+                    tag: 'system',
+                },
+                to: defaultGroup._id.toString(),
+                type: 'system',
+                content: welcomeContent,
+            };
+            
+            // 使用 socket.io 广播消息到群组
+            // 注意：ctx.socket.emit 使用 socket.to()，不会发送给发送者自己
+            // 所以需要先发送给当前用户，再广播给其他用户
+            const socket = (ctx.socket as any).__socket;
+            if (socket) {
+                // 直接发送给当前用户
+                socket.emit('message', messageData);
+                // 广播给群组中的其他用户
+                socket.to(defaultGroup._id.toString()).emit('message', messageData);
+            }
+        } catch (error) {
+            // 如果创建欢迎消息失败，不影响注册流程
+            console.error('创建欢迎消息失败:', error);
+        }
+    }
 
     return {
         _id: newUser._id,
@@ -285,7 +339,8 @@ export async function login(
     await handleNewUser(user);
 
     let tag = '';
-    if (BOTS.includes(user.username)) {
+    const botsList = (await getConfigWithDefault('BOTS')).split(',').map((s: string) => s.trim()).filter(Boolean);
+    if (botsList.includes(user.username)) {
         tag = 'bot';
     } else if (IP_LOCATION_API) {
         const url = `${IP_LOCATION_API}${ctx.socket.ip.split(',')[0]}`;
@@ -348,6 +403,7 @@ export async function login(
         signature: 1,
         level: 1,
         tag: 1,
+        createTime: 1,
     });
 
     return {
@@ -412,7 +468,8 @@ export async function loginByToken(
     await handleNewUser(user);
 
     let tag = '';
-    if (BOTS.includes(user.username)) {
+    const botsList = (await getConfigWithDefault('BOTS')).split(',').map((s: string) => s.trim()).filter(Boolean);
+    if (botsList.includes(user.username)) {
         tag = 'bot';
     } else if (IP_LOCATION_API) {
         const url = `${IP_LOCATION_API}${ctx.socket.ip.split(',')[0]}`;
@@ -442,8 +499,10 @@ export async function loginByToken(
             _id: 1,
             name: 1,
             avatar: 1,
+            announcement: 1,
             creator: 1,
             createTime: 1,
+            members: 1,
         },
     );
     groups.forEach((group: GroupDocument) => {
@@ -456,6 +515,7 @@ export async function loginByToken(
         signature: 1,
         level: 1,
         tag: 1,
+        createTime: 1,
     });
 
     ctx.socket.user = user._id.toString();
@@ -470,8 +530,9 @@ export async function loginByToken(
     );
 
     let bot = null;
-    if (process.env.DEFAULT_BOT_NAME) {
-        bot = await User.findOne({ username: process.env.DEFAULT_BOT_NAME }, {
+    const defaultBotName = await getConfigWithDefault('DEFAULT_BOT_NAME');
+    if (defaultBotName) {
+        bot = await User.findOne({ username: defaultBotName }, {
             _id: 1,
             username: 1,
             avatar: 1,
@@ -492,7 +553,16 @@ export async function loginByToken(
         signature: user.signature,
         pushToken: user.pushToken,
         tag: user.tag,
-        groups,
+        createTime: user.createTime,
+        groups: groups.map((g: GroupDocument) => ({
+            _id: g._id,
+            name: g.name,
+            avatar: g.avatar,
+            announcement: g.announcement,
+            creator: g.creator,
+            createTime: g.createTime,
+            membersCount: g.members.length,
+        })),
         friends,
         bot,
         isAdmin: config.administrators.includes(user.username),
@@ -522,8 +592,10 @@ export async function guest(ctx: Context<Environment>) {
             _id: 1,
             name: 1,
             avatar: 1,
+            announcement: 1,
             createTime: 1,
             creator: 1,
+            members: 1,
         },
     );
     if (!group) {
@@ -545,7 +617,7 @@ export async function guest(ctx: Context<Environment>) {
     await handleInviteV2Messages(messages);
     messages.reverse();
 
-    return { messages, ...group.toObject() };
+    return { messages, ...group.toObject(), membersCount: group.members.length };
 }
 
 /**
@@ -628,8 +700,11 @@ export async function changePassword(
     const { oldPassword, newPassword } = ctx.data;
     assert(newPassword, '新密码不能为空');
     assert(oldPassword === newPassword, '两次密码输入不一致');
-    if (PASSWORD_REGEX) {
-        assert(pattern.test(newPassword), PASSWORD_TIPS);
+    const passwordRegex = await getConfigWithDefault('PASSWORD_REGEX');
+    const passwordTips = await getConfigWithDefault('PASSWORD_TIPS');
+    if (passwordRegex) {
+        const pattern = new RegExp(passwordRegex);
+        assert(pattern.test(newPassword), passwordTips);
     }
     const user = await User.findOne({ _id: ctx.socket.user });
     if (!user) {
@@ -657,6 +732,9 @@ export async function changeUsername(ctx: Context<{ username: string }>) {
     if (!self) {
         throw new AssertionError({ message: '用户不存在' });
     }
+    // if (!self.password) {
+    //     throw new AssertionError({ message:'请先设置密码'});
+    // }
     const { username } = ctx.data;
     assert(username, '新用户名不能为空');
 
@@ -697,12 +775,15 @@ export async function changeSignature(ctx: Context<{ signature: string }>) {
  */
 export async function changePushToken(ctx: Context<{ pushToken: string }>) {
     const { pushToken } = ctx.data;
+
     const self = await User.findOne({ _id: ctx.socket.user });
     if (!self) {
         throw new AssertionError({ message: '用户不存在' });
     }
+
     self.pushToken = pushToken;
     await self.save();
+
     return {
         msg: 'ok',
     };
@@ -721,7 +802,8 @@ export async function resetUserPassword(ctx: Context<{ username: string }>) {
         throw new AssertionError({ message: '用户不存在' });
     }
 
-    const newPassword = process.env.DEFAULT_PASSWORD;
+    const newPassword = await getConfigWithDefault('DEFAULT_PASSWORD');
+    assert(newPassword, '默认密码未配置，请在管理台设置 DEFAULT_PASSWORD');
     const salt = await bcrypt.genSalt(SALT_ROUNDS);
     const hash = await bcrypt.hash(newPassword, salt);
 
@@ -788,7 +870,8 @@ function getUserOnlineStatusWrapper() {
     const cache: Record<
         string,
         {
-            value: boolean;
+            isOnline: boolean;
+            lastLoginTime: string | null;
             expireTime: number;
         }
     > = {};
@@ -801,19 +884,116 @@ function getUserOnlineStatusWrapper() {
 
         if (cache[userId] && cache[userId].expireTime > Date.now()) {
             return {
-                isOnline: cache[userId].value,
+                isOnline: cache[userId].isOnline,
+                lastLoginTime: cache[userId].lastLoginTime,
             };
         }
 
         const sockets = await Socket.find({ user: userId });
         const isOnline = sockets.length > 0;
+        let lastLoginTime: string | null = null;
+        if (!isOnline) {
+            const user = await User.findOne(
+                { _id: userId },
+                { lastLoginTime: 1 },
+            );
+            lastLoginTime = user?.lastLoginTime
+                ? (user.lastLoginTime as Date).toISOString()
+                : null;
+        }
+
+        // 缓存结果
         cache[userId] = {
-            value: isOnline,
+            isOnline,
+            lastLoginTime,
             expireTime: Date.now() + UserOnlineStatusCacheExpireTime,
         };
+
         return {
             isOnline,
+            lastLoginTime,
         };
     };
 }
 export const getUserOnlineStatus = getUserOnlineStatusWrapper();
+
+/**
+ * 管理员按用户名查找用户（用于删除前校验）, 需要管理员权限
+ * @param ctx Context
+ */
+export async function getAdminUserByUsername(
+    ctx: Context<{ username: string }>,
+) {
+    const { username } = ctx.data;
+    assert(username, '用户名不能为空');
+    const name = (username as string).trim();
+    if (!name) {
+        return { exists: false };
+    }
+    const user = await User.findOne({ username: name });
+    return user
+        ? { exists: true, username: user.username, _id: user._id.toString() }
+        : { exists: false };
+}
+
+/**
+ * 删除用户, 需要管理员权限
+ * @param ctx Context
+ */
+export async function deleteUser(ctx: Context<{ username: string }>) {
+    const { username } = ctx.data;
+    assert(username, '用户名不能为空');
+
+    const user = await User.findOne({ username });
+    if (!user) {
+        throw new AssertionError({ message: '用户不存在' });
+    }
+
+    const adminsStr = await getConfigWithDefault('ADMINS');
+    const adminUsernames = adminsStr
+        ? adminsStr.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [];
+    assert(
+        !adminUsernames.includes(username),
+        '不能删除管理员账号',
+    );
+
+    const userId = user._id;
+
+    // 断开 Socket 连接
+    const sockets = await Socket.find({ user: userId });
+    const io = (ctx.socket as any).__socket.server;
+    sockets.forEach((socketRecord) => {
+        const connectedSocket = io.sockets.sockets.get(socketRecord.id);
+        if (connectedSocket) {
+            connectedSocket.emit('deleteUser', '您的账号已被删除');
+            connectedSocket.disconnect(true);
+        }
+    });
+    await Socket.deleteMany({ user: userId });
+
+    // 处理创建的群组：转让给系统用户
+    const systemUser = await User.findOne({ tag: 'system' });
+    if (systemUser) {
+        await Group.updateMany({ creator: userId }, { creator: systemUser._id });
+    }
+
+    // 删除用户
+    await User.deleteOne({ _id: userId });
+
+    // 删除好友关系
+    await Friend.deleteMany({ $or: [{ from: userId }, { to: userId }] });
+
+    // 退出所有群组
+    await Group.updateMany({}, { $pull: { members: userId } });
+
+    // 删除发送的消息
+    await Message.deleteMany({ $or: [{ from: userId }, { to: userId }] });
+
+    // 删除通知
+    await Notification.deleteMany({ user: userId });
+
+    return {
+        msg: 'ok',
+    };
+}

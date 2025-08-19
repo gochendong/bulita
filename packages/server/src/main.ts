@@ -9,6 +9,7 @@ import User, { UserDocument } from '@bulita/database/mongoose/models/user';
 import bcrypt from 'bcryptjs';
 import { SALT_ROUNDS } from '@bulita/utils/const';
 import Snowflake from '@bulita/utils/snowflake';
+import { getConfigWithDefault } from './utils/runtimeConfig';
 import app from './app';
 
 (async () => {
@@ -18,18 +19,16 @@ import app from './app';
 
     await initMongoDB();
 
-    // 判断管理员是否存在, 不存在就创建
-    const admins = process.env.ADMINS;
-    let adminsArray = [];
+    // 判断管理员是否存在, 不存在就创建（ADMINS/DEFAULT_PASSWORD 仅启动时读取，改后需重启）
+    const admins = await getConfigWithDefault('ADMINS');
+    const adminsArray = [];
     let originalAdmin = null;
     const snowflake = new Snowflake(1n, 1n, 0n);
     const salt = await bcrypt.genSalt(SALT_ROUNDS);
-    const hash = await bcrypt.hash(
-        process.env.DEFAULT_PASSWORD,
-        salt,
-    );
+    const defaultPassword = await getConfigWithDefault('DEFAULT_PASSWORD');
+    const hash = await bcrypt.hash(defaultPassword, salt);
     if (admins) {
-        const defaultAdminsArray = admins.split(',');
+        const defaultAdminsArray = admins.split(',').map((s) => s.trim()).filter(Boolean);
         for (let i = 0; i < defaultAdminsArray.length; i++) {
             const defaultAdmin = defaultAdminsArray[i];
             let admin = await User.findOne({ username: defaultAdmin });
@@ -38,7 +37,7 @@ import app from './app';
                     username: defaultAdmin,
                     id: snowflake.nextId().toString(),
                     avatar: getRandomAvatar(),
-                    salt: salt,
+                    salt,
                     password: hash,
                 } as UserDocument);
                 if (!admin) {
@@ -65,8 +64,9 @@ import app from './app';
             logger.error('[defaultGroup]', 'create admin first');
             return process.exit(1);
         }
+        const defaultGroupName = await getConfigWithDefault('DEFAULT_GROUP_NAME');
         const defaultGroup = await Group.create({
-            name: process.env.DEFAULT_GROUP_NAME,
+            name: defaultGroupName,
             avatar: getRandomAvatar(),
             isDefault: true,
             creator: originalAdmin._id,
@@ -77,10 +77,10 @@ import app from './app';
         }
     }
 
-    // 判断机器人账号是否存在, 不存在就创建
-    const defaultBots = process.env.BOTS;
+    // 判断机器人账号是否存在, 不存在就创建（BOTS 仅启动时读取，改后需重启）
+    const defaultBots = await getConfigWithDefault('BOTS');
     if (defaultBots) {
-        const defaultBotsArray = defaultBots.split(',');
+        const defaultBotsArray = defaultBots.split(',').map((s) => s.trim()).filter(Boolean);
         await Promise.all(
             defaultBotsArray.map(async (defaultBot: string) => {
                 let bot = await User.findOne({ username: defaultBot });
@@ -89,10 +89,10 @@ import app from './app';
                         username: defaultBot,
                         id: snowflake.nextId().toString(),
                         avatar: getRandomAvatar(),
-                        salt: salt,
+                        salt,
                         password: hash,
                         tag: 'bot',
-                    } as UserDocument);
+                    } as UserDocument)
                     if (!bot) {
                         logger.error('[bot]', `create bot ${defaultBot} fail`);
                         return process.exit(1);

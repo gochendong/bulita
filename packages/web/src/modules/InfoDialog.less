@@ -21,16 +21,29 @@
 }
 
 .header {
-    background-color: rgb(240, 242, 245);
+    background-color: @warm-bg;
     padding: 20px 0 14px 0;
     border-top-left-radius: 6px;
     border-top-right-radius: 6px;
 }
 
+.onlineStatus {
+    font-size: 13px;
+    color: @google-green;
+    margin: 4px 0 0 0;
+}
+
+.lastOnline {
+    font-size: 13px;
+    color: @warm-text-muted;
+    margin: 4px 0 0 0;
+    text-align: center;
+}
+
 .ip {
     span {
         font-size: 13px;
-        color: #888;
+        color: @warm-text-muted;
         margin: 0 2px;
         cursor: pointer;
     }
@@ -62,10 +75,11 @@
 }
 
 .onlineStatus {
-    text-align: left;
+    text-align: center;
     display: flex;
     height: 30px;
     align-items: center;
+    justify-content: center;
     font-size: 14px;
 }
 

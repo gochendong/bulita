@@ -16,6 +16,8 @@
     "dev:docs": "npx lerna run dev:docs --stream",
     "build:docs": "npx lerna run build:docs --stream",
     "deploy:docs": "npx lerna run deploy:docs --stream",
+    "docker:build": "DOCKER_BUILDKIT=1 docker build -t bulita .",
+    "docker:run": "docker run --rm -p 9200:9200 bulita",
     "lint": "eslint ./ --ext js,jsx,ts,tsx --ignore-pattern .eslintignore --cache --fix",
     "test": "jest",
     "ts-check": "tsc --noEmit",
@@ -63,5 +65,6 @@
     "react-markdown": "^8.0.7",
     "react-syntax-highlighter": "^15.5.0",
     "xmlhttprequest": "^1.8.0"
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
 }

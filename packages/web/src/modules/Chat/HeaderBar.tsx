@@ -9,6 +9,7 @@ import useIsLogin from '../../hooks/useIsLogin';
 import useAction from '../../hooks/useAction';
 import IconButton from '../../components/IconButton';
 import Message from '../../components/Message';
+import UserBadge from '../../components/UserBadge';
 
 import Style from './HeaderBar.less';
 import useAero from '../../hooks/useAero';
@@ -33,11 +34,32 @@ type Props = {
     tag: string;
     signature?: string;
     level?: number;
+    /** 用户/好友注册时间，用于显示铭牌 */
+    createTime?: string | null;
     onlineMembersCount?: number;
+    /** 群组总人数（仅群组） */
+    totalMemberCount?: number;
     isOnline?: boolean;
+    /** 好友最后在线时间（仅好友、离线时） */
+    lastLoginTime?: string | null;
     /** 功能按钮点击事件 */
     onClickFunction: () => void;
 };
+
+function formatLastOnline(dateStr: string | null): string {
+    if (!dateStr) return '从未登录';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffM = Math.floor(diffMs / 60000);
+    const diffH = Math.floor(diffMs / 3600000);
+    const diffD = Math.floor(diffMs / 86400000);
+    if (diffM < 1) return '刚刚';
+    if (diffM < 60) return `${diffM} 分钟前`;
+    if (diffH < 24) return `${diffH} 小时前`;
+    if (diffD < 30) return `${diffD} 天前`;
+    return date.toLocaleDateString();
+}
 
 function HeaderBar(props: Props) {
     const {
@@ -47,8 +69,11 @@ function HeaderBar(props: Props) {
         signature,
         tag,
         level,
+        createTime,
         onlineMembersCount,
+        totalMemberCount,
         isOnline,
+        lastLoginTime,
         onClickFunction,
     } = props;
 
@@ -93,19 +118,29 @@ function HeaderBar(props: Props) {
             )}
             <h2 className={Style.name}>
                 {name}
+                {type === 'group' && totalMemberCount != null && (
+                    <span className={styles.count}>{` (${totalMemberCount}人)`}</span>
+                )}
+                {type === 'friend' && createTime && tag !== 'bot' && (
+                    <UserBadge createTime={createTime} />
+                )}
                 {tag === 'bot' && (
-                    <span className={Style.tag}>
-                        {/*<div className='online' />*/}
-                        {'机器人'}
-                    </span>
+                    <span className={Style.adminTag}>机器人</span>
                 )}
                 {process.env.ADMINS.split(',').includes(name) && (
-                    <span className={Style.tag}>
-                        {/*<div className='online' />*/}
-                        {'管理员'}
+                    <span className={Style.adminTag}>管理员</span>
+                )}
+                {type === 'friend' && (tag === 'bot' || isOnline === true) && (
+                    <span className={Style.onlineStatusText}>当前在线</span>
+                )}
+                {type === 'friend' && tag !== 'bot' && isOnline === false && lastLoginTime != null && (
+                    <span className={Style.lastOnlineText}>
+                        离线 最后在线：{formatLastOnline(lastLoginTime)}
                     </span>
                 )}
-                <span className={styles.count}>{signature}</span>
+                {signature ? (
+                    <span className={Style.signature} title={signature}>{signature}</span>
+                ) : null}
                 {/*{name && (*/}
                 {/*   <span>*/}
                 {/*       {name}{' '}*/}
