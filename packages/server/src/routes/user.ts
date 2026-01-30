@@ -245,6 +245,9 @@ export async function register(
     // 创建欢迎消息并保存到数据库
     if (defaultGroup) {
         try {
+            // 先让用户加入默认群组的 room，这样才能收到消息
+            ctx.socket.join(defaultGroup._id.toString());
+            
             // 查找或创建系统用户
             let systemUser = await User.findOne({ username: '系统' });
             if (!systemUser) {
@@ -277,7 +280,15 @@ export async function register(
             };
             
             // 使用 socket.io 广播消息到群组
-            ctx.socket.emit(defaultGroup._id.toString(), 'message', messageData);
+            // 注意：ctx.socket.emit 使用 socket.to()，不会发送给发送者自己
+            // 所以需要先发送给当前用户，再广播给其他用户
+            const socket = (ctx.socket as any).__socket;
+            if (socket) {
+                // 直接发送给当前用户
+                socket.emit('message', messageData);
+                // 广播给群组中的其他用户
+                socket.to(defaultGroup._id.toString()).emit('message', messageData);
+            }
         } catch (error) {
             // 如果创建欢迎消息失败，不影响注册流程
             console.error('创建欢迎消息失败:', error);

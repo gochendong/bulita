@@ -77,7 +77,8 @@ function Chat() {
         request();
         const timer = setInterval(() => request(), 1000 * 60);
         return () => clearInterval(timer);
-    }, [focus, linkman, isLogin, self, action]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [focus, linkman?.type, isLogin, self]);
 
     async function intervalUpdateHistory() {
         // Must get real-time state

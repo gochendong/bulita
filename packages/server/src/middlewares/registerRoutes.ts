@@ -31,6 +31,8 @@ export default function registerRoutes(socket: Socket, routes: Routes) {
                         emit: (target, _event, _data) => {
                             socket.to(target).emit(_event, _data);
                         },
+                        // 添加原始 socket 引用，用于直接发送消息给当前用户
+                        __socket: socket,
                     },
                 };
                 const before = Date.now();
