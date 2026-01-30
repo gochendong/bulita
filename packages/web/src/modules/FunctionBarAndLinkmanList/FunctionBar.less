@@ -39,7 +39,7 @@
             &:focus {
                 outline: none;
                 border-color: @input-border-focus;
-                background-color: #fff;
+                background-color: @input-bg-hover;
                 box-shadow: @input-shadow-focus;
             }
         }
@@ -49,7 +49,7 @@
 .inputFocus {
     :global {
         input {
-            background-color: #fff;
+            background-color: @input-bg-hover;
             border-color: @input-border-focus;
             box-shadow: @input-shadow-focus;
         }
@@ -76,27 +76,27 @@
     padding: 0 12px;
     height: 40px;
     border-radius: 20px;
-    background: @warm-accent-light;
-    border: 1px solid rgba(212, 160, 144, 0.35);
+    background: rgba(212, 160, 144, 0.08);
+    border: 1px solid rgba(212, 160, 144, 0.2);
     cursor: pointer;
     transition: background 0.2s ease, border-color 0.2s ease;
 
     &:hover {
-        background: rgba(212, 160, 144, 0.25);
-        border-color: @warm-accent;
+        background: rgba(212, 160, 144, 0.15);
+        border-color: rgba(212, 160, 144, 0.4);
         :global {
             .iconfont {
-                color: @warm-accent;
+                color: @warm-text-muted;
             }
         }
         .createGroupLabel {
-            color: @warm-accent;
+            color: @warm-text;
         }
     }
 
     :global {
         .iconfont {
-            color: @warm-accent;
+            color: @warm-text-muted;
             font-size: 18px;
         }
     }
@@ -104,8 +104,8 @@
 
 .createGroupLabel {
     font-size: 13px;
-    color: @warm-text;
-    font-weight: @font-weight-medium;
+    color: @warm-text-muted;
+    font-weight: @font-weight-normal;
 }
 
 .searchResult {
@@ -113,10 +113,11 @@
     top: 60px;
     left: 8px;
     width: 276px;
-    background-color: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
+    background-color: @warm-card;
+    border: 1px solid @warm-border;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-top-left-radius: @warm-radius-sm;
+    border-top-right-radius: @warm-radius-sm;
     z-index: 1300;
     
     :global {
@@ -137,11 +138,11 @@
         height: 56px;
         padding-left: 8px;
         & > p {
-            color: #333;
+            color: @warm-text;
             margin-left: 10px;
         }
         &:hover {
-            background-color: #eee;
+            background-color: @warm-accent-light;
         }
     }
 }
@@ -156,15 +157,15 @@
         & > div {
             margin-left: 10px;
             & > p {
-                color: #333;
+                color: @warm-text;
                 &:last-child {
-                    color: #666;
+                    color: @warm-text-muted;
                     font-size: 14px;
                 }
             }
         }
         &:hover {
-            background-color: #eee;
+            background-color: @warm-accent-light;
         }
     }
 }
@@ -176,7 +177,7 @@
     & > div {
         & > p {
             font-size: 14px;
-            color: #333;
+            color: @warm-text;
             font-weight: bold;
             line-height: 31px;
         }
@@ -187,11 +188,11 @@
     font-size: 14px;
     line-height: 80px;
     text-align: center;
-    color: #333;
+    color: @warm-text-muted;
 }
 
 .more {
-    color: var(--primary-color-10);
+    color: @warm-accent;
     font-size: 12px;
     text-align: center;
     & > span {

@@ -55,6 +55,7 @@ function MessageList(props: MessageListProps) {
     const messages = useSelector(
         (state: State) => state.linkmans[focus].messages,
     );
+    const linkman = useSelector((state: State) => state.linkmans[focus]);
     const unread = useSelector((state: State) => state.linkmans[focus].unread);
     const isLogin = useIsLogin();
     const tagColorMode = useSelector(
@@ -140,6 +141,15 @@ function MessageList(props: MessageListProps) {
         //     tag = '群主';
         // }
 
+        // 获取发送者的createTime（用于显示UserBadge）
+        // 如果是好友聊天，发送者就是对方，使用linkman.createTime
+        // 如果是群聊，需要从群成员信息中获取，目前先不显示（需要后端支持）
+        let senderCreateTime: string | null = null;
+        if (linkman.type === 'friend' && !isSelf) {
+            // 好友聊天且不是自己发送的消息，使用联系人的createTime
+            senderCreateTime = linkman.createTime || null;
+        }
+
         return (
             <MessageComponent
                 key={message._id}
@@ -160,6 +170,7 @@ function MessageList(props: MessageListProps) {
                 onRetry={onRetry}
                 shouldScroll={shouldScroll}
                 tagColorMode={tagColorMode}
+                senderCreateTime={senderCreateTime}
             />
         );
     }

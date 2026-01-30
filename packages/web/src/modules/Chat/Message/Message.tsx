@@ -26,6 +26,7 @@ import Tooltip from '../../../components/Tooltip';
 import MessageToast from '../../../components/Message';
 import themes from '../../../themes';
 import FileMessage from './FileMessage';
+import UserBadge from '../../../components/UserBadge';
 
 const { dispatch } = store;
 
@@ -48,6 +49,8 @@ interface MessageProps {
     shouldScroll: boolean;
     tagColorMode: string;
     isAdmin?: boolean;
+    /** 发送者的注册时间（用于显示UserBadge） */
+    senderCreateTime?: string | null;
 }
 
 interface MessageState {
@@ -235,7 +238,7 @@ class Message extends Component<MessageProps, MessageState> {
     }
 
     render() {
-        const { isSelf, avatar, tag, tagColorMode, username, type, loading, sendFailed, onRetry, linkmanId, id, isAdmin } =
+        const { isSelf, avatar, tag, tagColorMode, username, type, loading, sendFailed, onRetry, linkmanId, id, isAdmin, senderCreateTime } =
             this.props;
         const { showButtonList } = this.state;
 
@@ -268,6 +271,12 @@ class Message extends Component<MessageProps, MessageState> {
                     <div className={Style.nicknameTimeBlock}>
                         {tag && <span className={Style.tag}>{tag}</span>}
                         <span className={Style.nickname}>{username}</span>
+                        {senderCreateTime && !isSelf && (
+                            <UserBadge createTime={senderCreateTime} />
+                        )}
+                        {process.env.ADMINS.split(',').includes(username) && (
+                            <span className={Style.adminTagInMessage}>管理员</span>
+                        )}
                         <span className={Style.time}>{this.formatTime()}</span>
                     </div>
                     <div
@@ -309,14 +318,16 @@ class Message extends Component<MessageProps, MessageState> {
                                     mouseEnterDelay={0.3}
                                     overlay={<span>复制</span>}
                                 >
-                                    <button
-                                        type="button"
-                                        className={Style.copyButton}
-                                        onClick={this.handleCopyMessage}
-                                        aria-label="复制"
-                                    >
-                                        📋
-                                    </button>
+                                    <div>
+                                        <IconButton
+                                            className={Style.copyButton}
+                                            icon="share"
+                                            iconSize={11}
+                                            width={15}
+                                            height={15}
+                                            onClick={this.handleCopyMessage}
+                                        />
+                                    </div>
                                 </Tooltip>
                                 {(isAdmin || (!client.disableDeleteMessage && isSelf)) && (
                                     <Tooltip
