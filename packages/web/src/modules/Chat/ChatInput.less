@@ -2,17 +2,15 @@
 
 .chatInput {
     height: 100px;
-    background: linear-gradient(180deg, #fffbf9 0%, #faf8f5 100%);
+    background: transparent;
     display: flex;
     align-items: center;
     padding: 0 20px 0 24px;
     border-bottom-right-radius: 12px;
     position: relative;
-    border-top: 1px solid rgba(232, 228, 223, 0.6);
 
     &[data-aero='true'] {
-        background: linear-gradient(180deg, rgba(255, 251, 249, 0.95) 0%, rgba(250, 248, 245, 0.9) 100%);
-        border-top-color: rgba(255, 255, 255, 0.25);
+        background: transparent;
 
         .input {
             background-color: rgba(255, 255, 255, 0.75);
@@ -128,6 +126,7 @@
     resize: none;
     caret-color: @input-text;
     transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
 
     &::placeholder {
         color: @input-placeholder;

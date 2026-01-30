@@ -182,6 +182,12 @@ class Message extends Component<MessageProps, MessageState> {
         const { time } = this.props;
         const messageTime = new Date(time);
         const nowTime = new Date();
+        
+        // 检查日期是否有效
+        if (isNaN(messageTime.getTime())) {
+            return '';
+        }
+        
         if (Time.isToday(nowTime, messageTime)) {
             return Time.getHourMinute(messageTime);
         }
@@ -275,8 +281,8 @@ class Message extends Component<MessageProps, MessageState> {
                             </span>
                         )}
                         <span className={Style.nickname}>{username}</span>
-                        {!isSelf && (
-                            <UserBadge createTime={senderCreateTime || null} />
+                        {!isSelf && type !== 'system' && senderCreateTime && (
+                            <UserBadge createTime={senderCreateTime} />
                         )}
                         {process.env.ADMINS.split(',').includes(username) && (
                             <span className={Style.adminTagInMessage}>管理员</span>

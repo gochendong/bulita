@@ -173,9 +173,9 @@ function MessageList(props: MessageListProps) {
         // }
 
         // 获取发送者的createTime（用于显示UserBadge）
-        // 所有非自己的消息都应该显示UserBadge
+        // 所有非自己的消息都应该显示UserBadge，但系统消息除外
         let senderCreateTime: string | null = null;
-        if (!isSelf) {
+        if (!isSelf && message.from._id !== 'system') {
             if (linkman.type === 'friend') {
                 // 好友聊天，使用联系人的createTime
                 senderCreateTime = linkman.createTime || null;

@@ -80,7 +80,7 @@ function Register() {
                                 },
                                 loading: false,
                                 percent: 100,
-                                createTime: String(Date.now()),
+                                createTime: new Date().toISOString(),
                             };
                             try {
                                 action.addLinkmanMessage(firstLinkmanId, welcomeMessage);
