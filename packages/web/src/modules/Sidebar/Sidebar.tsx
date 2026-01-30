@@ -62,8 +62,8 @@ function Sidebar() {
         action.logout();
         window.localStorage.removeItem('token');
         Message.success('您已退出聊天室');
-        socket.disconnect();
-        socket.connect();
+        // 不需要手动断开和重连，socket.io 会自动处理
+        // socket 会在 connect 事件中自动处理登录状态
     }
 
     function renderTooltip(text: string, component: JSX.Element) {

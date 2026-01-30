@@ -28,9 +28,51 @@ import store from './state/store';
 const { dispatch } = store;
 
 const options = {
-    // reconnectionDelay: 1000,
+    transports: ['websocket', 'polling'], // 优先使用 websocket，失败时降级到 polling
+    upgrade: true, // 允许从 polling 升级到 websocket
+    rememberUpgrade: true, // 记住升级状态，避免重复升级
+    reconnection: true,
+    reconnectionDelay: 2000, // 初始重连延迟2秒
+    reconnectionDelayMax: 10000, // 最大重连延迟10秒
+    reconnectionAttempts: 5, // 最多重连5次
+    timeout: 20000, // 连接超时时间
+    forceNew: false, // 不强制创建新连接，复用现有连接
+    autoConnect: true,
+    // 减少 polling 请求频率
+    polling: {
+        extraHeaders: {},
+    },
 };
 const socket = IO(config.server, options);
+
+// 监听连接错误，避免无限重连
+let reconnectCount = 0;
+socket.on('connect_error', (error) => {
+    console.error('Socket连接错误:', error);
+    reconnectCount++;
+    // 如果连接失败次数过多，停止自动重连
+    if (reconnectCount > 10) {
+        console.error('Socket连接失败次数过多，停止自动重连');
+        socket.disconnect();
+    }
+});
+
+socket.on('connect', () => {
+    // 连接成功时重置重连计数
+    reconnectCount = 0;
+});
+
+socket.on('reconnect_attempt', (attemptNumber) => {
+    console.log(`Socket重连尝试 ${attemptNumber}`);
+    if (attemptNumber > 5) {
+        console.warn('Socket重连次数过多，可能存在问题');
+    }
+});
+
+socket.on('reconnect_failed', () => {
+    console.error('Socket重连失败，已达到最大重连次数');
+    reconnectCount = 0; // 重置计数，允许用户手动刷新页面重连
+});
 
 async function loginFailback() {
     const defaultGroup = await guest(

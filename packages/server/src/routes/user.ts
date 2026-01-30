@@ -242,6 +242,48 @@ export async function register(
         },
     );
 
+    // 创建欢迎消息并保存到数据库
+    if (defaultGroup) {
+        try {
+            // 查找或创建系统用户
+            let systemUser = await User.findOne({ username: '系统' });
+            if (!systemUser) {
+                // 如果系统用户不存在，使用新用户作为发送者（前端会处理显示）
+                systemUser = newUser;
+            }
+            
+            const welcomeMessage = await Message.create({
+                from: systemUser._id,
+                to: defaultGroup._id.toString(),
+                type: 'system',
+                content: `欢迎 ${newUser.username} 加入！开始你的聊天吧～`,
+            } as MessageDocument);
+
+            // 广播欢迎消息到群组
+            // 注意：from 对象需要包含前端需要的所有字段
+            const messageData = {
+                _id: welcomeMessage._id,
+                createTime: welcomeMessage.createTime,
+                from: {
+                    _id: systemUser._id.toString(),
+                    username: '系统',
+                    avatar: systemUser.avatar || '',
+                    originUsername: '系统',
+                    tag: 'system',
+                },
+                to: defaultGroup._id.toString(),
+                type: 'system',
+                content: welcomeMessage.content,
+            };
+            
+            // 使用 socket.io 广播消息到群组
+            ctx.socket.emit(defaultGroup._id.toString(), 'message', messageData);
+        } catch (error) {
+            // 如果创建欢迎消息失败，不影响注册流程
+            console.error('创建欢迎消息失败:', error);
+        }
+    }
+
     return {
         _id: newUser._id,
         avatar: newUser.avatar,
