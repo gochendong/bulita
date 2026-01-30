@@ -167,15 +167,17 @@ function FunctionBar() {
                     onEnter={handleInputEnter}
                 />
             </form>
-            <IconButton
+            <button
+                type="button"
                 className={Style.createGroupButton}
-                style={{ display: addButtonVisible ? 'block' : 'none' }}
-                width={40}
-                height={40}
-                icon="add"
-                iconSize={38}
+                style={{ display: addButtonVisible ? 'flex' : 'none' }}
                 onClick={() => toggleCreateGroupDialogVisible(true)}
-            />
+                aria-label="创建群组"
+                title="创建群组"
+            >
+                <i className="iconfont icon-add" />
+                <span className={Style.createGroupLabel}>建群</span>
+            </button>
             <Tabs
                 className={Style.searchResult}
                 style={{ display: searchResultVisible ? 'block' : 'none' }}

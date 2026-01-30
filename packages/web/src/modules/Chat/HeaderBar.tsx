@@ -113,10 +113,7 @@ function HeaderBar(props: Props) {
                     </span>
                 )}
                 {process.env.ADMINS.split(',').includes(name) && (
-                    <span className={Style.tag}>
-                        {/*<div className='online' />*/}
-                        {'管理员'}
-                    </span>
+                    <span className={Style.adminTag}>管理员</span>
                 )}
                 {signature ? (
                     <span className={Style.signature} title={signature}>{signature}</span>

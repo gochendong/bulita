@@ -31,6 +31,7 @@ function Input(props: InputProps) {
     } = props;
 
     const $input = useRef(null);
+    const [focused, setFocused] = useState(false);
 
     function handleInput(e: any) {
         onChange(e.target.value);
@@ -48,6 +49,16 @@ function Input(props: InputProps) {
         $input.current.focus();
     }
 
+    function handleFocus(e: any) {
+        setFocused(true);
+        onFocus();
+    }
+
+    function handleBlur(e: any) {
+        setFocused(false);
+        onBlur();
+    }
+
     return (
         <div
             className={`${Style.inputContainer} ${className}`}
@@ -59,13 +70,13 @@ function Input(props: InputProps) {
                 value={value}
                 onChange={handleInput}
                 onKeyDown={handleKeyDown}
-                onFocus={onFocus}
-                onBlur={onBlur}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
                 ref={$input}
                 placeholder={placeholder}
                 autoComplete={autoComplete}
             />
-            {value && showClearBtn && (
+            {value && showClearBtn && focused && (
                 <IconButton
                     className={Style.inputIconButton}
                     width={32}

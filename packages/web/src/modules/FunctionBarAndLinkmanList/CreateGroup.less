@@ -6,24 +6,28 @@
 .container {
     display: flex;
     flex-direction: column;
+    padding: 8px 0 4px;
 }
 
 .text {
-    font-size: 14px;
-    font-weight:normal;
-    line-height: 31px;
-    color: #333;
+    font-size: @font-size-base;
+    font-weight: @font-weight-normal;
+    line-height: 1.5;
+    margin-bottom: 10px;
+    color: @warm-text;
 }
 
 .input {
     width: 100%;
-    height: 42px;
+    height: 44px;
+    margin-bottom: 4px;
     :global {
         input {
             border-radius: @input-radius-sm;
             border: 1px solid @input-border;
             background-color: @input-bg;
             color: @input-text;
+            font-size: @font-size-base;
             &::placeholder {
                 color: @input-placeholder;
             }
@@ -31,22 +35,35 @@
                 border-color: @input-border-focus;
                 box-shadow: @input-shadow-focus;
             }
+            &:hover {
+                background-color: @input-bg-hover;
+            }
         }
     }
 }
 
 .button {
-    width: 66px;
-    height: 36px;
-    border-radius: 6px;
-    margin-top: 12px;
-    background-color: var(--primary-color-10);
-    color: var(--primary-text-color-10);
-    align-self: flex-end;
-    font-size: 14px;
+    width: 100%;
+    height: 44px;
+    border-radius: @input-radius-sm;
+    margin-top: 20px;
+    background: linear-gradient(135deg, @warm-accent 0%, darken(@warm-accent, 8%) 100%);
+    color: #fff;
+    font-size: @font-size-base;
+    font-weight: @font-weight-semibold;
     border: none;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, transform 0.1s ease, opacity 0.2s ease;
+    box-shadow: 0 2px 8px rgba(212, 160, 144, 0.35);
 
-    &:hover {
-        background-color: var(--primary-color-8);
+    &:hover:not(:disabled) {
+        box-shadow: 0 4px 12px rgba(212, 160, 144, 0.45);
+    }
+    &:active:not(:disabled) {
+        transform: scale(0.98);
+    }
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 }

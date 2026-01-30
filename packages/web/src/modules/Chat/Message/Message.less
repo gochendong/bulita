@@ -157,14 +157,37 @@
     right: 5px;
 }
 
-.button {
+.button,
+.copyButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    padding: 0;
+    border: none;
+    border-radius: 3px;
     background-color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
 
     &:hover {
         background-color: #f0f0f0;
         color: rgba(165, 181, 192, 1);
     }
+}
 
+.copyButton {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.buttonList > div:first-child:last-child .copyButton {
+    border-radius: 3px;
+}
+
+.button {
     @borderRadius: 3px;
     &:first-child {
         border-top-left-radius: @borderRadius;

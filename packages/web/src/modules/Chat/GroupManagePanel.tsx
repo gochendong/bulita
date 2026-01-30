@@ -59,7 +59,10 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                     if (b.isCreator) return 1;
                     if (a.isOnline && !b.isOnline) return -1;
                     if (!a.isOnline && b.isOnline) return 1;
-                    return 0;
+                    // 离线成员按最后离线时间排序，最后离线的排在上面
+                    const timeA = a.user.lastLoginTime ? new Date(a.user.lastLoginTime).getTime() : 0;
+                    const timeB = b.user.lastLoginTime ? new Date(b.user.lastLoginTime).getTime() : 0;
+                    return timeB - timeA;
                 });
                 setAllMembers(sorted);
             });

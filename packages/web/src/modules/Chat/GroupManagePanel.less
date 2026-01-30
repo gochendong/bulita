@@ -56,9 +56,12 @@
 
 .content {
     flex: 1;
+    min-height: 0;
     padding: 12px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
 }
 
 .block {
@@ -121,7 +124,9 @@
 }
 
 .memberList {
-    max-height: 280px;
+    flex: 1;
+    min-height: 120px;
+    max-height: none;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
 }
@@ -181,7 +186,7 @@
 
 .onlineTag {
     font-size: 11px;
-    color: #7cb342;
+    color: @warm-accent;
 }
 
 .memberTime {

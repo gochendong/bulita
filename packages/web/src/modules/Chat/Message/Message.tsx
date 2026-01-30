@@ -309,16 +309,14 @@ class Message extends Component<MessageProps, MessageState> {
                                     mouseEnterDelay={0.3}
                                     overlay={<span>复制</span>}
                                 >
-                                    <div>
-                                        <IconButton
-                                            className={Style.button}
-                                            icon="copy"
-                                            iconSize={12}
-                                            width={15}
-                                            height={15}
-                                            onClick={this.handleCopyMessage}
-                                        />
-                                    </div>
+                                    <button
+                                        type="button"
+                                        className={Style.copyButton}
+                                        onClick={this.handleCopyMessage}
+                                        aria-label="复制"
+                                    >
+                                        📋
+                                    </button>
                                 </Tooltip>
                                 {(isAdmin || (!client.disableDeleteMessage && isSelf)) && (
                                     <Tooltip

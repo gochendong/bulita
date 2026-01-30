@@ -1,3 +1,5 @@
+@import '../styles/variable.less';
+
 :global {
     .rc-notification {
         top: 5px !important;
@@ -14,18 +16,18 @@
     :global {
         .iconfont {
             font-size: 22px;
-    
+
             &.icon-success {
-                color: green;
+                color: @warm-accent;
             }
             &.icon-error {
-                color: #d82e2e;
+                color: #c45c4a;
             }
             &.icon-warning {
-                color: orange;
+                color: #d4a050;
             }
             &.icon-info {
-                color: #2773ef;
+                color: @warm-accent;
             }
         }
     }

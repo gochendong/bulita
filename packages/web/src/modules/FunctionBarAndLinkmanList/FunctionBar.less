@@ -68,21 +68,44 @@
 }
 
 .createGroupButton {
-    margin-left: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-left: 8px;
+    padding: 0 12px;
+    height: 40px;
+    border-radius: 20px;
+    background: @warm-accent-light;
+    border: 1px solid rgba(212, 160, 144, 0.35);
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
 
     &:hover {
+        background: rgba(212, 160, 144, 0.25);
+        border-color: @warm-accent;
         :global {
             .iconfont {
-                color: rgba(0, 0, 0, 0.5);
+                color: @warm-accent;
             }
+        }
+        .createGroupLabel {
+            color: @warm-accent;
         }
     }
 
     :global {
         .iconfont {
-            color: rgba(0, 0, 0, 0.1);
+            color: @warm-accent;
+            font-size: 18px;
         }
     }
+}
+
+.createGroupLabel {
+    font-size: 13px;
+    color: @warm-text;
+    font-weight: @font-weight-medium;
 }
 
 .searchResult {

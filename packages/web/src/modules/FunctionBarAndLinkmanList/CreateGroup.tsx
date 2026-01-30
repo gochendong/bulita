@@ -29,20 +29,22 @@ function CreateGroup(props: CreateGroupProps) {
     }
 
     return (
-        <Dialog title="创建私有群组" visible={visible} onClose={onClose}>
+        <Dialog title="新建群组" visible={visible} onClose={onClose}>
             <div className={Style.container}>
-                <h3 className={Style.text}>请输入群组名</h3>
+                <p className={Style.text}>输入群组名称，创建后即可邀请好友加入</p>
                 <Input
                     className={Style.input}
                     value={groupName}
                     onChange={setGroupName}
+                    placeholder="群组名称"
                 />
                 <button
                     className={Style.button}
                     onClick={handleCreateGroup}
                     type="button"
+                    disabled={!groupName.trim()}
                 >
-                    创建
+                    创建群组
                 </button>
             </div>
         </Dialog>
