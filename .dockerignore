@@ -1,6 +1,31 @@
-**/node_module
+# 依赖（在镜像内重新安装）
+**/node_modules
+
+# 构建产物（在镜像内重新构建）
 packages/docs/
 packages/web/.linaria-cache/
 packages/web/dist/
 
+# Git 与 IDE
+.git
+.gitignore
+.cursor
+.vscode
+*.swp
+*.swo
+
+# 测试与文档
+**/*.spec.ts
+**/*.spec.tsx
+**/test/
+**/__tests__
+*.md
+!README.md
+
+# 其他
 yarn-error.log
+.env.local
+.env.*.local
+docker-compose*.yaml
+Dockerfile*
+.dockerignore
