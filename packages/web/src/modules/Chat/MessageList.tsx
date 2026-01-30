@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
 import { css } from 'linaria';
@@ -9,6 +9,8 @@ import {
     getLinkmanHistoryMessages,
     getDefaultGroupHistoryMessages,
     updateHistory,
+    getGroupAllMembers,
+    GroupAllMemberItem,
 } from '../../service';
 import MessageComponent from './Message/Message';
 
@@ -63,6 +65,23 @@ function MessageList(props: MessageListProps) {
     );
 
     const $list = useRef<HTMLDivElement>(null);
+    // 群成员信息缓存（用于获取createTime显示UserBadge）
+    const [groupMembersMap, setGroupMembersMap] = useState<Map<string, string | null>>(new Map());
+
+    // 如果是群聊，获取所有成员信息并缓存createTime
+    useEffect(() => {
+        if (isGroup && isLogin && focus) {
+            getGroupAllMembers(focus).then((members) => {
+                const map = new Map<string, string | null>();
+                members.forEach((member) => {
+                    map.set(member.user._id, member.user.createTime);
+                });
+                setGroupMembersMap(map);
+            });
+        } else {
+            setGroupMembersMap(new Map());
+        }
+    }, [focus, isGroup, isLogin]);
 
     function clearUnread() {
         action.setLinkmanProperty(focus, 'unread', 0);
@@ -142,12 +161,16 @@ function MessageList(props: MessageListProps) {
         // }
 
         // 获取发送者的createTime（用于显示UserBadge）
-        // 如果是好友聊天，发送者就是对方，使用linkman.createTime
-        // 如果是群聊，需要从群成员信息中获取，目前先不显示（需要后端支持）
         let senderCreateTime: string | null = null;
-        if (linkman.type === 'friend' && !isSelf) {
-            // 好友聊天且不是自己发送的消息，使用联系人的createTime
-            senderCreateTime = linkman.createTime || null;
+        if (!isSelf) {
+            // 不是自己发送的消息，显示UserBadge
+            if (linkman.type === 'friend') {
+                // 好友聊天，使用联系人的createTime
+                senderCreateTime = linkman.createTime || null;
+            } else if (linkman.type === 'group') {
+                // 群聊，从群成员信息中查找
+                senderCreateTime = groupMembersMap.get(message.from._id) || null;
+            }
         }
 
         return (

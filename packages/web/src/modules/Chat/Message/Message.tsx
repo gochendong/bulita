@@ -318,16 +318,38 @@ class Message extends Component<MessageProps, MessageState> {
                                     mouseEnterDelay={0.3}
                                     overlay={<span>复制</span>}
                                 >
-                                    <div>
-                                        <IconButton
-                                            className={Style.copyButton}
-                                            icon="share"
-                                            iconSize={11}
-                                            width={15}
-                                            height={15}
-                                            onClick={this.handleCopyMessage}
-                                        />
-                                    </div>
+                                    <button
+                                        type="button"
+                                        className={Style.copyButton}
+                                        onClick={this.handleCopyMessage}
+                                        aria-label="复制"
+                                        title="复制"
+                                    >
+                                        <svg
+                                            width="11"
+                                            height="11"
+                                            viewBox="0 0 12 12"
+                                            fill="none"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <path
+                                                d="M4 2C4 1.44772 4.44772 1 5 1H9C9.55228 1 10 1.44772 10 2V6C10 6.55228 9.55228 7 9 7H8V8C8 8.55228 7.55228 9 7 9H3C2.44772 9 2 8.55228 2 8V4C2 3.44772 2.44772 3 3 3H4V2Z"
+                                                stroke="currentColor"
+                                                strokeWidth="1.2"
+                                                fill="none"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                            <path
+                                                d="M4 3H7C7.55228 3 8 3.44772 8 4V7"
+                                                stroke="currentColor"
+                                                strokeWidth="1.2"
+                                                fill="none"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        </svg>
+                                    </button>
                                 </Tooltip>
                                 {(isAdmin || (!client.disableDeleteMessage && isSelf)) && (
                                     <Tooltip
