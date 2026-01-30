@@ -120,14 +120,14 @@ function ChatInput(props: InputAreaProps) {
 
     const { minHeight, maxHeight } = props;
 
-    function focusInput(e: KeyboardEvent) {
-        if ($input.current.value === '' && e.key === 'Enter') {
-            e.preventDefault();
-            // @ts-ignore
-            $input.current.focus(e);
-        }
-    }
     useEffect(() => {
+        function focusInput(e: KeyboardEvent) {
+            if ($input.current && $input.current.value === '' && e.key === 'Enter') {
+                e.preventDefault();
+                // @ts-ignore
+                $input.current.focus(e);
+            }
+        }
         window.addEventListener('keydown', focusInput);
         return () => window.removeEventListener('keydown', focusInput);
     }, []);
@@ -137,12 +137,13 @@ function ChatInput(props: InputAreaProps) {
         minHeight: number = 50,
         maxHeight: number = 500,
     ) => {
-        current!.style.height = '0px';
-        current!.style.height =
-            current!.scrollHeight < maxHeight
+        if (!current) return;
+        current.style.height = '0px';
+        current.style.height =
+            current.scrollHeight < maxHeight
                 ? `${
-                      current!.scrollHeight > minHeight
-                          ? current!.scrollHeight
+                      current.scrollHeight > minHeight
+                          ? current.scrollHeight
                           : minHeight
                 }px`
                 : `${maxHeight}px`;
@@ -175,6 +176,7 @@ function ChatInput(props: InputAreaProps) {
      * @param value 要插入的文本
      */
     function insertAtCursor(value: string) {
+        if (!$input.current) return;
         const input = $input.current as unknown as HTMLInputElement;
         if (input.selectionStart || input.selectionStart === 0) {
             const startPos = input.selectionStart;
@@ -705,27 +707,27 @@ function ChatInput(props: InputAreaProps) {
     }
 
     async function getExpressionsFromContent() {
-        if ($input.current) {
-            const content = $input.current.value.trim();
-            if (searchExpressionTimer) {
-                clearTimeout(searchExpressionTimer);
-            }
-            // @ts-ignore
-            searchExpressionTimer = setTimeout(async () => {
-                if (content.length >= 1 && content.length <= 4) {
-                    const [err, res] = await fetch(
-                        'searchExpression',
-                        { keywords: content, limit: 10 },
-                        { toast: false },
-                    );
-                    if (!err && $input.current?.value.trim() === content) {
-                        setExpressions(res);
-                        return;
-                    }
-                }
-                setExpressions([]);
-            }, 500);
+        if (!$input.current) return;
+        const content = $input.current.value.trim();
+        if (searchExpressionTimer) {
+            clearTimeout(searchExpressionTimer);
         }
+        // @ts-ignore
+        searchExpressionTimer = setTimeout(async () => {
+            if (!$input.current) return;
+            if (content.length >= 1 && content.length <= 4) {
+                const [err, res] = await fetch(
+                    'searchExpression',
+                    { keywords: content, limit: 10 },
+                    { toast: false },
+                );
+                if (!err && $input.current?.value.trim() === content) {
+                    setExpressions(res);
+                    return;
+                }
+            }
+            setExpressions([]);
+        }, 500);
     }
 
     async function handleInputKeyDown(e: any) {
@@ -742,7 +744,7 @@ function ChatInput(props: InputAreaProps) {
         } else if (e.key === '@') {
             // 如果按下@建, 则进入@计算模式
             // @ts-ignore
-            if (!/@/.test($input.current.value)) {
+            if ($input.current && !/@/.test($input.current.value)) {
                 setAt({
                     enable: true,
                     content: '',
@@ -756,7 +758,7 @@ function ChatInput(props: InputAreaProps) {
             setTimeout(() => {
                 // 如果@已经被删掉了, 退出@计算模式
                 // @ts-ignore
-                if (!/@/.test($input.current.value)) {
+                if (!$input.current || !/@/.test($input.current.value)) {
                     setAt({ enable: false, content: '' });
                     return;
                 }
@@ -810,6 +812,7 @@ function ChatInput(props: InputAreaProps) {
     }
 
     function replaceAt(targetUsername: string) {
+        if (!$input.current) return;
         // @ts-ignore
         $input.current.value = $input.current.value.replace(
             `@${at.content}`,
@@ -848,6 +851,8 @@ function ChatInput(props: InputAreaProps) {
         setExpressions([]);
         if ($input.current) {
             $input.current.value = '';
+            setInputHasContent(false);
+            setTextAreaHeight($input.current, minHeight, maxHeight);
         }
     }
 

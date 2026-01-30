@@ -46,7 +46,9 @@ function Input(props: InputProps) {
     function handleClickClear() {
         onChange('');
         // @ts-ignore
-        $input.current.focus();
+        if ($input.current) {
+            $input.current.focus();
+        }
     }
 
     function handleFocus(e: any) {
