@@ -235,7 +235,7 @@ class Message extends Component<MessageProps, MessageState> {
     }
 
     render() {
-        const { isSelf, avatar, tag, tagColorMode, username, type, loading, sendFailed, onRetry, linkmanId, id } =
+        const { isSelf, avatar, tag, tagColorMode, username, type, loading, sendFailed, onRetry, linkmanId, id, isAdmin } =
             this.props;
         const { showButtonList } = this.state;
 
