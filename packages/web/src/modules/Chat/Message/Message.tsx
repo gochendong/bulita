@@ -23,6 +23,7 @@ import { deleteMessage } from '../../../service';
 import IconButton from '../../../components/IconButton';
 import { State } from '../../../state/reducer';
 import Tooltip from '../../../components/Tooltip';
+import MessageToast from '../../../components/Message';
 import themes from '../../../themes';
 import FileMessage from './FileMessage';
 
@@ -42,6 +43,8 @@ interface MessageProps {
     content: string;
     loading: boolean;
     percent: number;
+    sendFailed?: boolean;
+    onRetry?: (linkmanId: string, messageId: string) => void;
     shouldScroll: boolean;
     tagColorMode: string;
     isAdmin?: boolean;
@@ -76,19 +79,57 @@ class Message extends Component<MessageProps, MessageState> {
     }
 
     handleMouseEnter = () => {
-        const { isAdmin, isSelf, type } = this.props;
+        const { type } = this.props;
         if (type === 'system') {
             return;
         }
-        if (isAdmin || (!client.disableDeleteMessage && isSelf)) {
-            this.setState({ showButtonList: true });
-        }
+        this.setState({ showButtonList: true });
     };
 
     handleMouseLeave = () => {
-        const { isAdmin, isSelf } = this.props;
-        if (isAdmin || (!client.disableDeleteMessage && isSelf)) {
-            this.setState({ showButtonList: false });
+        this.setState({ showButtonList: false });
+    };
+
+    /**
+     * 复制消息内容到剪贴板
+     */
+    handleCopyMessage = async () => {
+        const { type, content } = this.props;
+        let text = '';
+        try {
+            switch (type) {
+                case 'text':
+                    text = content;
+                    break;
+                case 'image':
+                    text = content.includes('?') ? content.split('?')[0] : content;
+                    if (text.startsWith('blob:') || text.startsWith('data:')) {
+                        text = '[图片]';
+                    }
+                    break;
+                case 'file': {
+                    const parsed = JSON.parse(content || '{}');
+                    text = parsed.fileUrl ? `${parsed.filename}\n${parsed.fileUrl}` : parsed.filename || '[文件]';
+                    break;
+                }
+                case 'code':
+                    text = content.replace(/^@language=[^@]+@/, '');
+                    break;
+                case 'url':
+                    text = content;
+                    break;
+                case 'system':
+                    text = content;
+                    break;
+                default:
+                    text = content || '';
+            }
+            if (text && navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(text);
+                MessageToast.success('已复制到剪贴板');
+            }
+        } catch (err) {
+            MessageToast.error('复制失败');
         }
     };
 
@@ -194,7 +235,7 @@ class Message extends Component<MessageProps, MessageState> {
     }
 
     render() {
-        const { isSelf, avatar, tag, tagColorMode, username, type } =
+        const { isSelf, avatar, tag, tagColorMode, username, type, loading, sendFailed, onRetry, linkmanId, id } =
             this.props;
         const { showButtonList } = this.state;
 
@@ -234,33 +275,69 @@ class Message extends Component<MessageProps, MessageState> {
                         onMouseEnter={this.handleMouseEnter}
                         onMouseLeave={this.handleMouseLeave}
                     >
-                        <div
-                            className={
-                                type === 'image'
-                                    ? Style.imageContent
-                                    : Style.content
-                            }
-                        >
+<div
+                        className={
+                            type === 'image'
+                                ? Style.imageContent
+                                : Style.content
+                        }
+                    >
                             {this.renderContent()}
                         </div>
+                        {isSelf && loading && (
+                            <span className={Style.sendStatus}>
+                                <span className={Style.sendStatusDot} />
+                                发送中
+                            </span>
+                        )}
+                        {isSelf && sendFailed && onRetry && (
+                            <span className={Style.sendFailed}>
+                                <span className={Style.sendFailedText}>发送失败</span>
+                                <button
+                                    type="button"
+                                    className={Style.retryButton}
+                                    onClick={() => onRetry(linkmanId, id)}
+                                >
+                                    重试
+                                </button>
+                            </span>
+                        )}
                         {showButtonList && (
                             <div className={Style.buttonList}>
                                 <Tooltip
                                     placement={isSelf ? 'left' : 'right'}
                                     mouseEnterDelay={0.3}
-                                    overlay={<span>撤回消息</span>}
+                                    overlay={<span>复制</span>}
                                 >
                                     <div>
                                         <IconButton
                                             className={Style.button}
-                                            icon="recall"
+                                            icon="copy"
                                             iconSize={12}
                                             width={15}
                                             height={15}
-                                            onClick={this.handleDeleteMessage}
+                                            onClick={this.handleCopyMessage}
                                         />
                                     </div>
                                 </Tooltip>
+                                {(isAdmin || (!client.disableDeleteMessage && isSelf)) && (
+                                    <Tooltip
+                                        placement={isSelf ? 'left' : 'right'}
+                                        mouseEnterDelay={0.3}
+                                        overlay={<span>撤回消息</span>}
+                                    >
+                                        <div>
+                                            <IconButton
+                                                className={Style.button}
+                                                icon="recall"
+                                                iconSize={12}
+                                                width={15}
+                                                height={15}
+                                                onClick={this.handleDeleteMessage}
+                                            />
+                                        </div>
+                                    </Tooltip>
+                                )}
                             </div>
                         )}
                     </div>

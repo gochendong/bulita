@@ -18,6 +18,7 @@
     background-color: @input-bg;
     box-sizing: border-box;
     user-select: auto;
+    caret-color: @input-text;
     transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 
     &::placeholder {
@@ -43,6 +44,8 @@
     bottom: 0;
     margin: auto;
     right: 6px;
+    opacity: 1;
+    visibility: visible;
 
     &:hover {
         color: var(--primary-color-10);

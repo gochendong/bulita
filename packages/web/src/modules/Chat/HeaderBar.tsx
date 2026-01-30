@@ -9,6 +9,7 @@ import useIsLogin from '../../hooks/useIsLogin';
 import useAction from '../../hooks/useAction';
 import IconButton from '../../components/IconButton';
 import Message from '../../components/Message';
+import UserBadge from '../../components/UserBadge';
 
 import Style from './HeaderBar.less';
 import useAero from '../../hooks/useAero';
@@ -33,7 +34,11 @@ type Props = {
     tag: string;
     signature?: string;
     level?: number;
+    /** 用户/好友注册时间，用于显示铭牌 */
+    createTime?: string | null;
     onlineMembersCount?: number;
+    /** 群组总人数（仅群组） */
+    totalMemberCount?: number;
     isOnline?: boolean;
     /** 功能按钮点击事件 */
     onClickFunction: () => void;
@@ -47,7 +52,9 @@ function HeaderBar(props: Props) {
         signature,
         tag,
         level,
+        createTime,
         onlineMembersCount,
+        totalMemberCount,
         isOnline,
         onClickFunction,
     } = props;
@@ -93,6 +100,12 @@ function HeaderBar(props: Props) {
             )}
             <h2 className={Style.name}>
                 {name}
+                {type === 'group' && totalMemberCount != null && (
+                    <span className={styles.count}>{` (${totalMemberCount}人)`}</span>
+                )}
+                {type === 'friend' && createTime && (
+                    <UserBadge createTime={createTime} />
+                )}
                 {tag === 'bot' && (
                     <span className={Style.tag}>
                         {/*<div className='online' />*/}
@@ -105,7 +118,9 @@ function HeaderBar(props: Props) {
                         {'管理员'}
                     </span>
                 )}
-                <span className={styles.count}>{signature}</span>
+                {signature ? (
+                    <span className={Style.signature} title={signature}>{signature}</span>
+                ) : null}
                 {/*{name && (*/}
                 {/*   <span>*/}
                 {/*       {name}{' '}*/}

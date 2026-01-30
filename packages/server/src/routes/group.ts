@@ -78,6 +78,7 @@ export async function createGroup(ctx: Context<{ name: string }>) {
         announcement: newGroup.announcement || '',
         createTime: newGroup.createTime,
         creator: newGroup.creator,
+        membersCount: newGroup.members.length,
     };
 }
 
@@ -119,6 +120,7 @@ export async function joinGroup(ctx: Context<{ groupId: string }>) {
         announcement: group.announcement || '',
         createTime: group.createTime,
         creator: group.creator,
+        membersCount: group.members.length,
         messages,
     };
 }
@@ -341,6 +343,54 @@ export async function getGroupBasicInfo(ctx: Context<{ groupId: string }>) {
         announcement: group.announcement || '',
         members: group.members.length,
     };
+}
+
+/**
+ * 获取群内所有成员（含在线状态、群主、最后登录时间）
+ */
+export async function getGroupAllMembers(ctx: Context<{ groupId: string }>) {
+    const { groupId } = ctx.data;
+    assert(isValid(groupId), '无效的群组ID');
+
+    const group = await Group.findOne({ _id: groupId });
+    if (!group) {
+        throw new AssertionError({ message: '群组不存在' });
+    }
+
+    const users = await User.find(
+        { _id: { $in: group.members } },
+        { username: 1, avatar: 1, createTime: 1, lastLoginTime: 1 },
+    );
+    const userMap = new Map(
+        users.map((u) => [u._id.toString(), u.toObject()]),
+    );
+
+    const sockets = await Socket.find(
+        { user: { $in: group.members.map((m) => m.toString()) } },
+        { user: 1 },
+    );
+    const onlineIds = new Set(sockets.map((s) => s.user.toString()));
+    const creatorId = group.creator?.toString?.() || '';
+
+    const members = group.members.map((memberId) => {
+        const id = memberId.toString();
+        const user = userMap.get(id);
+        return {
+            user: user
+                ? {
+                      _id: id,
+                      username: user.username,
+                      avatar: user.avatar,
+                      createTime: user.createTime,
+                      lastLoginTime: user.lastLoginTime,
+                  }
+                : { _id: id, username: '', avatar: '', createTime: null, lastLoginTime: null },
+            isCreator: id === creatorId,
+            isOnline: onlineIds.has(id),
+        };
+    });
+
+    return { members };
 }
 
 /**

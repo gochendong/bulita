@@ -33,6 +33,8 @@ export interface Message {
     percent: number;
     createTime: string;
     deleted?: boolean;
+    /** 发送失败，可重试 */
+    sendFailed?: boolean;
 }
 
 export interface MessagesMap {
@@ -58,6 +60,7 @@ export interface Group {
     announcement?: string;
     createTime: string;
     creator: string;
+    membersCount?: number;
     onlineMembers: GroupMember[];
 }
 
@@ -242,7 +245,7 @@ function transformFriend(friend: Linkman): Linkman {
         tag: to.tag,
         level: to.level,
         // @ts-ignore
-        createTime: friend.createTime,
+        createTime: to.createTime || friend.createTime,
     };
     initLinkmanFields(transformedFriend as unknown as Linkman, 'friend');
     return transformedFriend as Linkman;
@@ -276,6 +279,7 @@ export const initialState: State = {
         sidebarVisible: !isMobile,
         functionBarAndLinkmanListVisible: !isMobile,
         enableSearchExpression: localStorage.enableSearchExpression,
+        pendingRetryMessage: null as { linkmanId: string; messageId: string } | null,
     },
 };
 

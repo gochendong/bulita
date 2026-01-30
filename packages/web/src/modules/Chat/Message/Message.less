@@ -1,3 +1,5 @@
+@import '../../../styles/variable.less';
+
 .message {
     display: flex;
     margin-right: 54px;
@@ -29,7 +31,7 @@
     border-radius: 3px;
     padding: 0 5px;
     display: inline-block;
-    font-size: 12px;
+    font-size: @font-size-xs;
     background-color: rgb(255, 255, 255);
     //color: var(--primary-text-color-5);  3.13 ui
     color: var(--primary-text-color-6);
@@ -40,16 +42,16 @@
 }
 
 .nickname {
-    color: #333;
-    font-size: 13px;
+    color: @warm-text;
+    font-size: @font-size-sm;
+    font-weight: @font-weight-medium;
     user-select: text;
     margin-right: 4px;
-    text-shadow: 0 0 0.3px black;
 }
 
 .time {
-    color: #666;
-    font-size: 12px;
+    color: @warm-text-muted;
+    font-size: @font-size-xs;
 }
 
 .contentButtonBlock {
@@ -61,30 +63,29 @@
 
 .content {
     display: inline-block;
-    color: #555;
-    font-size: 14px;
-    background-color: rgba(245, 246, 248, 1);
+    color: @warm-text;
+    font-size: @font-size-base;
+    font-weight: @font-weight-normal;
+    line-height: @line-height-base;
+    background-color: @warm-card;
     padding: 6px 8px;
-    border-radius: 8px;
+    border-radius: @warm-radius-sm;
     border-top-left-radius: 0px;
     min-height: 28px;
     margin-top: 3px;
     max-width: -webkit-fill-available;
-    line-height: 25px;
     overflow: auto;
 }
 
 .imageContent {
     display: inline-block;
-    color: #555;
-    font-size: 14px;
-    //background-color: rgba(255, 255, 255, 1);
-    //border-radius: 8px;
+    color: @warm-text;
+    font-size: @font-size-base;
+    line-height: @line-height-base;
     border-top-left-radius: 0px;
     min-height: 28px;
     margin-top: 3px;
     max-width: -webkit-fill-available;
-    line-height: 25px;
     overflow: auto;
 }
 
@@ -97,6 +98,54 @@
     position: absolute;
     top: 23px;
     left: 49px;
+}
+
+.sendStatus {
+    font-size: @font-size-xs;
+    color: @warm-text-muted;
+    margin-left: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sendStatusDot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #999;
+    animation: sendPulse 1s ease-in-out infinite;
+}
+
+@keyframes sendPulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+
+.sendFailed {
+    font-size: 11px;
+    margin-left: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.sendFailedText {
+    color: #e57373;
+}
+
+.retryButton {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid #e57373;
+    background: transparent;
+    color: #e57373;
+    cursor: pointer;
+
+    &:hover {
+        background: rgba(229, 115, 115, 0.1);
+    }
 }
 
 .buttonList {

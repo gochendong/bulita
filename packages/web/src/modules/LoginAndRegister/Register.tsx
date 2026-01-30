@@ -49,6 +49,26 @@ function Register() {
                 type: ActionTypes.SetLinkmansLastMessages,
                 payload: linkmanMessages,
             });
+
+            // 在第一个联系人的聊天里插入系统欢迎消息
+            if (linkmanIds.length > 0) {
+                const welcomeMessage = {
+                    _id: `sys_welcome_${Date.now()}`,
+                    type: 'system',
+                    content: `欢迎 ${user.username} 加入！开始你的聊天吧～`,
+                    from: {
+                        _id: 'system',
+                        username: '系统',
+                        avatar: '',
+                        originUsername: '系统',
+                        tag: 'system',
+                    },
+                    loading: false,
+                    percent: 100,
+                    createTime: String(Date.now()),
+                };
+                action.addLinkmanMessage(linkmanIds[0], welcomeMessage);
+            }
         }
     }
 

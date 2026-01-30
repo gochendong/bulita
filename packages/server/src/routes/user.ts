@@ -222,6 +222,7 @@ export async function register(
         signature: 1,
         level: 1,
         tag: 1,
+        createTime: 1,
     });
 
     const token = generateToken(
@@ -347,6 +348,7 @@ export async function login(
         signature: 1,
         level: 1,
         tag: 1,
+        createTime: 1,
     });
 
     return {
@@ -444,6 +446,7 @@ export async function loginByToken(
             announcement: 1,
             creator: 1,
             createTime: 1,
+            members: 1,
         },
     );
     groups.forEach((group: GroupDocument) => {
@@ -456,6 +459,7 @@ export async function loginByToken(
         signature: 1,
         level: 1,
         tag: 1,
+        createTime: 1,
     });
 
     ctx.socket.user = user._id.toString();
@@ -492,7 +496,16 @@ export async function loginByToken(
         signature: user.signature,
         pushToken: user.pushToken,
         tag: user.tag,
-        groups,
+        createTime: user.createTime,
+        groups: groups.map((g: GroupDocument) => ({
+            _id: g._id,
+            name: g.name,
+            avatar: g.avatar,
+            announcement: g.announcement,
+            creator: g.creator,
+            createTime: g.createTime,
+            membersCount: g.members.length,
+        })),
         friends,
         bot,
         isAdmin: config.administrators.includes(user.username),
@@ -525,6 +538,7 @@ export async function guest(ctx: Context<Environment>) {
             announcement: 1,
             createTime: 1,
             creator: 1,
+            members: 1,
         },
     );
     if (!group) {
@@ -546,7 +560,7 @@ export async function guest(ctx: Context<Environment>) {
     await handleInviteV2Messages(messages);
     messages.reverse();
 
-    return { messages, ...group.toObject() };
+    return { messages, ...group.toObject(), membersCount: group.members.length };
 }
 
 /**

@@ -37,7 +37,12 @@ const styles = {
     `,
 };
 
-function MessageList() {
+interface MessageListProps {
+    onRetry?: (linkmanId: string, messageId: string) => void;
+}
+
+function MessageList(props: MessageListProps) {
+    const { onRetry } = props;
     const action = useAction();
     const selfId = useSelector((state: State) => state.user?._id || '');
     const focus = useSelector((state: State) => state.focus);
@@ -151,6 +156,8 @@ function MessageList() {
                 tag={tag}
                 loading={message.loading}
                 percent={message.percent}
+                sendFailed={message.sendFailed}
+                onRetry={onRetry}
                 shouldScroll={shouldScroll}
                 tagColorMode={tagColorMode}
             />

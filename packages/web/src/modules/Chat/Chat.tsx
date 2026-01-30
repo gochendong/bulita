@@ -156,7 +156,9 @@ function Chat() {
                 signature={linkman.signature}
                 tag={linkman.tag}
                 level={linkman.level}
+                createTime={linkman.createTime}
                 onlineMembersCount={linkman.onlineMembers?.length}
+                totalMemberCount={linkman.membersCount}
                 isOnline={linkman.isOnline}
                 onClickFunction={handleClickFunction}
             />
@@ -172,7 +174,14 @@ function Chat() {
                     </span>
                 </div>
             ) : null}
-            <MessageList />
+            <MessageList
+                onRetry={(linkmanId, messageId) =>
+                    action.setStatus('pendingRetryMessage', {
+                        linkmanId,
+                        messageId,
+                    })
+                }
+            />
             <ChatInput />
 
             {linkman.type === 'group' && (

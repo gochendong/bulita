@@ -55,8 +55,7 @@ function FileMessage({ file, percent }: Props) {
             <p className={styles.button}>
                 {percent === undefined || percent >= 100
                     ? '下载'
-                    : // : `上传中... ${percent.toFixed(0)}%`}
-                      `上传中...`}
+                    : `上传中 ${Math.min(100, Math.round(percent))}%`}
             </p>
         </a>
     );

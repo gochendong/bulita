@@ -25,11 +25,13 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    background-color: rgba(250, 250, 250, 0.95);
-    border-top-right-radius: 10px;
-    border-bottom-right-radius: 10px;
+    background-color: @warm-card;
+    border-top-right-radius: @warm-radius;
+    border-bottom-right-radius: @warm-radius;
+    border-left: 1px solid @warm-border;
     position: absolute;
     right: 0;
+    box-shadow: -4px 0 12px rgba(0, 0, 0, 0.04);
 
     @media @mobile {
         border-top-right-radius: 0;
@@ -39,12 +41,12 @@
 
 .title {
     height: 70px;
-    border-bottom: 1px solid #e8e8e8;
+    border-bottom: 1px solid @warm-border;
     box-sizing: border-box;
     text-align: center;
     line-height: 70px;
     font-size: 14px;
-    color: #666;
+    color: @warm-text;
     font-weight: bold;
 
     @media @mobile {
@@ -66,7 +68,7 @@
 .blockTitle {
     line-height: 33px;
     font-size: 14px;
-    color: #333;
+    color: @warm-text;
     font-weight: bold;
 }
 
@@ -118,26 +120,74 @@
     }
 }
 
-.onlineMember{
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.memberList {
+    max-height: 280px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.memberSectionTitle {
+    font-size: 12px;
+    color: @input-placeholder;
+    margin: 10px 0 6px 0;
+    line-height: 1.4;
+
+    &:first-child {
+        margin-top: 0;
+    }
+}
+
+.memberRow {
     margin-bottom: 6px;
-    cursor: default;
+    border-radius: @input-radius-sm;
+    padding: 4px 0;
+
+    &:hover {
+        background: rgba(210, 165, 130, 0.08);
+    }
 }
 
 .userinfoBlock {
     display: flex;
     align-items: center;
     cursor: pointer;
+    padding: 2px 0;
+}
+
+.memberInfo {
+    margin-left: 10px;
+    flex: 1;
+    min-width: 0;
 }
 
 .username {
-    margin-left: 10px;
-    color: #333;
+    margin: 0;
+    color: @input-text;
     font-size: 14px;
     word-break: keep-all;
-    max-width: 120px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.creatorTag {
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, #e8b4a0 0%, #d4a090 100%);
+    color: #fff;
+    font-weight: 600;
+}
+
+.onlineTag {
+    font-size: 11px;
+    color: #7cb342;
+}
+
+.memberTime {
+    margin: 2px 0 0 0;
+    font-size: 12px;
+    color: @input-placeholder;
 }
 
 .clientInfoText {

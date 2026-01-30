@@ -42,8 +42,68 @@
 .form {
     flex: 1;
     display: flex;
+    flex-direction: column;
     position: relative;
     margin: 0 10px;
+    min-width: 0;
+}
+
+.pendingAttachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+    max-height: 80px;
+    overflow-y: auto;
+}
+
+.pendingAttachmentItem {
+    position: relative;
+    flex-shrink: 0;
+    border-radius: @input-radius-sm;
+    overflow: hidden;
+    border: 1px solid @input-border;
+    background: @input-bg;
+}
+
+.pendingAttachmentThumb {
+    display: block;
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+}
+
+.pendingAttachmentFile {
+    display: inline-block;
+    padding: 8px 28px 8px 10px;
+    font-size: 13px;
+    color: @input-text;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pendingAttachmentRemove {
+    position: absolute;
+    right: 2px;
+    top: 2px;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    &:hover {
+        background: rgba(0, 0, 0, 0.7);
+    }
 }
 
 .switch {
@@ -66,6 +126,7 @@
     background-color: @input-bg;
     user-select: auto;
     resize: none;
+    caret-color: @input-text;
     transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 
     &::placeholder {
@@ -82,6 +143,24 @@
         border-color: @input-border-focus;
         background-color: #fff;
         box-shadow: @input-shadow-focus;
+    }
+}
+
+.chatInputClearBtn {
+    position: absolute;
+    right: 90px;
+    top: 50%;
+    transform: translateY(-50%);
+    opacity: 1;
+    visibility: visible;
+
+    :global {
+        .iconfont {
+            color: @input-placeholder;
+        }
+    }
+    &:hover :global(.iconfont) {
+        color: var(--primary-color-10);
     }
 }
 

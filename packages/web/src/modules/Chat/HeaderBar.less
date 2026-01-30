@@ -2,7 +2,7 @@
 
 .headerBar {
     height: 70px;
-    border-bottom: 1px solid rgba(208, 208, 208, 0.6);
+    border-bottom: 1px solid @warm-border;
     display: flex;
     align-items: center;
     padding: 0px 18px;
@@ -10,7 +10,7 @@
     position: relative;
 
     &[data-aero=true] {
-        border-bottom: 1px solid rgba(208, 208, 208, 0.3);
+        border-bottom: 1px solid rgba(232, 224, 216, 0.6);
     }
 
     @media @mobile {
@@ -47,11 +47,13 @@
 }
 
 .name {
-    font-size: 16px;
-    color: #333;
+    font-size: @font-size-lg;
+    font-weight: @font-weight-medium;
+    color: @warm-text;
+    letter-spacing: 0.02em;
 
     @media @mobile {
-        font-size: 14px;
+        font-size: @font-size-base;
         height: 100%;
         display: flex;
         flex-direction: column;
@@ -59,6 +61,24 @@
         justify-content: center;
         flex: 1;
         transform: translateY(2px);
+    }
+}
+
+// 个性签名 / 副标题（好友聊天时显示）
+.signature {
+    margin-left: 10px;
+    font-size: @font-size-sm;
+    font-weight: @font-weight-normal;
+    color: @warm-text-muted;
+    opacity: 0.95;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    @media (max-width: 500px) {
+        font-size: @font-size-xs;
+        max-width: 120px;
     }
 }
 

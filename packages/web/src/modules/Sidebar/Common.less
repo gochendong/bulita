@@ -1,13 +1,17 @@
+@import '../../styles/variable.less';
+
 .container {
 
 }
 
 .block {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
 
     a, p, li {
-        line-height: 22px;
-        font-size: 14px;
+        line-height: @line-height-base;
+        font-size: @font-size-base;
+        color: @warm-text;
+        font-weight: @font-weight-normal;
     }
     ul {
         margin: 6px 0;
@@ -16,31 +20,36 @@
 }
 
 .title {
-    line-height: 33px;
-    font-size: 14px;
-    color: #333;
-    font-weight: bold;
+    line-height: 1.5;
+    font-size: @font-size-base;
+    color: @warm-text;
+    font-weight: @font-weight-semibold;
+    margin-bottom: 6px;
+    letter-spacing: 0.02em;
 }
 
 .title2 {
-    line-height: 33px;
-    font-size: 14px;
-    color: #333;
+    line-height: @line-height-base;
+    font-size: @font-size-base;
+    color: @warm-text;
+    font-weight: @font-weight-normal;
 }
 
 .href {
-    color: #18a058;
+    color: @warm-accent;
     text-decoration: none;
     margin-left: 5px;
+    font-weight: @font-weight-medium;
 }
 
 .block2 {
     margin-bottom: 14px;
 
     a, p, li {
-        line-height: 22px;
-        font-size: 14px;
-        opacity: 0.75;
+        line-height: @line-height-base;
+        font-size: @font-size-base;
+        color: @warm-text-muted;
+        font-weight: @font-weight-normal;
     }
     ul {
         margin: 6px 0;

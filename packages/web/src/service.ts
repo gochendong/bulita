@@ -388,6 +388,29 @@ export async function getDefaultGroupOnlineMembers() {
     return members;
 }
 
+/** 群内成员（含在线状态、群主、最后登录时间） */
+export interface GroupAllMemberItem {
+    user: {
+        _id: string;
+        username: string;
+        avatar: string;
+        createTime: string | null;
+        lastLoginTime: string | null;
+    };
+    isCreator: boolean;
+    isOnline: boolean;
+}
+
+/**
+ * 获取群内所有成员
+ */
+export async function getGroupAllMembers(
+    groupId: string,
+): Promise<GroupAllMemberItem[]> {
+    const [, result] = await fetch('getGroupAllMembers', { groupId });
+    return result?.members ?? [];
+}
+
 /**
  * 封禁用户
  * @param username 目标用户名

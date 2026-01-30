@@ -49,7 +49,10 @@ function Input(props: InputProps) {
     }
 
     return (
-        <div className={`${Style.inputContainer} ${className}`}>
+        <div
+            className={`${Style.inputContainer} ${className}`}
+            data-has-value={!!(value && value.toString().trim())}
+        >
             <input
                 className={Style.input}
                 type={type}
