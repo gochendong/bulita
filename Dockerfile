@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.4
 # 使用 BuildKit 启用缓存挂载，构建时: DOCKER_BUILDKIT=1 docker build .
-FROM node:14
+FROM node:20
 
 WORKDIR /usr/app/bulita
 
