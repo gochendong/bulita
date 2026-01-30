@@ -75,8 +75,10 @@ export async function createGroup(ctx: Context<{ name: string }>) {
         _id: newGroup._id,
         name: newGroup.name,
         avatar: newGroup.avatar,
+        announcement: newGroup.announcement || '',
         createTime: newGroup.createTime,
         creator: newGroup.creator,
+        membersCount: newGroup.members.length,
     };
 }
 
@@ -115,8 +117,10 @@ export async function joinGroup(ctx: Context<{ groupId: string }>) {
         _id: group._id,
         name: group.name,
         avatar: group.avatar,
+        announcement: group.announcement || '',
         createTime: group.createTime,
         creator: group.creator,
+        membersCount: group.members.length,
         messages,
     };
 }
@@ -242,6 +246,64 @@ export const getDefaultGroupOnlineMembers =
     getDefaultGroupOnlineMembersWrapper();
 
 /**
+ * 获取默认群组的所有成员（含在线状态、群主、最后登录时间）
+ * 无需登录态
+ */
+function getDefaultGroupAllMembersWrapper() {
+    let cache: any = null;
+    let expireTime = 0;
+    return async function getDefaultGroupAllMembers() {
+        if (cache && expireTime > Date.now()) {
+            return cache;
+        }
+
+        const group = await Group.findOne({ isDefault: true });
+        if (!group) {
+            throw new AssertionError({ message: '群组不存在' });
+        }
+
+        const users = await User.find(
+            { _id: { $in: group.members } },
+            { username: 1, avatar: 1, createTime: 1, lastLoginTime: 1 },
+        );
+        const userMap = new Map(
+            users.map((u) => [u._id.toString(), u.toObject()]),
+        );
+
+        const sockets = await Socket.find(
+            { user: { $in: group.members.map((m) => m.toString()) } },
+            { user: 1 },
+        );
+        const onlineIds = new Set(sockets.map((s) => s.user.toString()));
+        const creatorId = group.creator?.toString?.() || '';
+
+        const members = group.members.map((memberId) => {
+            const id = memberId.toString();
+            const user = userMap.get(id);
+            return {
+                user: user
+                    ? {
+                          _id: id,
+                          username: user.username,
+                          avatar: user.avatar,
+                          createTime: user.createTime,
+                          lastLoginTime: user.lastLoginTime,
+                      }
+                    : { _id: id, username: '', avatar: '', createTime: null, lastLoginTime: null },
+                isCreator: id === creatorId,
+                isOnline: onlineIds.has(id),
+            };
+        });
+
+        cache = { members };
+        expireTime = Date.now() + GroupOnlineMembersCacheExpireTime;
+        return cache;
+    };
+}
+export const getDefaultGroupAllMembers =
+    getDefaultGroupAllMembersWrapper();
+
+/**
  * 修改群头像, 只有群创建者有权限
  * @param ctx Context
  */
@@ -336,6 +398,85 @@ export async function getGroupBasicInfo(ctx: Context<{ groupId: string }>) {
         _id: group._id,
         name: group.name,
         avatar: group.avatar,
+        announcement: group.announcement || '',
         members: group.members.length,
     };
+}
+
+/**
+ * 获取群内所有成员（含在线状态、群主、最后登录时间）
+ */
+export async function getGroupAllMembers(ctx: Context<{ groupId: string }>) {
+    const { groupId } = ctx.data;
+    assert(isValid(groupId), '无效的群组ID');
+
+    const group = await Group.findOne({ _id: groupId });
+    if (!group) {
+        throw new AssertionError({ message: '群组不存在' });
+    }
+
+    const users = await User.find(
+        { _id: { $in: group.members } },
+        { username: 1, avatar: 1, createTime: 1, lastLoginTime: 1 },
+    );
+    const userMap = new Map(
+        users.map((u) => [u._id.toString(), u.toObject()]),
+    );
+
+    const sockets = await Socket.find(
+        { user: { $in: group.members.map((m) => m.toString()) } },
+        { user: 1 },
+    );
+    const onlineIds = new Set(sockets.map((s) => s.user.toString()));
+    const creatorId = group.creator?.toString?.() || '';
+
+    const members = group.members.map((memberId) => {
+        const id = memberId.toString();
+        const user = userMap.get(id);
+        return {
+            user: user
+                ? {
+                      _id: id,
+                      username: user.username,
+                      avatar: user.avatar,
+                      createTime: user.createTime,
+                      lastLoginTime: user.lastLoginTime,
+                  }
+                : { _id: id, username: '', avatar: '', createTime: null, lastLoginTime: null },
+            isCreator: id === creatorId,
+            isOnline: onlineIds.has(id),
+        };
+    });
+
+    return { members };
+}
+
+/**
+ * 修改群公告，仅群主可修改
+ */
+export async function changeGroupAnnouncement(
+    ctx: Context<{ groupId: string; announcement: string }>,
+) {
+    const { groupId, announcement } = ctx.data;
+    assert(isValid(groupId), '无效的群组ID');
+    const group = await Group.findOne({ _id: groupId });
+    if (!group) {
+        throw new AssertionError({ message: '群组不存在' });
+    }
+    assert(
+        group.creator.toString() === ctx.socket.user.toString(),
+        '只有群主才能修改群公告',
+    );
+
+    await Group.updateOne(
+        { _id: groupId },
+        { announcement: announcement || '' },
+    );
+
+    ctx.socket.emit(groupId, 'changeGroupAnnouncement', {
+        groupId,
+        announcement: announcement || '',
+    });
+
+    return {};
 }

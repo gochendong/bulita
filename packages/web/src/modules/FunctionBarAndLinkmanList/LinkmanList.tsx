@@ -47,17 +47,27 @@ function LinkmanList() {
         return new Date(time).getTime();
     }
 
+    /** 好友列表只显示最近 6 个月有联系的联系人；群组全部显示 */
+    const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
+
+    function shouldShowLinkman(linkman: Linkman): boolean {
+        if (linkman.type === 'group') return true;
+        const lastTime = getLinkmanLastTime(linkman);
+        const sixMonthsAgo = Date.now() - SIX_MONTHS_MS;
+        return lastTime >= sixMonthsAgo;
+    }
+
     function sort(linkman1: Linkman, linkman2: Linkman): number {
         return getLinkmanLastTime(linkman1) < getLinkmanLastTime(linkman2)
             ? 1
             : -1;
     }
 
+    const filteredLinkmans = Object.values(linkmans).filter(shouldShowLinkman);
+
     return (
         <div className={Style.linkmanList}>
-            {Object.values(linkmans)
-                .sort(sort)
-                .map((linkman) => renderLinkman(linkman))}
+            {filteredLinkmans.sort(sort).map((linkman) => renderLinkman(linkman))}
         </div>
     );
 }

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
 import { css } from 'linaria';
@@ -9,6 +9,9 @@ import {
     getLinkmanHistoryMessages,
     getDefaultGroupHistoryMessages,
     updateHistory,
+    getGroupAllMembers,
+    getDefaultGroupAllMembers,
+    GroupAllMemberItem,
 } from '../../service';
 import MessageComponent from './Message/Message';
 
@@ -37,7 +40,12 @@ const styles = {
     `,
 };
 
-function MessageList() {
+interface MessageListProps {
+    onRetry?: (linkmanId: string, messageId: string) => void;
+}
+
+function MessageList(props: MessageListProps) {
+    const { onRetry } = props;
     const action = useAction();
     const selfId = useSelector((state: State) => state.user?._id || '');
     const focus = useSelector((state: State) => state.focus);
@@ -50,6 +58,7 @@ function MessageList() {
     const messages = useSelector(
         (state: State) => state.linkmans[focus].messages,
     );
+    const linkman = useSelector((state: State) => state.linkmans[focus]);
     const unread = useSelector((state: State) => state.linkmans[focus].unread);
     const isLogin = useIsLogin();
     const tagColorMode = useSelector(
@@ -57,6 +66,34 @@ function MessageList() {
     );
 
     const $list = useRef<HTMLDivElement>(null);
+    // 群成员信息缓存（用于获取createTime显示UserBadge）
+    const [groupMembersMap, setGroupMembersMap] = useState<Map<string, string | null>>(new Map());
+
+    // 如果是群聊，获取所有成员信息并缓存createTime
+    useEffect(() => {
+        if (isGroup && focus) {
+            if (isLogin) {
+                getGroupAllMembers(focus).then((members) => {
+                    const map = new Map<string, string | null>();
+                    members.forEach((member) => {
+                        map.set(member.user._id, member.user.createTime);
+                    });
+                    setGroupMembersMap(map);
+                });
+            } else {
+                // 游客用户获取默认群组的所有成员
+                getDefaultGroupAllMembers().then((members) => {
+                    const map = new Map<string, string | null>();
+                    members.forEach((member) => {
+                        map.set(member.user._id, member.user.createTime);
+                    });
+                    setGroupMembersMap(map);
+                });
+            }
+        } else {
+            setGroupMembersMap(new Map());
+        }
+    }, [focus, isGroup, isLogin]);
 
     function clearUnread() {
         action.setLinkmanProperty(focus, 'unread', 0);
@@ -135,6 +172,23 @@ function MessageList() {
         //     tag = '群主';
         // }
 
+        // 获取发送者的createTime（用于显示UserBadge）
+        // 所有非自己的消息都应该显示UserBadge，但系统消息除外
+        let senderCreateTime: string | null = null;
+        if (!isSelf && message.from._id !== 'system') {
+            if (linkman.type === 'friend') {
+                // 好友聊天，使用联系人的createTime
+                senderCreateTime = linkman.createTime || null;
+            } else if (linkman.type === 'group') {
+                // 群聊，从群成员信息中查找
+                senderCreateTime = groupMembersMap.get(message.from._id) || null;
+                // 如果找不到，尝试从message.from中获取（某些情况下消息可能包含用户信息）
+                if (!senderCreateTime && (message.from as any).createTime) {
+                    senderCreateTime = (message.from as any).createTime;
+                }
+            }
+        }
+
         return (
             <MessageComponent
                 key={message._id}
@@ -151,8 +205,11 @@ function MessageList() {
                 tag={tag}
                 loading={message.loading}
                 percent={message.percent}
+                sendFailed={message.sendFailed}
+                onRetry={onRetry}
                 shouldScroll={shouldScroll}
                 tagColorMode={tagColorMode}
+                senderCreateTime={senderCreateTime}
             />
         );
     }

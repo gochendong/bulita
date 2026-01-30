@@ -37,6 +37,10 @@ module.exports = merge(common, {
         new WorkboxPlugin.GenerateSW({
             clientsClaim: true,
             skipWaiting: true,
+            // 禁用缓存策略，确保更新后立即生效
+            runtimeCaching: [],
+            // 不缓存HTML，确保能获取最新版本
+            exclude: [/\.html$/],
         }),
         new WebpackBar(),
     ],

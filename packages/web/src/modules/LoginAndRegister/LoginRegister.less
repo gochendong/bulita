@@ -1,94 +1,137 @@
+@import '../../styles/variable.less';
+
+.dialogHeader {
+    padding: 24px 28px 12px;
+    font-size: 22px;
+    font-weight: @font-weight-bold;
+    color: @warm-text;
+    text-align: center;
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, rgba(212, 160, 144, 0.1) 0%, rgba(232, 224, 216, 0.05) 100%);
+    margin: -20px -20px 0 -20px;
+    padding-top: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid @warm-border;
+}
+
 .loginRegister {
-    height: 260px;
+    min-height: 200px;
     display: flex;
     flex-direction: column;
-    padding: 0 30px;
+    padding: 0 28px 24px;
 }
 
 .title {
-    font-size: 14px;
-        font-weight: normal;
-        line-height: 27px;
-        margin-top: 20px;
-        color: #666;
+    font-size: @font-size-base;
+    font-weight: @font-weight-medium;
+    line-height: 1.5;
+    margin-top: 18px;
+    margin-bottom: 6px;
+    color: @warm-text;
 }
 
 .input {
-    height: 40px;
-    & > input {
-        line-height: 40px;
+    height: 44px;
+
+    :global {
+        input {
+            line-height: 44px;
+            padding-top: 0;
+            padding-bottom: 0;
+            border-radius: @input-radius-sm;
+            border: 1px solid @input-border;
+            background-color: @input-bg;
+            color: @input-text;
+            font-size: @font-size-base;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            &::placeholder {
+                color: @input-placeholder;
+            }
+            &:hover {
+                background-color: @input-bg-hover;
+            }
+            &:focus {
+                border-color: @input-border-focus;
+                box-shadow: @input-shadow-focus;
+            }
+        }
     }
 }
 
 .loginButton {
-    background-color: var(--primary-color-10);
-    color: var(--primary-text-color-10);
-    height: 40px;
+    margin-top: 28px;
+    height: 44px;
     border: none;
-    margin-top: 30px;
-    transition: background-color 0.2s;
-    border-radius: 6px;
+    border-radius: @input-radius-sm;
+    background: linear-gradient(135deg, @warm-accent 0%, darken(@warm-accent, 8%) 100%);
+    color: #fff;
+    font-size: @font-size-base;
+    font-weight: @font-weight-semibold;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, transform 0.1s ease;
 
-    &:hover {
-        background-color: var(--primary-color-9);
+    &:hover:not(:disabled) {
+        box-shadow: @input-shadow-focus;
+    }
+    &:active:not(:disabled) {
+        transform: scale(0.98);
+    }
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
     }
 }
 
 .button {
-    margin-top: 80px;
-    height: 70px;
+    margin-top: 48px;
+    height: 52px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 0px 15px;
-    background-color: red;
-    border-radius: 10px;
+    padding: 0 24px;
+    border-radius: @input-radius-sm;
     border: none;
-    color: white;
-    position: relative;
+    color: #fff;
     cursor: pointer;
-    font-weight: 900;
-    transition-duration: .2s;
-    background: linear-gradient(0deg, #000, #272727);
-}
+    font-size: @font-size-base;
+    font-weight: @font-weight-semibold;
+    transition: box-shadow 0.2s ease, transform 0.1s ease;
+    background: linear-gradient(135deg, @warm-accent 0%, darken(@warm-accent, 8%) 100%);
+    box-shadow: 0 2px 8px rgba(212, 160, 144, 0.35);
 
-.button:before, .button:after {
-    content: '';
-    position: absolute;
-    left: -2px;
-    top: -2px;
-    border-radius: 10px;
-    background: linear-gradient(45deg, #fb0094, #0000ff, #00ff00,#ffff00, #ff0000, #fb0094,
-    #0000ff, #00ff00,#ffff00, #ff0000);
-    background-size: 400%;
-    width: calc(100% + 4px);
-    height: calc(100% + 4px);
-    z-index: -1;
-    animation: steam 20s linear infinite;
-}
-
-@keyframes steam {
-    0% {
-        background-position: 0 0;
+    &:hover:not(:disabled) {
+        box-shadow: 0 4px 12px rgba(212, 160, 144, 0.45);
     }
-
-    50% {
-        background-position: 400% 0;
+    &:active:not(:disabled) {
+        transform: scale(0.98);
     }
-
-    100% {
-        background-position: 0 0;
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
     }
 }
-
-.button:after {
-    filter: blur(50px);
-}
-
-
 
 .href {
-    color: #18a058;
+    color: @warm-accent;
     text-decoration: none;
+    font-weight: @font-weight-medium;
+}
+
+// 与 Dialog、Tabs 整体协调的暖色
+:global {
+    .rc-dialog-content {
+        border-radius: @warm-radius;
+        overflow: hidden;
+    }
+    .rc-tabs-tab {
+        color: @warm-text-muted;
+        font-size: @font-size-base;
+    }
+    .rc-tabs-tab-active {
+        color: @warm-text;
+        font-weight: @font-weight-medium;
+    }
+    .rc-tabs-ink-bar {
+        background: @warm-accent;
+    }
 }

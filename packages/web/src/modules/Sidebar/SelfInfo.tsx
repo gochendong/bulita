@@ -124,8 +124,8 @@ function SelfInfo(props: SelfInfoProps) {
         action.logout();
         window.localStorage.removeItem('token');
         Message.success(message);
-        socket.disconnect();
-        socket.connect();
+        // 不需要手动断开和重连，socket.io 会自动处理
+        // socket 会在 connect 事件中自动处理登录状态
     }
 
     const [oldPassword, setOldPassword] = useState('');
@@ -159,6 +159,7 @@ function SelfInfo(props: SelfInfoProps) {
      * 修改用户名
      */
     async function handleChangeUsername() {
+        if (username === currentUsername) return;
         const isSuccess = await changeUsername(username);
         if (isSuccess) {
             dispatch({
@@ -168,7 +169,6 @@ function SelfInfo(props: SelfInfoProps) {
                 },
             });
             Message.success('修改用户名成功');
-            onClose();
         }
     }
 
@@ -176,6 +176,7 @@ function SelfInfo(props: SelfInfoProps) {
      * 修改个性签名
      */
     async function handleChangeSignature() {
+        if (signature === currentSignature) return;
         const isSuccess = await changeSignature(signature);
         if (isSuccess) {
             dispatch({
@@ -185,7 +186,6 @@ function SelfInfo(props: SelfInfoProps) {
                 },
             });
             Message.success('修改个性签名成功');
-            onClose();
         }
     }
 
@@ -193,6 +193,7 @@ function SelfInfo(props: SelfInfoProps) {
      * 修改私聊通知token
      */
     async function handleChangePushToken() {
+        if (pushToken === currentPushToken) return;
         const isSuccess = await changePushToken(pushToken);
         if (isSuccess) {
             dispatch({
@@ -202,7 +203,6 @@ function SelfInfo(props: SelfInfoProps) {
                 },
             });
             Message.success('修改私聊通知token成功');
-            onClose();
         }
     }
 
@@ -284,14 +284,9 @@ function SelfInfo(props: SelfInfoProps) {
                             className={Style.input}
                             value={username}
                             onChange={setUsername}
+                            onBlur={handleChangeUsername}
                             type="text"
                         />
-                        <Button
-                            className={Style.button}
-                            onClick={handleChangeUsername}
-                        >
-                            确认修改
-                        </Button>
                     </div>
                 </div>
                 <div className={Common.block}>
@@ -301,14 +296,9 @@ function SelfInfo(props: SelfInfoProps) {
                             className={Style.input}
                             value={signature}
                             onChange={setSignature}
+                            onBlur={handleChangeSignature}
                             type="text"
                         />
-                        <Button
-                            className={Style.button}
-                            onClick={handleChangeSignature}
-                        >
-                            确认修改
-                        </Button>
                     </div>
                 </div>
                 <div className={Common.block}>
@@ -328,14 +318,9 @@ function SelfInfo(props: SelfInfoProps) {
                             className={Style.input}
                             value={pushToken}
                             onChange={setPushToken}
+                            onBlur={handleChangePushToken}
                             type="text"
                         />
-                        <Button
-                            className={Style.button}
-                            onClick={handleChangePushToken}
-                        >
-                            确认修改
-                        </Button>
                     </div>
                 </div>
                 <div className={Common.block}>
@@ -346,23 +331,18 @@ function SelfInfo(props: SelfInfoProps) {
                             value={oldPassword}
                             onChange={setOldPassword}
                             type="password"
-                            placeholder="新密码"
+                            placeholder="当前密码"
                             showClearBtn={false}
                         />
                         <Input
                             className={Style.input}
                             value={newPassword}
                             onChange={setNewPassword}
+                            onBlur={() => oldPassword && newPassword && handleChangePassword()}
                             type="password"
-                            placeholder="重复新密码"
+                            placeholder="新密码（填写后失焦自动修改）"
                             showClearBtn={false}
                         />
-                        <Button
-                            className={Style.button}
-                            onClick={handleChangePassword}
-                        >
-                            确认修改
-                        </Button>
                     </div>
                 </div>
             </div>

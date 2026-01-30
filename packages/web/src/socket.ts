@@ -28,9 +28,79 @@ import store from './state/store';
 const { dispatch } = store;
 
 const options = {
-    // reconnectionDelay: 1000,
+    transports: ['polling', 'websocket'], // 先尝试 polling，成功后再升级到 websocket
+    upgrade: true, // 允许从 polling 升级到 websocket
+    rememberUpgrade: false, // 不记住升级状态，每次都尝试升级
+    reconnection: true,
+    reconnectionDelay: 1000, // 初始重连延迟1秒
+    reconnectionDelayMax: 5000, // 最大重连延迟5秒
+    reconnectionAttempts: 10, // 最多重连10次
+    timeout: 10000, // 连接超时时间10秒
+    forceNew: false, // 不强制创建新连接，复用现有连接
+    autoConnect: true,
+    // 减少 polling 请求频率
+    polling: {
+        extraHeaders: {},
+    },
+    // 允许跨域
+    withCredentials: true,
 };
 const socket = IO(config.server, options);
+
+// 监听连接错误，避免无限重连
+let reconnectCount = 0;
+let lastErrorTime = 0;
+socket.on('connect_error', (error: any) => {
+    const now = Date.now();
+    // 避免频繁打印错误日志（每5秒最多打印一次）
+    if (now - lastErrorTime > 5000) {
+        // 只记录非 WebSocket 升级相关的错误
+        const errorMessage = error?.message || String(error);
+        if (!errorMessage.includes('websocket') && !errorMessage.includes('upgrade')) {
+            console.warn('Socket连接错误:', errorMessage);
+        }
+        lastErrorTime = now;
+    }
+    reconnectCount++;
+    // 如果连接失败次数过多，停止自动重连
+    if (reconnectCount > 20) {
+        console.error('Socket连接失败次数过多，停止自动重连');
+        socket.disconnect();
+    }
+});
+
+socket.on('connect', () => {
+    // 连接成功时重置重连计数
+    reconnectCount = 0;
+    lastErrorTime = 0;
+    const transport = socket.io?.engine?.transport?.name || 'unknown';
+    // 只在开发环境打印连接信息
+    if (process.env.NODE_ENV === 'development') {
+        console.log(`Socket连接成功，传输方式: ${transport}`);
+    }
+});
+
+socket.on('reconnect_attempt', (attemptNumber) => {
+    // 只在开发环境或重连次数较多时打印
+    if (process.env.NODE_ENV === 'development' || attemptNumber > 5) {
+        console.log(`Socket重连尝试 ${attemptNumber}`);
+    }
+    if (attemptNumber > 10) {
+        console.warn('Socket重连次数过多，可能存在问题');
+    }
+});
+
+socket.on('reconnect_failed', () => {
+    console.error('Socket重连失败，已达到最大重连次数');
+    reconnectCount = 0; // 重置计数，允许用户手动刷新页面重连
+});
+
+// 监听传输方式变化
+socket.io?.engine?.on('upgrade', () => {
+    if (process.env.NODE_ENV === 'development') {
+        console.log('Socket传输方式已升级到 WebSocket');
+    }
+});
 
 async function loginFailback() {
     const defaultGroup = await guest(
@@ -291,6 +361,26 @@ socket.on(
                 linkmanId: groupId,
                 key: 'name',
                 value: name,
+            } as SetLinkmanPropertyPayload,
+        });
+    },
+);
+
+socket.on(
+    'changeGroupAnnouncement',
+    ({
+        groupId,
+        announcement,
+    }: {
+        groupId: string;
+        announcement: string;
+    }) => {
+        dispatch({
+            type: ActionTypes.SetLinkmanProperty,
+            payload: {
+                linkmanId: groupId,
+                key: 'announcement',
+                value: announcement,
             } as SetLinkmanPropertyPayload,
         });
     },

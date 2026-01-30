@@ -31,7 +31,7 @@ export async function register(
     if (err) {
         return null;
     }
-    window.location.reload();
+    // 不再立即刷新页面，让前端处理登录状态后再决定是否刷新
     return user;
 }
 
@@ -181,6 +181,22 @@ export async function changeGroupName(groupId: string, name: string) {
  */
 export async function changeGroupAvatar(groupId: string, avatar: string) {
     const [error] = await fetch('changeGroupAvatar', { groupId, avatar });
+    return !error;
+}
+
+/**
+ * 修改群公告
+ * @param groupId 目标群组
+ * @param announcement 新公告内容
+ */
+export async function changeGroupAnnouncement(
+    groupId: string,
+    announcement: string,
+) {
+    const [error] = await fetch('changeGroupAnnouncement', {
+        groupId,
+        announcement,
+    });
     return !error;
 }
 
@@ -370,6 +386,41 @@ export const getGroupOnlineMembers = (() => {
 export async function getDefaultGroupOnlineMembers() {
     const [, members] = await fetch('getDefaultGroupOnlineMembers');
     return members;
+}
+
+/**
+ * 获取默认群组的所有成员（含在线状态、群主、最后登录时间）
+ * 无需登录态
+ */
+export async function getDefaultGroupAllMembers(): Promise<GroupAllMemberItem[]> {
+    const [, result] = await fetch('getDefaultGroupAllMembers');
+    if (!result || !result.members) {
+        return [];
+    }
+    return result.members;
+}
+
+/** 群内成员（含在线状态、群主、最后登录时间） */
+export interface GroupAllMemberItem {
+    user: {
+        _id: string;
+        username: string;
+        avatar: string;
+        createTime: string | null;
+        lastLoginTime: string | null;
+    };
+    isCreator: boolean;
+    isOnline: boolean;
+}
+
+/**
+ * 获取群内所有成员
+ */
+export async function getGroupAllMembers(
+    groupId: string,
+): Promise<GroupAllMemberItem[]> {
+    const [, result] = await fetch('getGroupAllMembers', { groupId });
+    return result?.members ?? [];
 }
 
 /**

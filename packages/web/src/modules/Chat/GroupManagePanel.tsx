@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
 import readDiskFIle from '../../utils/readDiskFile';
@@ -10,13 +10,17 @@ import Input from '../../components/Input';
 import Button from '../../components/Button';
 import Message from '../../components/Message';
 import Avatar from '../../components/Avatar';
+import UserBadge from '../../components/UserBadge';
 import Tooltip from '../../components/Tooltip';
 import Dialog from '../../components/Dialog';
 import {
     changeGroupName,
     changeGroupAvatar,
+    changeGroupAnnouncement,
     deleteGroup,
     leaveGroup,
+    getGroupAllMembers,
+    GroupAllMemberItem,
 } from '../../service';
 import useAction from '../../hooks/useAction';
 import config from '../../../../config/client';
@@ -26,26 +30,60 @@ interface GroupManagePanelProps {
     visible: boolean;
     onClose: () => void;
     groupId: string;
+    name: string;
     avatar: string;
+    announcement: string;
     creator: string;
     onlineMembers: GroupMember[];
 }
 
 function GroupManagePanel(props: GroupManagePanelProps) {
-    const { visible, onClose, groupId, avatar, creator, onlineMembers } = props;
+    const { visible, onClose, groupId, name, avatar, announcement, creator, onlineMembers } = props;
 
     const action = useAction();
     const isLogin = useIsLogin();
     const selfId = useSelector((state: State) => state.user?._id);
     const [deleteConfirmDialog, setDialogStatus] = useState(false);
-    const [groupName, setGroupName] = useState('');
+    const [groupName, setGroupName] = useState(name);
+    const [groupAnnouncement, setGroupAnnouncement] = useState(announcement);
+    const [allMembers, setAllMembers] = useState<GroupAllMemberItem[]>([]);
     const context = useContext(ShowUserOrGroupInfoContext);
 
+    useEffect(() => {
+        if (visible) {
+            setGroupName(name);
+            setGroupAnnouncement(announcement);
+            getGroupAllMembers(groupId).then((members) => {
+                const sorted = [...members].sort((a, b) => {
+                    if (a.isCreator) return -1;
+                    if (b.isCreator) return 1;
+                    if (a.isOnline && !b.isOnline) return -1;
+                    if (!a.isOnline && b.isOnline) return 1;
+                    // 离线成员按最后离线时间排序，最后离线的排在上面
+                    const timeA = a.user.lastLoginTime ? new Date(a.user.lastLoginTime).getTime() : 0;
+                    const timeB = b.user.lastLoginTime ? new Date(b.user.lastLoginTime).getTime() : 0;
+                    return timeB - timeA;
+                });
+                setAllMembers(sorted);
+            });
+        }
+    }, [visible, name, announcement, groupId]);
+
     async function handleChangeGroupName() {
-        const isSuccess = await changeGroupName(groupId, groupName);
+        if (!groupName.trim() || groupName === name) return;
+        const isSuccess = await changeGroupName(groupId, groupName.trim());
         if (isSuccess) {
             Message.success('修改群名称成功');
-            action.setLinkmanProperty(groupId, 'name', groupName);
+            action.setLinkmanProperty(groupId, 'name', groupName.trim());
+        }
+    }
+
+    async function handleChangeGroupAnnouncement() {
+        if (groupAnnouncement === announcement) return;
+        const isSuccess = await changeGroupAnnouncement(groupId, groupAnnouncement.trim());
+        if (isSuccess) {
+            Message.success('修改群公告成功');
+            action.setLinkmanProperty(groupId, 'announcement', groupAnnouncement.trim());
         }
     }
 
@@ -116,6 +154,60 @@ function GroupManagePanel(props: GroupManagePanelProps) {
         onClose();
     }
 
+    function formatTime(dateStr: string | null): string {
+        if (!dateStr) return '从未登录';
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffM = Math.floor(diffMs / 60000);
+        const diffH = Math.floor(diffMs / 3600000);
+        const diffD = Math.floor(diffMs / 86400000);
+        if (diffM < 1) return '刚刚';
+        if (diffM < 60) return `${diffM}分钟前`;
+        if (diffH < 24) return `${diffH}小时前`;
+        if (diffD < 30) return `${diffD}天前`;
+        return date.toLocaleDateString();
+    }
+
+    const ownerMembers = allMembers.filter((m) => m.isCreator);
+    const onlineMembersList = allMembers.filter((m) => !m.isCreator && m.isOnline);
+    const offlineMembersList = allMembers.filter((m) => !m.isCreator && !m.isOnline);
+
+    function renderMemberRow(member: GroupAllMemberItem) {
+        const { user: u } = member;
+        return (
+            <div
+                key={u._id}
+                className={Style.memberRow}
+            >
+                <div
+                    className={Style.userinfoBlock}
+                    onClick={() => handleShowUserInfo(u)}
+                    role="button"
+                >
+                    <Avatar size={28} src={u.avatar} />
+                    <div className={Style.memberInfo}>
+                        <p className={Style.username}>
+                            {u.username}
+                            <UserBadge createTime={u.createTime} />
+                            {member.isCreator && (
+                                <span className={Style.creatorTag}>群主</span>
+                            )}
+                            {member.isOnline && !member.isCreator && (
+                                <span className={Style.onlineTag}>在线</span>
+                            )}
+                        </p>
+                        <p className={Style.memberTime}>
+                            {member.isOnline
+                                ? '当前在线'
+                                : `离线于 ${formatTime(u.lastLoginTime)}`}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div
             className={`${Style.groupManagePanel} ${visible ? 'show' : 'hide'}`}
@@ -137,13 +229,25 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                                 className={Style.input}
                                 value={groupName}
                                 onChange={setGroupName}
+                                onBlur={handleChangeGroupName}
                             />
-                            <Button
-                                className={Style.button}
-                                onClick={handleChangeGroupName}
-                            >
-                                确认修改
-                            </Button>
+                        </div>
+                    ) : null}
+                    {isLogin && selfId === creator ? (
+                        <div className={Style.block}>
+                            <p className={Style.blockTitle}>群公告</p>
+                            <Input
+                                className={Style.input}
+                                value={groupAnnouncement}
+                                onChange={setGroupAnnouncement}
+                                onBlur={handleChangeGroupAnnouncement}
+                                placeholder="设置群公告，成员将在聊天顶部看到"
+                            />
+                        </div>
+                    ) : announcement ? (
+                        <div className={Style.block}>
+                            <p className={Style.blockTitle}>群公告</p>
+                            <p className={Style.announcementText}>{announcement}</p>
                         </div>
                     ) : null}
                     {isLogin && selfId === creator ? (
@@ -180,47 +284,31 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                     </div>
                     <div className={Style.block}>
                         <p className={Style.blockTitle}>
-                            在线成员 &nbsp;<span>{onlineMembers.length}</span>
+                            所有成员 &nbsp;<span>{allMembers.length}</span>
                         </p>
-                        <div>
-                            {onlineMembers.map((member) => (
-                                <div
-                                    key={member.user._id}
-                                    className={Style.onlineMember}
-                                >
-                                    <div
-                                        className={Style.userinfoBlock}
-                                        onClick={() =>
-                                            handleShowUserInfo(member.user)
-                                        }
-                                        role="button"
-                                    >
-                                        <Avatar
-                                            size={24}
-                                            src={member.user.avatar}
-                                        />
-                                        <p className={Style.username}>
-                                            {member.user.username}
-                                        </p>
-                                    </div>
-                                    <Tooltip
-                                        placement="top"
-                                        trigger={['hover']}
-                                        overlay={
-                                            <span>{member.environment}</span>
-                                        }
-                                    >
-                                        <p className={Style.clientInfoText}>
-                                            {member.browser}
-                                            &nbsp;&nbsp;
-                                            {member.os ===
-                                            'Windows Server 2008 R2 / 7'
-                                                ? 'Windows 7'
-                                                : member.os}
-                                        </p>
-                                    </Tooltip>
-                                </div>
-                            ))}
+                        <div className={Style.memberList}>
+                            {ownerMembers.length > 0 && (
+                                <>
+                                    <p className={Style.memberSectionTitle}>群主</p>
+                                    {ownerMembers.map(renderMemberRow)}
+                                </>
+                            )}
+                            {onlineMembersList.length > 0 && (
+                                <>
+                                    <p className={Style.memberSectionTitle}>
+                                        在线成员 &nbsp;{onlineMembersList.length}
+                                    </p>
+                                    {onlineMembersList.map(renderMemberRow)}
+                                </>
+                            )}
+                            {offlineMembersList.length > 0 && (
+                                <>
+                                    <p className={Style.memberSectionTitle}>
+                                        离线成员 &nbsp;{offlineMembersList.length}
+                                    </p>
+                                    {offlineMembersList.map(renderMemberRow)}
+                                </>
+                            )}
                         </div>
                     </div>
                     <Dialog

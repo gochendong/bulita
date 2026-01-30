@@ -222,6 +222,7 @@ export async function register(
         signature: 1,
         level: 1,
         tag: 1,
+        createTime: 1,
     });
 
     const token = generateToken(
@@ -240,6 +241,59 @@ export async function register(
             environment,
         },
     );
+
+    // 创建欢迎消息并保存到数据库
+    if (defaultGroup) {
+        try {
+            // 先让用户加入默认群组的 room，这样才能收到消息
+            ctx.socket.join(defaultGroup._id.toString());
+            
+            // 查找或创建系统用户
+            let systemUser = await User.findOne({ username: '系统' });
+            if (!systemUser) {
+                // 如果系统用户不存在，使用新用户作为发送者（前端会处理显示）
+                systemUser = newUser;
+            }
+            
+            const welcomeMessage = await Message.create({
+                from: systemUser._id,
+                to: defaultGroup._id.toString(),
+                type: 'system',
+                content: `欢迎 ${newUser.username} 加入！开始你的聊天吧～`,
+            } as MessageDocument);
+
+            // 广播欢迎消息到群组
+            // 注意：from 对象需要包含前端需要的所有字段
+            const messageData = {
+                _id: welcomeMessage._id,
+                createTime: welcomeMessage.createTime,
+                from: {
+                    _id: systemUser._id.toString(),
+                    username: '系统',
+                    avatar: systemUser.avatar || '',
+                    originUsername: '系统',
+                    tag: 'system',
+                },
+                to: defaultGroup._id.toString(),
+                type: 'system',
+                content: welcomeMessage.content,
+            };
+            
+            // 使用 socket.io 广播消息到群组
+            // 注意：ctx.socket.emit 使用 socket.to()，不会发送给发送者自己
+            // 所以需要先发送给当前用户，再广播给其他用户
+            const socket = (ctx.socket as any).__socket;
+            if (socket) {
+                // 直接发送给当前用户
+                socket.emit('message', messageData);
+                // 广播给群组中的其他用户
+                socket.to(defaultGroup._id.toString()).emit('message', messageData);
+            }
+        } catch (error) {
+            // 如果创建欢迎消息失败，不影响注册流程
+            console.error('创建欢迎消息失败:', error);
+        }
+    }
 
     return {
         _id: newUser._id,
@@ -347,6 +401,7 @@ export async function login(
         signature: 1,
         level: 1,
         tag: 1,
+        createTime: 1,
     });
 
     return {
@@ -441,8 +496,10 @@ export async function loginByToken(
             _id: 1,
             name: 1,
             avatar: 1,
+            announcement: 1,
             creator: 1,
             createTime: 1,
+            members: 1,
         },
     );
     groups.forEach((group: GroupDocument) => {
@@ -455,6 +512,7 @@ export async function loginByToken(
         signature: 1,
         level: 1,
         tag: 1,
+        createTime: 1,
     });
 
     ctx.socket.user = user._id.toString();
@@ -491,7 +549,16 @@ export async function loginByToken(
         signature: user.signature,
         pushToken: user.pushToken,
         tag: user.tag,
-        groups,
+        createTime: user.createTime,
+        groups: groups.map((g: GroupDocument) => ({
+            _id: g._id,
+            name: g.name,
+            avatar: g.avatar,
+            announcement: g.announcement,
+            creator: g.creator,
+            createTime: g.createTime,
+            membersCount: g.members.length,
+        })),
         friends,
         bot,
         isAdmin: config.administrators.includes(user.username),
@@ -521,8 +588,10 @@ export async function guest(ctx: Context<Environment>) {
             _id: 1,
             name: 1,
             avatar: 1,
+            announcement: 1,
             createTime: 1,
             creator: 1,
+            members: 1,
         },
     );
     if (!group) {
@@ -544,7 +613,7 @@ export async function guest(ctx: Context<Environment>) {
     await handleInviteV2Messages(messages);
     messages.reverse();
 
-    return { messages, ...group.toObject() };
+    return { messages, ...group.toObject(), membersCount: group.members.length };
 }
 
 /**

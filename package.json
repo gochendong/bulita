@@ -16,6 +16,8 @@
     "dev:docs": "npx lerna run dev:docs --stream",
     "build:docs": "npx lerna run build:docs --stream",
     "deploy:docs": "npx lerna run deploy:docs --stream",
+    "docker:build": "DOCKER_BUILDKIT=1 docker build -t bulita .",
+    "docker:run": "docker run --rm -p 9200:9200 bulita",
     "lint": "eslint ./ --ext js,jsx,ts,tsx --ignore-pattern .eslintignore --cache --fix",
     "test": "jest",
     "ts-check": "tsc --noEmit",
