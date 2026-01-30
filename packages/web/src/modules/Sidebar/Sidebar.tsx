@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import loadable from '@loadable/component';
+import platform from 'platform';
 
 import { isMobile } from '@bulita/utils/ua';
 import { State } from '../../state/reducer';
@@ -12,6 +13,9 @@ import OnlineStatus from './OnlineStatus';
 import useAction from '../../hooks/useAction';
 import socket from '../../socket';
 import Message from '../../components/Message';
+import { guest } from '../../service';
+import convertMessage from '@bulita/utils/convertMessage';
+import { ActionTypes } from '../../state/action';
 
 import Admin from './Admin';
 import About from './About';
@@ -19,6 +23,7 @@ import About from './About';
 import Style from './Sidebar.less';
 import useAero from '../../hooks/useAero';
 import { LocalStorageKey } from '../../localStorage';
+import store from '../../state/store';
 
 const SelfInfoAsync = loadable(
     () =>
@@ -58,12 +63,37 @@ function Sidebar() {
         return null;
     }
 
-    function logout() {
+    async function logout() {
         action.logout();
         window.localStorage.removeItem('token');
         Message.success('您已退出聊天室');
-        // 不需要手动断开和重连，socket.io 会自动处理
-        // socket 会在 connect 事件中自动处理登录状态
+        
+        // 加载游客视角
+        try {
+            const defaultGroup = await guest(
+                platform.os?.family,
+                platform.name,
+                platform.description,
+            );
+            if (defaultGroup) {
+                const { messages } = defaultGroup;
+                store.dispatch({
+                    type: ActionTypes.SetGuest,
+                    payload: defaultGroup,
+                });
+
+                messages.forEach(convertMessage);
+                store.dispatch({
+                    type: ActionTypes.AddLinkmanHistoryMessages,
+                    payload: {
+                        linkmanId: defaultGroup._id,
+                        messages,
+                    },
+                });
+            }
+        } catch (error) {
+            console.error('加载游客视角失败:', error);
+        }
     }
 
     function renderTooltip(text: string, component: JSX.Element) {
