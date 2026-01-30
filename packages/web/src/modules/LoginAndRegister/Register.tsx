@@ -11,6 +11,7 @@ import { register, getLinkmansLastMessagesV2 } from '../../service';
 // import { Message } from '../../state/reducer';
 import Message from '../../components/Message';
 import { ActionTypes } from '../../state/action';
+import store from '../../state/store';
 
 /** 登录框 */
 function Register() {
@@ -45,6 +46,7 @@ function Register() {
                 
                 // 获取联系人消息
                 if (linkmanIds.length > 0) {
+                    const firstLinkmanId = linkmanIds[0];
                     const linkmanMessages = await getLinkmansLastMessagesV2(linkmanIds);
                     Object.values(linkmanMessages).forEach(
                         // @ts-ignore
@@ -58,37 +60,43 @@ function Register() {
                     });
 
                     // 在第一个联系人的聊天里插入系统欢迎消息
-                    // 延迟发送以确保联系人已经加载到状态中，并且 SetLinkmansLastMessages 已经完成
-                    setTimeout(() => {
-                        const welcomeMessage = {
-                            _id: `sys_welcome_${Date.now()}`,
-                            type: 'system',
-                            content: `欢迎 ${user.username} 加入！开始你的聊天吧～`,
-                            from: {
-                                _id: 'system',
-                                username: '系统',
-                                avatar: '',
-                                originUsername: '系统',
-                                tag: 'system',
-                            },
-                            loading: false,
-                            percent: 100,
-                            createTime: String(Date.now()),
-                        };
-                        try {
-                            action.addLinkmanMessage(linkmanIds[0], welcomeMessage);
-                        } catch (error) {
-                            console.error('发送欢迎消息失败:', error);
-                            // 如果失败，重试一次
-                            setTimeout(() => {
-                                try {
-                                    action.addLinkmanMessage(linkmanIds[0], welcomeMessage);
-                                } catch (retryError) {
-                                    console.error('重试发送欢迎消息失败:', retryError);
-                                }
-                            }, 500);
+                    // 使用 requestAnimationFrame 和检查状态来确保联系人已经加载
+                    const sendWelcomeMessage = () => {
+                        const state = store.getState();
+                        const linkman = state.linkmans[firstLinkmanId];
+                        
+                        if (linkman) {
+                            // 联系人已加载，可以发送欢迎消息
+                            const welcomeMessage = {
+                                _id: `sys_welcome_${Date.now()}`,
+                                type: 'system',
+                                content: `欢迎 ${user.username} 加入！开始你的聊天吧～`,
+                                from: {
+                                    _id: 'system',
+                                    username: '系统',
+                                    avatar: '',
+                                    originUsername: '系统',
+                                    tag: 'system',
+                                },
+                                loading: false,
+                                percent: 100,
+                                createTime: String(Date.now()),
+                            };
+                            try {
+                                action.addLinkmanMessage(firstLinkmanId, welcomeMessage);
+                            } catch (error) {
+                                console.error('发送欢迎消息失败:', error);
+                            }
+                        } else {
+                            // 联系人还未加载，等待后重试
+                            setTimeout(sendWelcomeMessage, 100);
                         }
-                    }, 500);
+                    };
+                    
+                    // 使用双重延迟确保状态更新完成
+                    requestAnimationFrame(() => {
+                        setTimeout(sendWelcomeMessage, 200);
+                    });
                 }
 
                 // 提示用户点击左上角头像修改信息
