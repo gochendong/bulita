@@ -70,11 +70,15 @@
     cursor: pointer;
     transition: box-shadow 0.2s ease, transform 0.1s ease;
 
-    &:hover {
+    &:hover:not(:disabled) {
         box-shadow: @input-shadow-focus;
     }
-    &:active {
+    &:active:not(:disabled) {
         transform: scale(0.98);
+    }
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
     }
 }
 
@@ -95,11 +99,15 @@
     background: linear-gradient(135deg, @warm-accent 0%, darken(@warm-accent, 8%) 100%);
     box-shadow: 0 2px 8px rgba(212, 160, 144, 0.35);
 
-    &:hover {
+    &:hover:not(:disabled) {
         box-shadow: 0 4px 12px rgba(212, 160, 144, 0.45);
     }
-    &:active {
+    &:active:not(:disabled) {
         transform: scale(0.98);
+    }
+    &:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
     }
 }
 
