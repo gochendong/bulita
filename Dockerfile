@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1.4
 # 使用 BuildKit 启用缓存挂载，构建时: DOCKER_BUILDKIT=1 docker build .
-FROM node:20
+FROM node:20-alpine
+
+RUN corepack enable && corepack prepare yarn@1.22.22 --activate
 
 WORKDIR /usr/app/bulita
 

@@ -1,3 +1,5 @@
+@import '../../styles/variable.less';
+
 .loginRegister {
     height: 260px;
     display: flex;
@@ -14,9 +16,29 @@
 }
 
 .input {
-    height: 40px;
-    & > input {
-        line-height: 40px;
+    height: 44px;
+
+    :global {
+        input {
+            line-height: 44px;
+            padding-top: 0;
+            padding-bottom: 0;
+            border-radius: @input-radius-sm;
+            border: 1px solid @input-border;
+            background-color: @input-bg;
+            color: @input-text;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            &::placeholder {
+                color: @input-placeholder;
+            }
+            &:hover {
+                background-color: @input-bg-hover;
+            }
+            &:focus {
+                border-color: @input-border-focus;
+                box-shadow: @input-shadow-focus;
+            }
+        }
     }
 }
 

@@ -2,21 +2,23 @@
 
 .chatInput {
     height: 100px;
-    background-color: rgba(255, 255, 255, 1);
+    background: linear-gradient(180deg, #fffbf9 0%, #faf8f5 100%);
     display: flex;
     align-items: center;
-    padding: 0px 20px;
-    border-bottom-right-radius: 10px;
+    padding: 0 20px;
+    border-bottom-right-radius: 12px;
     position: relative;
+    border-top: 1px solid rgba(232, 228, 223, 0.6);
 
     &[data-aero='true'] {
-        background-color: rgba(255, 255, 255, 0.15);
+        background: linear-gradient(180deg, rgba(255, 251, 249, 0.95) 0%, rgba(250, 248, 245, 0.9) 100%);
+        border-top-color: rgba(255, 255, 255, 0.25);
 
         .input {
-            background-color: rgba(255, 255, 255, 0.6);
-            border: none;
+            background-color: rgba(255, 255, 255, 0.75);
+            border-color: rgba(232, 228, 223, 0.5);
             &::placeholder {
-                color: #888;
+                color: @input-placeholder;
             }
         }
 
@@ -51,25 +53,35 @@
 
 .input {
     flex: 1;
-    padding: 10px 90px 10px 14px;
-    height: 50px;
+    padding: 14px 90px 14px 18px;
+    min-height: 52px;
+    max-height: 120px;
     width: 100%;
-    border-radius: 10px;
-    line-height: normal;
+    border-radius: @input-radius;
+    line-height: 1.5;
     outline: none;
-    border: 1px solid rgba(208, 208, 208, 0.5);
-    font-size: 14px;
-    color: #000000;
+    border: 1px solid @input-border;
+    font-size: 15px;
+    color: @input-text;
+    background-color: @input-bg;
     user-select: auto;
     resize: none;
-
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 
     &::placeholder {
-        color: #999;
+        color: @input-placeholder;
+        font-weight: 400;
+    }
+
+    &:hover {
+        background-color: @input-bg-hover;
+        border-color: darken(@input-border, 3%);
     }
 
     &:focus {
-        border-color: var(--primary-color-8);
+        border-color: @input-border-focus;
+        background-color: #fff;
+        box-shadow: @input-shadow-focus;
     }
 }
 
@@ -78,13 +90,13 @@
     right: 10px;
     top: 5px;
     font-size: 22px;
-    color: #aaa;
+    color: #b5a99a;
 }
 
 .iconButton {
     :global {
         .iconfont {
-            color: #aaa;
+            color: #b5a99a;
         }
     }
 
@@ -98,7 +110,7 @@
 }
 
 .guest {
-    color: #333;
+    color: @input-text;
     user-select: none;
     font-size: 14px;
     flex: 1;
@@ -116,8 +128,11 @@
 .expressionDropdown {
     width: 415px;
     height: 240px;
-    background-color: white;
+    background-color: #fffbf9;
     transform: translateY(-8px);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border: 1px solid @input-border;
 
     @media @mobile {
         width: 100%;
@@ -125,7 +140,10 @@
 }
 
 .featureDropdown {
-    background-color: white;
+    background-color: #fffbf9;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border: 1px solid @input-border;
 
     :global {
         .rc-menu {
@@ -138,15 +156,17 @@
 }
 
 .atPanel {
-    background-color: white;
+    background-color: #fffbf9;
     position: absolute;
     left: 120px;
     bottom: 60px;
-    padding: 6px 0;
-    border-radius: 3px;
+    padding: 8px 0;
+    border-radius: 12px;
     max-height: 266px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border: 1px solid @input-border;
 }
 
 .atUserList {
@@ -154,21 +174,23 @@
     align-items: center;
     cursor: pointer;
     margin-bottom: 2px;
-    height: 30px;
-    padding: 0 8px;
+    height: 36px;
+    padding: 0 12px;
     min-width: 120px;
+    border-radius: 8px;
+    transition: background-color 0.15s ease;
 
     &:last-child {
         margin-bottom: 0px;
     }
     &:hover {
-        background-color: var(--primary-color-4);
+        background-color: rgba(210, 165, 130, 0.12);
     }
 }
 
 .atText {
     font-size: 14px;
-    margin-left: 6px;
+    margin-left: 8px;
     margin-top: 4px;
-    color: #444;
+    color: @input-text;
 }
