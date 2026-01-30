@@ -117,6 +117,7 @@ function ChatInput(props: InputAreaProps) {
     const [pendingAttachments, setPendingAttachments] = useState<
         { type: 'image' | 'file'; data: ReadFileResult; previewUrl?: string }[]
     >([]);
+    const sendingLockRef = useRef(false);
 
     const { minHeight, maxHeight } = props;
 
@@ -260,8 +261,6 @@ function ChatInput(props: InputAreaProps) {
         action.addLinkmanMessage(focus, message);
         return _id;
     }
-
-    const sendingLockRef = useRef(false);
 
     useEffect(() => {
         const pending = status.pendingRetryMessage;
