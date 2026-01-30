@@ -275,8 +275,8 @@ class Message extends Component<MessageProps, MessageState> {
                             </span>
                         )}
                         <span className={Style.nickname}>{username}</span>
-                        {senderCreateTime && !isSelf && (
-                            <UserBadge createTime={senderCreateTime} />
+                        {!isSelf && (
+                            <UserBadge createTime={senderCreateTime || null} />
                         )}
                         {process.env.ADMINS.split(',').includes(username) && (
                             <span className={Style.adminTagInMessage}>管理员</span>

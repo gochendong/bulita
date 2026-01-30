@@ -154,6 +154,34 @@ function ChatInput(props: InputAreaProps) {
         setExpressions([]);
     }, [enableSearchExpression]);
 
+    useEffect(() => {
+        if (!isLogin) return;
+        const pending = status.pendingRetryMessage;
+        if (!pending || pending.linkmanId !== focus) return;
+        const msg = store.getState().linkmans[focus]?.messages[pending.messageId];
+        if (!msg) {
+            action.setStatus('pendingRetryMessage', null);
+            return;
+        }
+        action.updateMessage(focus, pending.messageId, {
+            loading: true,
+            sendFailed: false,
+        });
+        action.setStatus('pendingRetryMessage', null);
+        sendMessage(focus, msg.type, msg.content).then(([err, result]) => {
+            if (err) {
+                action.updateMessage(focus, pending.messageId, {
+                    loading: false,
+                    sendFailed: true,
+                });
+            } else {
+                result.loading = false;
+                result.sendFailed = false;
+                action.updateMessage(focus, pending.messageId, result);
+            }
+        });
+    }, [status.pendingRetryMessage, focus, action, isLogin]);
+
     if (!isLogin) {
         return (
             <div className={Style.chatInput}>
@@ -261,33 +289,6 @@ function ChatInput(props: InputAreaProps) {
         action.addLinkmanMessage(focus, message);
         return _id;
     }
-
-    useEffect(() => {
-        const pending = status.pendingRetryMessage;
-        if (!pending || pending.linkmanId !== focus) return;
-        const msg = store.getState().linkmans[focus]?.messages[pending.messageId];
-        if (!msg) {
-            action.setStatus('pendingRetryMessage', null);
-            return;
-        }
-        action.updateMessage(focus, pending.messageId, {
-            loading: true,
-            sendFailed: false,
-        });
-        action.setStatus('pendingRetryMessage', null);
-        sendMessage(focus, msg.type, msg.content).then(([err, result]) => {
-            if (err) {
-                action.updateMessage(focus, pending.messageId, {
-                    loading: false,
-                    sendFailed: true,
-                });
-            } else {
-                result.loading = false;
-                result.sendFailed = false;
-                action.updateMessage(focus, pending.messageId, result);
-            }
-        });
-    }, [status.pendingRetryMessage, focus, action]);
 
     // eslint-disable-next-line react/destructuring-assignment
     async function handleSendMessage(

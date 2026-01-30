@@ -50,23 +50,26 @@ function Chat() {
         };
     }, []);
 
-    async function fetchGroupOnlineMembers() {
-        let onlineMembers: GroupMember[] | { cache: true } = [];
-        if (isLogin) {
-            onlineMembers = await getGroupOnlineMembers(focus);
-        }
-        if (Array.isArray(onlineMembers)) {
-            action.setLinkmanProperty(focus, 'onlineMembers', onlineMembers);
-        }
-    }
-    async function fetchUserOnlineStatus() {
-        const isOnline = await getUserOnlineStatus(focus.replace(self, ''));
-        action.setLinkmanProperty(focus, 'isOnline', isOnline);
-    }
     useEffect(() => {
         if (!linkman) {
-            return () => {};
+            return;
         }
+        
+        async function fetchGroupOnlineMembers() {
+            let onlineMembers: GroupMember[] | { cache: true } = [];
+            if (isLogin) {
+                onlineMembers = await getGroupOnlineMembers(focus);
+            }
+            if (Array.isArray(onlineMembers)) {
+                action.setLinkmanProperty(focus, 'onlineMembers', onlineMembers);
+            }
+        }
+        
+        async function fetchUserOnlineStatus() {
+            const isOnline = await getUserOnlineStatus(focus.replace(self, ''));
+            action.setLinkmanProperty(focus, 'isOnline', isOnline);
+        }
+        
         const request =
             linkman.type === 'group'
                 ? fetchGroupOnlineMembers
@@ -74,7 +77,7 @@ function Chat() {
         request();
         const timer = setInterval(() => request(), 1000 * 60);
         return () => clearInterval(timer);
-    }, [focus]);
+    }, [focus, linkman, isLogin, self, action]);
 
     async function intervalUpdateHistory() {
         // Must get real-time state

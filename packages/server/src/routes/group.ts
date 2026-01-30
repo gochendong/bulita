@@ -246,6 +246,64 @@ export const getDefaultGroupOnlineMembers =
     getDefaultGroupOnlineMembersWrapper();
 
 /**
+ * 获取默认群组的所有成员（含在线状态、群主、最后登录时间）
+ * 无需登录态
+ */
+function getDefaultGroupAllMembersWrapper() {
+    let cache: any = null;
+    let expireTime = 0;
+    return async function getDefaultGroupAllMembers() {
+        if (cache && expireTime > Date.now()) {
+            return cache;
+        }
+
+        const group = await Group.findOne({ isDefault: true });
+        if (!group) {
+            throw new AssertionError({ message: '群组不存在' });
+        }
+
+        const users = await User.find(
+            { _id: { $in: group.members } },
+            { username: 1, avatar: 1, createTime: 1, lastLoginTime: 1 },
+        );
+        const userMap = new Map(
+            users.map((u) => [u._id.toString(), u.toObject()]),
+        );
+
+        const sockets = await Socket.find(
+            { user: { $in: group.members.map((m) => m.toString()) } },
+            { user: 1 },
+        );
+        const onlineIds = new Set(sockets.map((s) => s.user.toString()));
+        const creatorId = group.creator?.toString?.() || '';
+
+        const members = group.members.map((memberId) => {
+            const id = memberId.toString();
+            const user = userMap.get(id);
+            return {
+                user: user
+                    ? {
+                          _id: id,
+                          username: user.username,
+                          avatar: user.avatar,
+                          createTime: user.createTime,
+                          lastLoginTime: user.lastLoginTime,
+                      }
+                    : { _id: id, username: '', avatar: '', createTime: null, lastLoginTime: null },
+                isCreator: id === creatorId,
+                isOnline: onlineIds.has(id),
+            };
+        });
+
+        cache = { members };
+        expireTime = Date.now() + GroupOnlineMembersCacheExpireTime;
+        return cache;
+    };
+}
+export const getDefaultGroupAllMembers =
+    getDefaultGroupAllMembersWrapper();
+
+/**
  * 修改群头像, 只有群创建者有权限
  * @param ctx Context
  */

@@ -27,11 +27,11 @@ interface UserBadgeProps {
 function UserBadge(props: UserBadgeProps) {
     const { createTime, className = '' } = props;
     const { label, level } = getBadgeLevel(createTime);
-    if (level === 0) return null;
+    // 即使level为0（访客）也显示标签
     return (
         <span
             className={`${Style.badge} ${Style[`level${level}`]} ${className}`}
-            title={`注册 ${label}`}
+            title={level === 0 ? '访客用户' : `注册 ${label}`}
         >
             {label}
         </span>

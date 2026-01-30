@@ -10,6 +10,7 @@ import {
     getDefaultGroupHistoryMessages,
     updateHistory,
     getGroupAllMembers,
+    getDefaultGroupAllMembers,
     GroupAllMemberItem,
 } from '../../service';
 import MessageComponent from './Message/Message';
@@ -70,14 +71,25 @@ function MessageList(props: MessageListProps) {
 
     // 如果是群聊，获取所有成员信息并缓存createTime
     useEffect(() => {
-        if (isGroup && isLogin && focus) {
-            getGroupAllMembers(focus).then((members) => {
-                const map = new Map<string, string | null>();
-                members.forEach((member) => {
-                    map.set(member.user._id, member.user.createTime);
+        if (isGroup && focus) {
+            if (isLogin) {
+                getGroupAllMembers(focus).then((members) => {
+                    const map = new Map<string, string | null>();
+                    members.forEach((member) => {
+                        map.set(member.user._id, member.user.createTime);
+                    });
+                    setGroupMembersMap(map);
                 });
-                setGroupMembersMap(map);
-            });
+            } else {
+                // 游客用户获取默认群组的所有成员
+                getDefaultGroupAllMembers().then((members) => {
+                    const map = new Map<string, string | null>();
+                    members.forEach((member) => {
+                        map.set(member.user._id, member.user.createTime);
+                    });
+                    setGroupMembersMap(map);
+                });
+            }
         } else {
             setGroupMembersMap(new Map());
         }
@@ -161,15 +173,19 @@ function MessageList(props: MessageListProps) {
         // }
 
         // 获取发送者的createTime（用于显示UserBadge）
+        // 所有非自己的消息都应该显示UserBadge
         let senderCreateTime: string | null = null;
         if (!isSelf) {
-            // 不是自己发送的消息，显示UserBadge
             if (linkman.type === 'friend') {
                 // 好友聊天，使用联系人的createTime
                 senderCreateTime = linkman.createTime || null;
             } else if (linkman.type === 'group') {
                 // 群聊，从群成员信息中查找
                 senderCreateTime = groupMembersMap.get(message.from._id) || null;
+                // 如果找不到，尝试从message.from中获取（某些情况下消息可能包含用户信息）
+                if (!senderCreateTime && (message.from as any).createTime) {
+                    senderCreateTime = (message.from as any).createTime;
+                }
             }
         }
 
