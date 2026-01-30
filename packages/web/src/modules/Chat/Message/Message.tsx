@@ -269,7 +269,11 @@ class Message extends Component<MessageProps, MessageState> {
                 </ShowUserOrGroupInfoContext.Consumer>
                 <div className={Style.right}>
                     <div className={Style.nicknameTimeBlock}>
-                        {tag && <span className={Style.tag}>{tag}</span>}
+                        {tag && (
+                            <span className={tag === '群主' ? Style.creatorTagInMessage : Style.tag}>
+                                {tag}
+                            </span>
+                        )}
                         <span className={Style.nickname}>{username}</span>
                         {senderCreateTime && !isSelf && (
                             <UserBadge createTime={senderCreateTime} />

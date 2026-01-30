@@ -31,7 +31,7 @@ export async function register(
     if (err) {
         return null;
     }
-    window.location.reload();
+    // 不再立即刷新页面，让前端处理登录状态后再决定是否刷新
     return user;
 }
 

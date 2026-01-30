@@ -69,6 +69,13 @@ function Register() {
                 };
                 action.addLinkmanMessage(linkmanIds[0], welcomeMessage);
             }
+
+            // 提示用户点击左上角头像修改信息
+            setTimeout(() => {
+                Message.success('注册成功！点击左上角头像可以修改个人信息', 4);
+            }, 500);
+        } else {
+            Message.error('注册失败，请重试');
         }
     }
 
