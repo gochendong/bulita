@@ -185,6 +185,22 @@ export async function changeGroupAvatar(groupId: string, avatar: string) {
 }
 
 /**
+ * 修改群公告
+ * @param groupId 目标群组
+ * @param announcement 新公告内容
+ */
+export async function changeGroupAnnouncement(
+    groupId: string,
+    announcement: string,
+) {
+    const [error] = await fetch('changeGroupAnnouncement', {
+        groupId,
+        announcement,
+    });
+    return !error;
+}
+
+/**
  * 创建群组
  * @param name 群组名
  */

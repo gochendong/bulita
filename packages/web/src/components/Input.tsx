@@ -13,6 +13,7 @@ interface InputProps {
     onChange: (value: string) => void;
     onEnter?: (value: string) => void;
     onFocus?: () => void;
+    onBlur?: () => void;
 }
 
 function Input(props: InputProps) {
@@ -26,6 +27,7 @@ function Input(props: InputProps) {
         onChange,
         onEnter = () => {},
         onFocus = () => {},
+        onBlur = () => {},
     } = props;
 
     const $input = useRef(null);
@@ -55,6 +57,7 @@ function Input(props: InputProps) {
                 onChange={handleInput}
                 onKeyDown={handleKeyDown}
                 onFocus={onFocus}
+                onBlur={onBlur}
                 ref={$input}
                 placeholder={placeholder}
                 autoComplete={autoComplete}

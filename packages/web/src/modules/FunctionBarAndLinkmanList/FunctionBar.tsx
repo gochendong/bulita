@@ -34,7 +34,7 @@ function FunctionBar() {
     });
 
     const context = useContext(ShowUserOrGroupInfoContext);
-    const placeholder = '搜索用户和群组';
+    const placeholder = '';
 
     function resetSearch() {
         toggleSearchResultVisible(false);
@@ -146,6 +146,9 @@ function FunctionBar() {
 
     return (
         <div className={Style.functionBar}>
+            <span className={Style.searchIcon} title="搜索用户和群组">
+                <i className="iconfont icon-search" />
+            </span>
             <form
                 className={Style.form}
                 autoComplete="off"

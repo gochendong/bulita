@@ -296,6 +296,26 @@ socket.on(
     },
 );
 
+socket.on(
+    'changeGroupAnnouncement',
+    ({
+        groupId,
+        announcement,
+    }: {
+        groupId: string;
+        announcement: string;
+    }) => {
+        dispatch({
+            type: ActionTypes.SetLinkmanProperty,
+            payload: {
+                linkmanId: groupId,
+                key: 'announcement',
+                value: announcement,
+            } as SetLinkmanPropertyPayload,
+        });
+    },
+);
+
 socket.on('deleteGroup', ({ groupId }: { groupId: string }) => {
     dispatch({
         type: ActionTypes.RemoveLinkman,

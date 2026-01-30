@@ -160,6 +160,18 @@ function Chat() {
                 isOnline={linkman.isOnline}
                 onClickFunction={handleClickFunction}
             />
+            {linkman.type === 'group' && linkman.announcement ? (
+                <div
+                    className={Style.groupAnnouncement}
+                    onClick={handleClickFunction}
+                    role="button"
+                >
+                    <span className={Style.groupAnnouncementIcon}>📢</span>
+                    <span className={Style.groupAnnouncementText}>
+                        {linkman.announcement}
+                    </span>
+                </div>
+            ) : null}
             <MessageList />
             <ChatInput />
 
@@ -168,7 +180,9 @@ function Chat() {
                     visible={groupManagePanel}
                     onClose={() => toggleGroupManagePanel(false)}
                     groupId={linkman._id}
+                    name={linkman.name}
                     avatar={linkman.avatar}
+                    announcement={linkman.announcement || ''}
                     creator={linkman.creator}
                     onlineMembers={linkman.onlineMembers}
                 />

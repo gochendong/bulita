@@ -55,6 +55,7 @@ export interface Group {
     _id: string;
     name: string;
     avatar: string;
+    announcement?: string;
     createTime: string;
     creator: string;
     onlineMembers: GroupMember[];

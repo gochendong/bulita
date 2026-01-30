@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
 import readDiskFIle from '../../utils/readDiskFile';
@@ -15,6 +15,7 @@ import Dialog from '../../components/Dialog';
 import {
     changeGroupName,
     changeGroupAvatar,
+    changeGroupAnnouncement,
     deleteGroup,
     leaveGroup,
 } from '../../service';
@@ -26,26 +27,46 @@ interface GroupManagePanelProps {
     visible: boolean;
     onClose: () => void;
     groupId: string;
+    name: string;
     avatar: string;
+    announcement: string;
     creator: string;
     onlineMembers: GroupMember[];
 }
 
 function GroupManagePanel(props: GroupManagePanelProps) {
-    const { visible, onClose, groupId, avatar, creator, onlineMembers } = props;
+    const { visible, onClose, groupId, name, avatar, announcement, creator, onlineMembers } = props;
 
     const action = useAction();
     const isLogin = useIsLogin();
     const selfId = useSelector((state: State) => state.user?._id);
     const [deleteConfirmDialog, setDialogStatus] = useState(false);
-    const [groupName, setGroupName] = useState('');
+    const [groupName, setGroupName] = useState(name);
+    const [groupAnnouncement, setGroupAnnouncement] = useState(announcement);
     const context = useContext(ShowUserOrGroupInfoContext);
 
+    useEffect(() => {
+        if (visible) {
+            setGroupName(name);
+            setGroupAnnouncement(announcement);
+        }
+    }, [visible, name, announcement]);
+
     async function handleChangeGroupName() {
-        const isSuccess = await changeGroupName(groupId, groupName);
+        if (!groupName.trim() || groupName === name) return;
+        const isSuccess = await changeGroupName(groupId, groupName.trim());
         if (isSuccess) {
             Message.success('修改群名称成功');
-            action.setLinkmanProperty(groupId, 'name', groupName);
+            action.setLinkmanProperty(groupId, 'name', groupName.trim());
+        }
+    }
+
+    async function handleChangeGroupAnnouncement() {
+        if (groupAnnouncement === announcement) return;
+        const isSuccess = await changeGroupAnnouncement(groupId, groupAnnouncement.trim());
+        if (isSuccess) {
+            Message.success('修改群公告成功');
+            action.setLinkmanProperty(groupId, 'announcement', groupAnnouncement.trim());
         }
     }
 
@@ -137,13 +158,25 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                                 className={Style.input}
                                 value={groupName}
                                 onChange={setGroupName}
+                                onBlur={handleChangeGroupName}
                             />
-                            <Button
-                                className={Style.button}
-                                onClick={handleChangeGroupName}
-                            >
-                                确认修改
-                            </Button>
+                        </div>
+                    ) : null}
+                    {isLogin && selfId === creator ? (
+                        <div className={Style.block}>
+                            <p className={Style.blockTitle}>群公告</p>
+                            <Input
+                                className={Style.input}
+                                value={groupAnnouncement}
+                                onChange={setGroupAnnouncement}
+                                onBlur={handleChangeGroupAnnouncement}
+                                placeholder="设置群公告，成员将在聊天顶部看到"
+                            />
+                        </div>
+                    ) : announcement ? (
+                        <div className={Style.block}>
+                            <p className={Style.blockTitle}>群公告</p>
+                            <p className={Style.announcementText}>{announcement}</p>
                         </div>
                     ) : null}
                     {isLogin && selfId === creator ? (

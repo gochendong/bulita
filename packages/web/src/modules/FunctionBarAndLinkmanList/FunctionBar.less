@@ -22,7 +22,7 @@
 
     :global {
         input {
-            padding-left: 40px;
+            padding-left: 42px;
             padding-right: 16px;
             padding-top: 2px;
             border-radius: 20px;
@@ -57,11 +57,14 @@
 }
 
 .searchIcon {
-    font-size: 22px;
+    font-size: 20px;
     position: absolute;
-    left: 20px;
-    top: 22px;
-    color: #666;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: @input-placeholder;
+    pointer-events: none;
+    z-index: 1;
 }
 
 .createGroupButton {

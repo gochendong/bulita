@@ -75,6 +75,7 @@ export async function createGroup(ctx: Context<{ name: string }>) {
         _id: newGroup._id,
         name: newGroup.name,
         avatar: newGroup.avatar,
+        announcement: newGroup.announcement || '',
         createTime: newGroup.createTime,
         creator: newGroup.creator,
     };
@@ -115,6 +116,7 @@ export async function joinGroup(ctx: Context<{ groupId: string }>) {
         _id: group._id,
         name: group.name,
         avatar: group.avatar,
+        announcement: group.announcement || '',
         createTime: group.createTime,
         creator: group.creator,
         messages,
@@ -336,6 +338,37 @@ export async function getGroupBasicInfo(ctx: Context<{ groupId: string }>) {
         _id: group._id,
         name: group.name,
         avatar: group.avatar,
+        announcement: group.announcement || '',
         members: group.members.length,
     };
+}
+
+/**
+ * 修改群公告，仅群主可修改
+ */
+export async function changeGroupAnnouncement(
+    ctx: Context<{ groupId: string; announcement: string }>,
+) {
+    const { groupId, announcement } = ctx.data;
+    assert(isValid(groupId), '无效的群组ID');
+    const group = await Group.findOne({ _id: groupId });
+    if (!group) {
+        throw new AssertionError({ message: '群组不存在' });
+    }
+    assert(
+        group.creator.toString() === ctx.socket.user.toString(),
+        '只有群主才能修改群公告',
+    );
+
+    await Group.updateOne(
+        { _id: groupId },
+        { announcement: announcement || '' },
+    );
+
+    ctx.socket.emit(groupId, 'changeGroupAnnouncement', {
+        groupId,
+        announcement: announcement || '',
+    });
+
+    return {};
 }

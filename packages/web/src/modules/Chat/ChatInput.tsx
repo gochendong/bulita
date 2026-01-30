@@ -42,22 +42,31 @@ interface InputAreaProps {
 
 const expressionList = css`
     display: flex;
+    align-items: center;
+    gap: 4px;
     width: 100%;
-    height: 80px;
+    height: 64px;
     position: absolute;
     left: 0;
-    top: -80px;
+    top: -64px;
     background-color: inherit;
     overflow-x: auto;
 `;
 const expressionImageContainer = css`
-    min-width: 80px;
-    height: 80px;
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.04);
 `;
 const expressionImage = css`
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
 `;
 
 const ExpressionAsync = loadable(
