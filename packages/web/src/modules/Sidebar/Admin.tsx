@@ -218,28 +218,26 @@ function Admin(props: AdminProps) {
                             </div>
                         )}
                 <div className={Common.block}>
-                    <p className={Common.title}>快捷开关</p>
+                    <p className={Common.title}>快捷开关（全局）</p>
                     <div className={Style.buttonWrap}>
-                    {!systemConfig?.disableSendMessage ? (
+                            {!systemConfig?.disableSendMessage ? (
                                 <Button
                                     className={styles.button}
-                                    type="danger"
                                     onClick={handleDisableSendMessage}
                                 >
-                                    开启禁言
+                                    开启全局禁言
                                 </Button>
                             ) : (
                                 <Button
                                     className={styles.button}
                                     onClick={handleEnableSendMessage}
                                 >
-                                    关闭禁言
+                                    关闭全局禁言
                                 </Button>
                             )}
                             {!systemConfig?.disableNewUserSendMessage ? (
                                 <Button
                                     className={styles.button}
-                                    type="danger"
                                     onClick={handleDisableSNewUserendMessage}
                                 >
                                     开启新用户禁言

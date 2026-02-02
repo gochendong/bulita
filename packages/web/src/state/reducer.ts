@@ -164,6 +164,16 @@ export interface State {
         defaultBotName: string;
         /** 用户最大建群数，0 表示不限 */
         maxGroupNum: number;
+        /** 待重试的消息（点击「重试」时使用） */
+        pendingRetryMessage: { linkmanId: string; messageId: string } | null;
+        /** 当前引用的消息（在输入框上方展示） */
+        quotedMessage?: {
+            linkmanId: string;
+            messageId: string;
+            username: string;
+            content: string;
+            type: string;
+        } | null;
     };
 }
 
@@ -290,7 +300,8 @@ export const initialState: State = {
         groupAISwitch: false,
         defaultBotName: '',
         maxGroupNum: 0,
-        pendingRetryMessage: null as { linkmanId: string; messageId: string } | null,
+        pendingRetryMessage: null,
+        quotedMessage: null,
     },
 };
 

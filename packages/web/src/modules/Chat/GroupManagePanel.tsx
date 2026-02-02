@@ -277,13 +277,13 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                                 解散群组
                             </button>
                         ) : (
-                            <Button
-                                className={Style.button}
-                                type="danger"
+                            <button
+                                type="button"
+                                className={Style.leaveGroupBtn}
                                 onClick={handleLeaveGroup}
                             >
                                 退出群组
-                            </Button>
+                            </button>
                         )}
                     </div>
                     <div className={Style.block}>

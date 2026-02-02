@@ -106,6 +106,17 @@ function ChatInput(props: InputAreaProps) {
     const enableSearchExpression = useSelector(
         (state: State) => state.status.enableSearchExpression,
     );
+    const quotedMessage = useSelector(
+        (state: State) => state.status.quotedMessage,
+    ) as
+        | {
+              linkmanId: string;
+              messageId: string;
+              username: string;
+              content: string;
+              type: string;
+          }
+        | null;
     const [expressionDialog, toggleExpressionDialog] = useState(false);
     const [codeEditorDialog, toggleCodeEditorDialog] = useState(false);
     const [inputFocus, toggleInputFocus] = useState(false);
@@ -734,12 +745,26 @@ function ChatInput(props: InputAreaProps) {
 
         // 再发送文本
         if (text) {
-            const id = addSelfMessage('text', xss(text));
+            let finalText = text;
+            if (quotedMessage) {
+                const rawPreview =
+                    quotedMessage.type === 'text'
+                        ? quotedMessage.content || ''
+                        : `[${quotedMessage.type} 消息]`;
+                const preview = rawPreview
+                    .replace(/\s+/g, ' ')
+                    .slice(0, 80);
+                finalText = `> 引用 ${quotedMessage.username}: ${preview}\n\n${text}`;
+            }
+            const id = addSelfMessage('text', xss(finalText));
             $input.current!.value = '';
             setInputHasContent(false);
             setTextAreaHeight($input.current, minHeight, maxHeight);
             setExpressions([]);
-            handleSendMessage(id, 'text', text);
+            handleSendMessage(id, 'text', finalText);
+        }
+        if (quotedMessage) {
+            action.setStatus('quotedMessage', null);
         }
         return null;
     }
@@ -996,6 +1021,28 @@ function ChatInput(props: InputAreaProps) {
                         ))}
                     </div>
                 )}
+                {quotedMessage && (
+                    <div className={Style.quotePreview}>
+                        <div className={Style.quoteContent}>
+                            <span className={Style.quoteLabel}>
+                                引用 {quotedMessage.username}：
+                            </span>
+                            <span className={Style.quoteText}>
+                                {quotedMessage.content
+                                    .replace(/\s+/g, ' ')
+                                    .slice(0, 80)}
+                            </span>
+                        </div>
+                        <button
+                            type="button"
+                            className={Style.quoteClose}
+                            onClick={() => action.setStatus('quotedMessage', null)}
+                            aria-label="取消引用"
+                        >
+                            ×
+                        </button>
+                    </div>
+                )}
                 <textarea
                     className={Style.input}
                     autoFocus={!isMobile}
@@ -1020,28 +1067,7 @@ function ChatInput(props: InputAreaProps) {
                         setInputHasContent((currentTarget.value || '').trim().length > 0);
                     }}
                 />
-                {inputHasContent && (
-                    <IconButton
-                        className={Style.chatInputClearBtn}
-                        width={32}
-                        height={32}
-                        iconSize={18}
-                        icon="clear"
-                        onMouseDown={(e) => {
-                            e.preventDefault();
-                            if ($input.current) {
-                                $input.current.value = '';
-                                setInputHasContent(false);
-                                setTextAreaHeight($input.current, minHeight, maxHeight);
-                                if (isMobile) {
-                                    $input.current.blur();
-                                } else {
-                                    $input.current.focus();
-                                }
-                            }
-                        }}
-                    />
-                )}
+                {/* 清除按钮已移除，保持输入区域干净简洁 */}
             </form>
             <div className={Style.atPanel}>
                 {at.enable &&

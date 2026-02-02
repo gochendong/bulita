@@ -250,7 +250,7 @@ class Message extends Component<MessageProps, MessageState> {
     }
 
     render() {
-        const { isSelf, avatar, tag, tagColorMode, username, type, loading, sendFailed, onRetry, linkmanId, id, isAdmin, senderCreateTime } =
+        const { isSelf, avatar, tag, tagColorMode, username, type, content, loading, sendFailed, onRetry, linkmanId, id, isAdmin, senderCreateTime } =
             this.props;
         const { showButtonList } = this.state;
 
@@ -365,6 +365,41 @@ class Message extends Component<MessageProps, MessageState> {
                                                 strokeLinejoin="round"
                                             />
                                         </svg>
+                                    </button>
+                                </Tooltip>
+                                <Tooltip
+                                    placement={isSelf ? 'left' : 'right'}
+                                    mouseEnterDelay={0.3}
+                                    overlay={<span>引用</span>}
+                                >
+                                    <button
+                                        type="button"
+                                        className={Style.copyButton}
+                                        onClick={() => {
+                                            if (type === 'system') return;
+                                            const preview =
+                                                type === 'text'
+                                                    ? content || ''
+                                                    : `[${type} 消息]`;
+                                            dispatch({
+                                                type: ActionTypes.SetStatus,
+                                                payload: {
+                                                    key: 'quotedMessage',
+                                                    value: {
+                                                        linkmanId,
+                                                        messageId: id,
+                                                        username,
+                                                        content: preview,
+                                                        type,
+                                                    },
+                                                },
+                                            });
+                                            MessageToast.success('已引用该条消息');
+                                        }}
+                                        aria-label="引用"
+                                        title="引用"
+                                    >
+                                        「」
                                     </button>
                                 </Tooltip>
                                 {(isAdmin || (!client.disableDeleteMessage && isSelf)) && (
