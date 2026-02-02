@@ -271,6 +271,7 @@ function Admin(props: AdminProps) {
                         </div>
                     </div>
                 </div>
+                </div>
                 <div className={Style.adminCol}>
                     <div className={Common.container}>
                         <div className={Common.block}>

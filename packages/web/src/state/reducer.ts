@@ -160,6 +160,8 @@ export interface State {
         groupAISwitch: boolean;
         /** 群聊中 @ 的默认机器人名（用于 @ 列表置顶与判断是否触发群聊 AI） */
         defaultBotName: string;
+        /** 用户最大建群数，0 表示不限 */
+        maxGroupNum: number;
     };
 }
 
@@ -285,6 +287,7 @@ export const initialState: State = {
         enableSearchExpression: localStorage.enableSearchExpression,
         groupAISwitch: false,
         defaultBotName: '',
+        maxGroupNum: 0,
         pendingRetryMessage: null as { linkmanId: string; messageId: string } | null,
     },
 };

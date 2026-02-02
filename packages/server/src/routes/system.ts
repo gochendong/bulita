@@ -387,10 +387,13 @@ export async function getPublicSystemConfig() {
         (await Redis.get(GroupAISwitchKey)) ?? 'false';
     const defaultTitle = await getConfigWithDefault('DEFAULT_TITLE');
     const defaultBotName = await getConfigWithDefault('DEFAULT_BOT_NAME');
+    const maxGroupNumStr = await getConfigWithDefault('MAX_GROUP_NUM');
+    const maxGroupNum = parseInt(maxGroupNumStr, 10) || 0;
     return {
         groupAISwitch: groupAISwitch === 'true',
         defaultTitle,
         defaultBotName: defaultBotName || '',
+        maxGroupNum,
     };
 }
 

@@ -57,7 +57,7 @@ export const ADMIN_CONFIG_LABELS: Record<string, string> = {
     REGISTER_IP_INTERVAL: '同一IP注册间隔(秒)',
     PASSWORD_REGEX: '密码正则',
     PASSWORD_TIPS: '密码规则提示',
-    MAX_GROUP_NUM: '用户最大建群数(0不限)',
+    MAX_GROUP_NUM: '用户最大建群数(0=不允许建群，管理员不限)',
     PRIVATE_MSG_CALLBACK_DOMAIN: '私聊消息通知回调域名',
     NOTIFY_KEY: '私聊通知 Redis 键(敏感)',
 };

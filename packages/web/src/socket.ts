@@ -193,6 +193,12 @@ socket.on('connect', async () => {
                     payload: { key: 'defaultBotName', value: publicConfig.defaultBotName || '' },
                 });
             }
+            if (publicConfig?.maxGroupNum !== undefined) {
+                dispatch({
+                    type: ActionTypes.SetStatus,
+                    payload: { key: 'maxGroupNum', value: publicConfig.maxGroupNum },
+                });
+            }
             if (publicConfig?.defaultTitle !== undefined && publicConfig.defaultTitle !== '') {
                 defaultTitle = publicConfig.defaultTitle;
                 document.title = defaultTitle;
