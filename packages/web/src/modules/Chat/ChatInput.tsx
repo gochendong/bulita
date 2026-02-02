@@ -119,6 +119,8 @@ function ChatInput(props: InputAreaProps) {
         | null;
     const [expressionDialog, toggleExpressionDialog] = useState(false);
     const [codeEditorDialog, toggleCodeEditorDialog] = useState(false);
+    const [addMenuOpen, setAddMenuOpen] = useState(false);
+    const addTriggerRef = useRef<HTMLDivElement>(null);
     const [inputFocus, toggleInputFocus] = useState(false);
     const [inputHasContent, setInputHasContent] = useState(false);
     const [at, setAt] = useState({ enable: false, content: '' });
@@ -512,7 +514,7 @@ function ChatInput(props: InputAreaProps) {
         if (domEvent.keyCode === 13) {
             return;
         }
-
+        setAddMenuOpen(false);
         switch (key) {
             case 'image': {
                 handleSendImage();
@@ -965,29 +967,35 @@ function ChatInput(props: InputAreaProps) {
                     iconSize={25}
                 />
             </Dropdown>
-            <Dropdown
-                trigger={['click']}
-                overlay={
-                    <div className={Style.featureDropdown}>
-                        <Menu onClick={handleFeatureMenuClick}>
-                            <MenuItem key="code">发送代码</MenuItem>
-                            <MenuItem key="image">发送图片</MenuItem>
-                            <MenuItem key="file">发送文件</MenuItem>
-                        </Menu>
-                    </div>
-                }
-                animation="slide-up"
-                placement="topLeft"
-                getPopupContainer={() => document.body}
-            >
+            <div className={Style.addMenuWrap} ref={addTriggerRef}>
                 <IconButton
                     className={Style.iconButton}
                     width={32}
                     height={32}
                     icon="add"
                     iconSize={25}
+                    onClick={() => setAddMenuOpen((v) => !v)}
                 />
-            </Dropdown>
+                {addMenuOpen && (
+                    <>
+                        <div
+                            className={Style.addMenuBackdrop}
+                            role="button"
+                            tabIndex={-1}
+                            onClick={() => setAddMenuOpen(false)}
+                            onKeyDown={(e) => e.key === 'Escape' && setAddMenuOpen(false)}
+                            aria-label="关闭"
+                        />
+                        <div className={Style.featureDropdown}>
+                            <Menu onClick={handleFeatureMenuClick}>
+                                <MenuItem key="code">发送代码</MenuItem>
+                                <MenuItem key="image">发送图片</MenuItem>
+                                <MenuItem key="file">发送文件</MenuItem>
+                            </Menu>
+                        </div>
+                    </>
+                )}
+            </div>
             <form
                 className={Style.form}
                 autoComplete="off"
@@ -1071,23 +1079,6 @@ function ChatInput(props: InputAreaProps) {
                 />
                 {/* 清除按钮已移除，保持输入区域干净简洁 */}
             </form>
-            <div className={Style.atPanel}>
-                {at.enable &&
-                    getSuggestion().map((member) => (
-                        <div
-                            className={Style.atUserList}
-                            key={member.user._id}
-                            onClick={() => replaceAt(member.user.username)}
-                            role="button"
-                        >
-                            <Avatar size={24} src={member.user.avatar} />
-                            <p className={Style.atText}>
-                                {member.user.username}
-                            </p>
-                        </div>
-                    ))}
-            </div>
-
             {codeEditorDialog && (
                 <CodeEditorAsync
                     visible={codeEditorDialog}
