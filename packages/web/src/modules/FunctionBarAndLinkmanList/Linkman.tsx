@@ -28,7 +28,7 @@ interface LinkmanProps {
 }
 
 function Linkman(props: LinkmanProps) {
-    const { id, name, avatar, preview, unread, time, tag } = props;
+    const { id, name, avatar, preview, unread, time, tag, isOnline, lastLoginTime } = props;
 
     const action = useAction();
     const focus = useSelector((state: State) => state.focus);
