@@ -191,155 +191,162 @@ function Admin(props: AdminProps) {
             title="管理员控制台"
             onClose={onClose}
         >
-            <div className={Common.container}>
-                {systemConfig?.adminConfig && systemConfig?.adminConfigLabels && (
-                    <div className={Common.block}>
-                        <p className={Common.title}>系统配置</p>
-                        <p className={Style.configTip}>以下配置优先 Redis，留空则使用 .env 或代码默认值。失焦自动保存。标注「需重启」的项修改后需重启服务生效。</p>
-                        <div className={Style.configList}>
-                            {Object.keys(systemConfig.adminConfig).map((key) => (
-                                <div key={key} className={Style.configRow}>
-                                    <label className={Style.configLabel}>
-                                        {systemConfig.adminConfigLabels[key] || key}
-                                        {systemConfig.restartRequiredKeys?.includes(key) ? ' (需重启)' : ''}
-                                    </label>
-                                    <Input
-                                        className={Style.configInput}
-                                        value={adminConfigValues[key] ?? ''}
-                                        onChange={(v) => setAdminConfigValues((prev) => ({ ...prev, [key]: v }))}
-                                        onBlur={() => handleSetSystemConfig(key, adminConfigValuesRef.current[key] ?? '')}
-                                        placeholder="留空使用 .env 或默认值"
-                                    />
+            <div className={Style.adminColumns}>
+                <div className={Style.adminCol}>
+                    <div className={Common.container}>
+                        {systemConfig?.adminConfig && systemConfig?.adminConfigLabels && (
+                            <div className={Common.block}>
+                                <p className={Common.title}>系统配置</p>
+                                <p className={Style.configTip}>以下配置优先 Redis，留空则使用 .env 或代码默认值。失焦自动保存。标注「需重启」的项修改后需重启服务生效。</p>
+                                <div className={Style.configList}>
+                                    {Object.keys(systemConfig.adminConfig).map((key) => (
+                                        <div key={key} className={Style.configRow}>
+                                            <label className={Style.configLabel}>
+                                                {systemConfig.adminConfigLabels[key] || key}
+                                                {systemConfig.restartRequiredKeys?.includes(key) ? ' (需重启)' : ''}
+                                            </label>
+                                            <Input
+                                                className={Style.configInput}
+                                                value={adminConfigValues[key] ?? ''}
+                                                onChange={(v) => setAdminConfigValues((prev) => ({ ...prev, [key]: v }))}
+                                                onBlur={() => handleSetSystemConfig(key, adminConfigValuesRef.current[key] ?? '')}
+                                                placeholder="留空使用 .env 或默认值"
+                                            />
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
+                            </div>
+                        )}
+                        <div className={Common.block}>
+                            <p className={Common.title}>快捷开关</p>
+                            {!systemConfig?.disableSendMessage ? (
+                                <Button
+                                    className={styles.button}
+                                    type="danger"
+                                    onClick={handleDisableSendMessage}
+                                >
+                                    开启禁言
+                                </Button>
+                            ) : (
+                                <Button
+                                    className={styles.button}
+                                    onClick={handleEnableSendMessage}
+                                >
+                                    关闭禁言
+                                </Button>
+                            )}
+                            {!systemConfig?.disableNewUserSendMessage ? (
+                                <Button
+                                    className={styles.button}
+                                    type="danger"
+                                    onClick={handleDisableSNewUserendMessage}
+                                >
+                                    开启新用户禁言
+                                </Button>
+                            ) : (
+                                <Button
+                                    className={styles.button}
+                                    onClick={handleEnableNewUserSendMessage}
+                                >
+                                    关闭新用户禁言
+                                </Button>
+                            )}
+                            {!systemConfig?.groupAISwitch ? (
+                                <Button
+                                    className={styles.button}
+                                    onClick={() => handleToggleGroupAI(true)}
+                                >
+                                    开启群聊 AI
+                                </Button>
+                            ) : (
+                                <Button
+                                    className={styles.button}
+                                    type="danger"
+                                    onClick={() => handleToggleGroupAI(false)}
+                                >
+                                    关闭群聊 AI
+                                </Button>
+                            )}
                         </div>
                     </div>
-                )}
-                <div className={Common.block}>
-                    <p className={Common.title}>快捷开关</p>
-                    {!systemConfig?.disableSendMessage ? (
-                        <Button
-                            className={styles.button}
-                            type="danger"
-                            onClick={handleDisableSendMessage}
-                        >
-                            开启禁言
-                        </Button>
-                    ) : (
-                        <Button
-                            className={styles.button}
-                            onClick={handleEnableSendMessage}
-                        >
-                            关闭禁言
-                        </Button>
-                    )}
-                    {!systemConfig?.disableNewUserSendMessage ? (
-                        <Button
-                            className={styles.button}
-                            type="danger"
-                            onClick={handleDisableSNewUserendMessage}
-                        >
-                            开启新用户禁言
-                        </Button>
-                    ) : (
-                        <Button
-                            className={styles.button}
-                            onClick={handleEnableNewUserSendMessage}
-                        >
-                            关闭新用户禁言
-                        </Button>
-                    )}
-                    {!systemConfig?.groupAISwitch ? (
-                        <Button
-                            className={styles.button}
-                            onClick={() => handleToggleGroupAI(true)}
-                        >
-                            开启群聊 AI
-                        </Button>
-                    ) : (
-                        <Button
-                            className={styles.button}
-                            type="danger"
-                            onClick={() => handleToggleGroupAI(false)}
-                        >
-                            关闭群聊 AI
-                        </Button>
-                    )}
                 </div>
-                <div className={Common.block}>
-                    <p className={Common.title}>重置用户密码</p>
-                    <div className={Style.inputBlock}>
-                        <Input
-                            className={Style.input}
-                            value={resetPasswordUsername}
-                            onChange={setResetPasswordUsername}
-                            onBlur={() => resetPasswordUsername.trim() && handleResetPassword()}
-                            placeholder="要重置密码的用户名"
-                        />
-                    </div>
-                </div>
-                <div className={Common.block}>
-                    <p className={Common.title}>更新用户标签</p>
-                    <div className={Style.inputBlock}>
-                        <Input
-                            className={`${Style.input} ${Style.tagUsernameInput}`}
-                            value={tagUsername}
-                            onChange={setTagUsername}
-                            onBlur={() => tagUsername.trim() && tag.trim() && handleSetTag()}
-                            placeholder="要更新标签的用户名"
-                        />
-                        <Input
-                            className={`${Style.input} ${Style.tagInput}`}
-                            value={tag}
-                            onChange={setTag}
-                            onBlur={() => tagUsername.trim() && tag.trim() && handleSetTag()}
-                            placeholder="标签内容"
-                        />
-                    </div>
-                </div>
-                <div className={Common.block}>
-                    <p className={Common.title}>封禁用户</p>
-                    <div className={Style.inputBlock}>
-                        <Input
-                            className={Style.input}
-                            value={sealUsername}
-                            onChange={setSealUsername}
-                            onBlur={() => sealUsername.trim() && handleSeal()}
-                            placeholder="要封禁的用户名"
-                        />
-                    </div>
-                </div>
-                <div className={Common.block}>
-                    <p className={Common.title}>封禁用户列表</p>
-                    <div className={Style.sealList}>
-                        {sealList.users.map((username) => (
-                            <span className={Style.sealUsername} key={username}>
-                                {username}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-
-                <div className={Common.block}>
-                    <p className={Common.title}>封禁ip</p>
-                    <div className={Style.inputBlock}>
-                        <Input
-                            className={Style.input}
-                            value={sealIpAddress}
-                            onChange={setSealIpAddress}
-                            onBlur={() => sealIpAddress.trim() && handleSealIp()}
-                            placeholder="要封禁的ip"
-                        />
-                    </div>
-                </div>
-                <div className={Common.block}>
-                    <p className={Common.title}>封禁ip列表</p>
-                    <div className={Style.sealList}>
-                        {sealList.ips.map((ip) => (
-                            <span className={Style.sealUsername} key={ip}>
-                                {ip}
-                            </span>
-                        ))}
+                <div className={Style.adminCol}>
+                    <div className={Common.container}>
+                        <div className={Common.block}>
+                            <p className={Common.title}>重置用户密码</p>
+                            <div className={Style.inputBlock}>
+                                <Input
+                                    className={Style.input}
+                                    value={resetPasswordUsername}
+                                    onChange={setResetPasswordUsername}
+                                    onBlur={() => resetPasswordUsername.trim() && handleResetPassword()}
+                                    placeholder="要重置密码的用户名"
+                                />
+                            </div>
+                        </div>
+                        <div className={Common.block}>
+                            <p className={Common.title}>更新用户标签</p>
+                            <div className={Style.inputBlock}>
+                                <Input
+                                    className={`${Style.input} ${Style.tagUsernameInput}`}
+                                    value={tagUsername}
+                                    onChange={setTagUsername}
+                                    onBlur={() => tagUsername.trim() && tag.trim() && handleSetTag()}
+                                    placeholder="要更新标签的用户名"
+                                />
+                                <Input
+                                    className={`${Style.input} ${Style.tagInput}`}
+                                    value={tag}
+                                    onChange={setTag}
+                                    onBlur={() => tagUsername.trim() && tag.trim() && handleSetTag()}
+                                    placeholder="标签内容"
+                                />
+                            </div>
+                        </div>
+                        <div className={Common.block}>
+                            <p className={Common.title}>封禁用户</p>
+                            <div className={Style.inputBlock}>
+                                <Input
+                                    className={Style.input}
+                                    value={sealUsername}
+                                    onChange={setSealUsername}
+                                    onBlur={() => sealUsername.trim() && handleSeal()}
+                                    placeholder="要封禁的用户名"
+                                />
+                            </div>
+                        </div>
+                        <div className={Common.block}>
+                            <p className={Common.title}>封禁用户列表</p>
+                            <div className={Style.sealList}>
+                                {sealList.users.map((username) => (
+                                    <span className={Style.sealUsername} key={username}>
+                                        {username}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                        <div className={Common.block}>
+                            <p className={Common.title}>封禁ip</p>
+                            <div className={Style.inputBlock}>
+                                <Input
+                                    className={Style.input}
+                                    value={sealIpAddress}
+                                    onChange={setSealIpAddress}
+                                    onBlur={() => sealIpAddress.trim() && handleSealIp()}
+                                    placeholder="要封禁的ip"
+                                />
+                            </div>
+                        </div>
+                        <div className={Common.block}>
+                            <p className={Common.title}>封禁ip列表</p>
+                            <div className={Style.sealList}>
+                                {sealList.ips.map((ip) => (
+                                    <span className={Style.sealUsername} key={ip}>
+                                        {ip}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

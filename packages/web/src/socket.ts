@@ -187,6 +187,12 @@ socket.on('connect', async () => {
                     payload: { key: 'groupAISwitch', value: publicConfig.groupAISwitch },
                 });
             }
+            if (publicConfig?.defaultBotName !== undefined) {
+                dispatch({
+                    type: ActionTypes.SetStatus,
+                    payload: { key: 'defaultBotName', value: publicConfig.defaultBotName || '' },
+                });
+            }
             if (publicConfig?.defaultTitle !== undefined && publicConfig.defaultTitle !== '') {
                 defaultTitle = publicConfig.defaultTitle;
                 document.title = defaultTitle;

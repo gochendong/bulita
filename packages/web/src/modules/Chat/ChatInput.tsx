@@ -98,6 +98,7 @@ function ChatInput(props: InputAreaProps) {
     const status = useSelector((state: State) => state.status);
     const linkman = useSelector((state: State) => state.linkmans[focus]);
     const groupAISwitch = useSelector((state: State) => state.status.groupAISwitch);
+    const defaultBotName = useSelector((state: State) => state.status.defaultBotName) || '';
     const voiceSwitch = useSelector((state: State) => state.status.voiceSwitch);
     const selfVoiceSwitch = useSelector(
         (state: State) => state.status.selfVoiceSwitch,
@@ -261,8 +262,8 @@ function ChatInput(props: InputAreaProps) {
             content,
             createTime: Date.now(),
             from: {
-                _id: process.env.DEFAULT_BOT_NAME || 'AI',
-                username: process.env.DEFAULT_BOT_NAME || 'AI',
+                _id: defaultBotName || 'AI',
+                username: defaultBotName || 'AI',
                 avatar: window.localStorage.getItem('botAvatar') || '',
                 tag: 'bot',
             },
@@ -281,7 +282,7 @@ function ChatInput(props: InputAreaProps) {
             createTime: Date.now(),
             from: {
                 _id: linkman._id,
-                username: process.env.DEFAULT_BOT_NAME,
+                username: defaultBotName || 'AI',
                 avatar: window.localStorage.getItem('botAvatar'),
                 tag: 'bot',
             },
@@ -357,18 +358,24 @@ function ChatInput(props: InputAreaProps) {
                 action.updateMessage(focus, botMessageId, botMsg);
             }
         }
-        if (linkman.type === 'group' && groupAISwitch) {
-            const botMessageId = addGroupBotMessage(
-                'text',
-                `${process.env.DEFAULT_BOT_NAME || 'AI'}正在回复${username}...`,
-            );
-            const [groupBotErr, groupBotMsg] = await sendGroupBotMessage(
-                linkmanId,
-                type,
-                content,
-            );
-            if (!groupBotErr) {
-                action.updateMessage(focus, botMessageId, groupBotMsg);
+        const botNameForGroup = defaultBotName || 'AI';
+        const contentMentionsBot = botNameForGroup && content.includes(`@${botNameForGroup}`);
+        if (linkman.type === 'group' && contentMentionsBot) {
+            if (groupAISwitch) {
+                const botMessageId = addGroupBotMessage(
+                    'text',
+                    `${botNameForGroup}正在回复${username}...`,
+                );
+                const [groupBotErr, groupBotMsg] = await sendGroupBotMessage(
+                    linkmanId,
+                    type,
+                    content,
+                );
+                if (!groupBotErr) {
+                    action.updateMessage(focus, botMessageId, groupBotMsg);
+                }
+            } else {
+                Message.warning('管理员已关闭群聊 AI，@ 机器人不会触发回复');
             }
         }
     }
@@ -833,17 +840,33 @@ function ChatInput(props: InputAreaProps) {
         }
     }
 
-    function getSuggestion() {
+    function getSuggestion(): typeof linkman.onlineMembers {
         if (!at.enable || linkman.type !== 'group') {
             return [];
         }
-        return linkman.onlineMembers.filter((member) => {
-            const regex = new RegExp(`^${at.content}`);
-            if (regex.test(member.user.username)) {
-                return true;
-            }
-            return false;
+        const botName = defaultBotName || 'AI';
+        const regex = new RegExp(`^${at.content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
+        const filtered = (linkman.onlineMembers || []).filter((member) =>
+            regex.test(member.user.username),
+        );
+        const hasBot = botName && filtered.some((m) => m.user.username === botName);
+        const botFirst = [...filtered].sort((a, b) => {
+            if (a.user.username === botName) return -1;
+            if (b.user.username === botName) return 1;
+            return 0;
         });
+        if (groupAISwitch && botName && !hasBot && regex.test(botName)) {
+            return [
+                {
+                    user: { _id: `bot-${botName}`, username: botName, avatar: '' },
+                    os: '',
+                    browser: '',
+                    environment: '',
+                },
+                ...botFirst,
+            ];
+        }
+        return botFirst;
     }
 
     function replaceAt(targetUsername: string) {

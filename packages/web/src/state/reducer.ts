@@ -158,6 +158,8 @@ export interface State {
         enableSearchExpression: boolean;
         /** 群聊 AI 开关（由管理员在控制台设置，从服务端拉取） */
         groupAISwitch: boolean;
+        /** 群聊中 @ 的默认机器人名（用于 @ 列表置顶与判断是否触发群聊 AI） */
+        defaultBotName: string;
     };
 }
 
@@ -282,6 +284,7 @@ export const initialState: State = {
         functionBarAndLinkmanListVisible: !isMobile,
         enableSearchExpression: localStorage.enableSearchExpression,
         groupAISwitch: false,
+        defaultBotName: '',
         pendingRetryMessage: null as { linkmanId: string; messageId: string } | null,
     },
 };

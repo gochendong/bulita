@@ -1,5 +1,21 @@
 .admin {
-    // height: 50% !important;
+    width: 720px !important;
+    max-width: 94vw;
+    :global(.rc-dialog-body) {
+        max-height: 85vh;
+        overflow-y: auto;
+    }
+}
+
+.adminColumns {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.adminCol {
+    flex: 1;
+    min-width: 0;
 }
 
 .inputBlock {
