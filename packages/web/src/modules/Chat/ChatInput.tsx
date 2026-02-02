@@ -955,6 +955,7 @@ function ChatInput(props: InputAreaProps) {
                 }
                 animation="slide-up"
                 placement="topLeft"
+                getPopupContainer={() => document.body}
             >
                 <IconButton
                     className={Style.iconButton}
@@ -977,6 +978,7 @@ function ChatInput(props: InputAreaProps) {
                 }
                 animation="slide-up"
                 placement="topLeft"
+                getPopupContainer={() => document.body}
             >
                 <IconButton
                     className={Style.iconButton}

@@ -5,11 +5,16 @@
     background: transparent;
     display: flex;
     align-items: center;
+    gap: 12px;
     padding: 0 20px 0 24px;
     border-bottom-right-radius: 12px;
     position: relative;
     border-left: none;
     box-shadow: none;
+
+    :global(.rc-dropdown) {
+        flex-shrink: 0;
+    }
 
     &[data-aero='true'] {
         background: transparent;
@@ -44,7 +49,7 @@
     display: flex;
     flex-direction: column;
     position: relative;
-    margin: 0 10px 0 16px;
+    margin: 0 10px 0 0;
     min-width: 0;
 }
 
@@ -253,7 +258,6 @@
     border-radius: 12px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
     border: 1px solid @input-border;
-    margin-bottom: 6px;
 
     :global {
         .rc-menu {
