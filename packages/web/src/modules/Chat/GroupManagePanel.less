@@ -85,24 +85,13 @@
 .name {
     display: block;
     margin-top: 6px;
-    & > :global(.component-input) {
-        height: 36px;
-        width: 100%;
-        display: block;
-    }
 }
-.input {
+
+/* 仅设尺寸，不重复边框，避免与 Input 组件内部 input 重叠 */
+.inputWrap {
     height: 36px;
     width: 100%;
-    border-radius: 6px;
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    font-size: 14px;
-    color: #333;
-    box-sizing: border-box;
-    -webkit-user-select: auto;
-    -moz-user-select: auto;
-    -ms-user-select: auto;
-    user-select: auto;
+    display: block;
 }
 
 .button {

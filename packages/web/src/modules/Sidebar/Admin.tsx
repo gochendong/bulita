@@ -197,7 +197,7 @@ function Admin(props: AdminProps) {
                         {systemConfig?.adminConfig && systemConfig?.adminConfigLabels && (
                             <div className={Common.block}>
                                 <p className={Common.title}>系统配置</p>
-                                <p className={Style.configTip}>以下配置优先 Redis，留空则使用 .env 或代码默认值。失焦自动保存。标注「需重启」的项修改后需重启服务生效。</p>
+                                <p className={Style.configTip}>以下配置优先写入 Redis。输入框留空表示该项设为空（不会使用 .env）。点击输入框外即保存。标注「需重启」的项修改后需重启服务生效。</p>
                                 <div className={Style.configList}>
                                     {Object.keys(systemConfig.adminConfig).map((key) => (
                                         <div key={key} className={Style.configRow}>
@@ -210,7 +210,7 @@ function Admin(props: AdminProps) {
                                                 value={adminConfigValues[key] ?? ''}
                                                 onChange={(v) => setAdminConfigValues((prev) => ({ ...prev, [key]: v }))}
                                                 onBlur={() => handleSetSystemConfig(key, adminConfigValuesRef.current[key] ?? '')}
-                                                placeholder="留空使用 .env 或默认值"
+                                                placeholder="留空表示该项为空"
                                             />
                                         </div>
                                     ))}

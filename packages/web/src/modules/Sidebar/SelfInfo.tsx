@@ -149,9 +149,23 @@ function SelfInfo(props: SelfInfoProps) {
 
     const [username, setUsername] = useState(currentUsername);
     const [signature, setSignature] = useState(currentSignature);
+    /**
+     * 按 token 长度脱敏：两侧各显示若干字符，中间用 * 填充
+     */
+    function maskPushToken(token: string): string {
+        if (!token) return '';
+        const len = token.length;
+        const side = Math.max(2, Math.min(6, Math.floor(len / 4)));
+        if (len <= side * 2) return '*'.repeat(len);
+        const left = token.slice(0, side);
+        const right = token.slice(-side);
+        const midLen = len - side * 2;
+        return left + '*'.repeat(midLen) + right;
+    }
+
     const [pushToken, setPushToken] = useState(currentPushToken);
     const [pushTokenDisplay, setPushTokenDisplay] = useState(
-        currentPushToken ? `***${currentPushToken.slice(-4)}` : ''
+        currentPushToken ? maskPushToken(currentPushToken) : ''
     );
 
     useEffect(() => {
@@ -161,21 +175,25 @@ function SelfInfo(props: SelfInfoProps) {
     useEffect(() => {
         if (visible) {
             setPushToken(currentPushToken);
-            setPushTokenDisplay(currentPushToken ? `***${currentPushToken.slice(-4)}` : '');
+            setPushTokenDisplay(currentPushToken ? maskPushToken(currentPushToken) : '');
         }
     }, [visible, currentPushToken]);
 
     /**
-     * 修改用户名
+     * 修改用户名（不能为空，留空表示不修改）
      */
     async function handleChangeUsername() {
-        if (username === currentUsername) return;
-        const isSuccess = await changeUsername(username);
+        if (!username.trim()) {
+            setUsername(currentUsername);
+            return;
+        }
+        if (username.trim() === currentUsername) return;
+        const isSuccess = await changeUsername(username.trim());
         if (isSuccess) {
             dispatch({
                 type: ActionTypes.UpdateUserInfo,
                 payload: {
-                    username
+                    username: username.trim(),
                 },
             });
             Message.success('用户名已更新');
@@ -333,7 +351,7 @@ function SelfInfo(props: SelfInfoProps) {
                             }}
                             onFocus={() => setPushTokenDisplay(pushToken)}
                             onBlur={() => {
-                                setPushTokenDisplay(pushToken ? `***${pushToken.slice(-4)}` : '');
+                                setPushTokenDisplay(pushToken ? maskPushToken(pushToken) : '');
                                 handleChangePushToken();
                             }}
                             type="text"
@@ -359,7 +377,7 @@ function SelfInfo(props: SelfInfoProps) {
                             onChange={setNewPassword}
                             onBlur={() => oldPassword && newPassword && handleChangePassword()}
                             type="password"
-                            placeholder="新密码（填写后失焦自动生效）"
+                            placeholder="新密码（填写后点击输入框外即保存）"
                             showClearBtn={false}
                         />
                     </div>

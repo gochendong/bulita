@@ -120,12 +120,19 @@ export async function setConfig(key: string, value: string): Promise<void> {
 }
 
 /**
- * 获取所有管理员可编辑配置的当前值（Redis 或 .env 或代码默认值）
+ * 获取所有管理员可编辑配置的当前值（供管理台展示）。
+ * 若 Redis 中已有该键（含设为空字符串），则显示 Redis 的值；否则显示 .env 或代码默认值。
+ * 这样「留空」在控制台保存后，会真正存成空，再次打开时也显示为空。
  */
 export async function getAllAdminConfig(): Promise<Record<string, string>> {
     const out: Record<string, string> = {};
     for (const key of ADMIN_CONFIG_KEYS) {
-        out[key] = await getConfigWithDefault(key);
+        const redisVal = await getConfig(key);
+        if (redisVal !== undefined) {
+            out[key] = redisVal;
+        } else {
+            out[key] = await getConfigWithDefault(key);
+        }
     }
     return out;
 }

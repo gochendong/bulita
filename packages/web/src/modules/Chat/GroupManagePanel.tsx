@@ -70,7 +70,11 @@ function GroupManagePanel(props: GroupManagePanelProps) {
     }, [visible, name, announcement, groupId]);
 
     async function handleChangeGroupName() {
-        if (!groupName.trim() || groupName === name) return;
+        if (!groupName.trim()) {
+            setGroupName(name);
+            return;
+        }
+        if (groupName.trim() === name) return;
         const isSuccess = await changeGroupName(groupId, groupName.trim());
         if (isSuccess) {
             Message.success('群名称已更新');
@@ -229,7 +233,7 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                             <p className={Style.blockTitle}>群名称</p>
                             <div className={Style.name}>
                                 <Input
-                                    className={Style.input}
+                                    className={Style.inputWrap}
                                     value={groupName}
                                     onChange={setGroupName}
                                     onBlur={handleChangeGroupName}
@@ -241,7 +245,7 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                         <div className={Style.block}>
                             <p className={Style.blockTitle}>群公告</p>
                             <Input
-                                className={Style.input}
+                                className={Style.inputWrap}
                                 value={groupAnnouncement}
                                 onChange={setGroupAnnouncement}
                                 onBlur={handleChangeGroupAnnouncement}
