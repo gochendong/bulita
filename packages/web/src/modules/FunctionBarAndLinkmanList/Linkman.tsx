@@ -35,6 +35,21 @@ function Linkman(props: LinkmanProps) {
     const aero = useAero();
     const { linkmans } = useStore();
 
+    function formatLastOnline(dateStr: string | null | undefined): string {
+        if (!dateStr) return '从未登录';
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffM = Math.floor(diffMs / 60000);
+        const diffH = Math.floor(diffMs / 3600000);
+        const diffD = Math.floor(diffMs / 86400000);
+        if (diffM < 1) return '刚刚';
+        if (diffM < 60) return `${diffM} 分钟前`;
+        if (diffH < 24) return `${diffH} 小时前`;
+        if (diffD < 30) return `${diffD} 天前`;
+        return date.toLocaleDateString();
+    }
+
     function formatTime() {
         const nowTime = new Date();
         if (Time.isToday(nowTime, time)) {
