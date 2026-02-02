@@ -21,22 +21,29 @@ function Login() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
+    const LOGIN_TIMEOUT_MS = 15000;
+
     async function handleLogin() {
         if (!username.trim() || !password.trim()) {
             Message.error('请输入用户名和密码');
             return;
         }
         if (loading) return;
-        
+
         setLoading(true);
         try {
-            const user = await login(
-                username,
-                password,
-                platform.os?.family,
-                platform.name,
-                platform.description,
-            );
+            const user = await Promise.race([
+                login(
+                    username,
+                    password,
+                    platform.os?.family,
+                    platform.name,
+                    platform.description,
+                ),
+                new Promise<null>((_, reject) =>
+                    setTimeout(() => reject(new Error('timeout')), LOGIN_TIMEOUT_MS),
+                ),
+            ]);
             if (user) {
                 action.setUser(user);
                 action.toggleLoginRegisterDialog(false);
@@ -62,8 +69,12 @@ function Login() {
             } else {
                 Message.error('登录失败，请检查用户名和密码');
             }
-        } catch (error) {
-            Message.error('登录失败，请重试');
+        } catch (error: any) {
+            if (error?.message === 'timeout') {
+                Message.error('登录超时，请检查网络后重试');
+            } else {
+                Message.error('登录失败，请重试');
+            }
         } finally {
             setLoading(false);
         }
