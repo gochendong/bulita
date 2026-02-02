@@ -192,7 +192,31 @@ function Admin(props: AdminProps) {
             onClose={onClose}
         >
             <div className={Common.container}>
+                {systemConfig?.adminConfig && systemConfig?.adminConfigLabels && (
+                    <div className={Common.block}>
+                        <p className={Common.title}>系统配置</p>
+                        <p className={Style.configTip}>以下配置优先 Redis，留空则使用 .env 或代码默认值。失焦自动保存。标注「需重启」的项修改后需重启服务生效。</p>
+                        <div className={Style.configList}>
+                            {Object.keys(systemConfig.adminConfig).map((key) => (
+                                <div key={key} className={Style.configRow}>
+                                    <label className={Style.configLabel}>
+                                        {systemConfig.adminConfigLabels[key] || key}
+                                        {systemConfig.restartRequiredKeys?.includes(key) ? ' (需重启)' : ''}
+                                    </label>
+                                    <Input
+                                        className={Style.configInput}
+                                        value={adminConfigValues[key] ?? ''}
+                                        onChange={(v) => setAdminConfigValues((prev) => ({ ...prev, [key]: v }))}
+                                        onBlur={() => handleSetSystemConfig(key, adminConfigValuesRef.current[key] ?? '')}
+                                        placeholder="留空使用 .env 或默认值"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
                 <div className={Common.block}>
+                    <p className={Common.title}>快捷开关</p>
                     {!systemConfig?.disableSendMessage ? (
                         <Button
                             className={styles.button}
@@ -242,29 +266,6 @@ function Admin(props: AdminProps) {
                         </Button>
                     )}
                 </div>
-                {systemConfig?.adminConfig && systemConfig?.adminConfigLabels && (
-                    <div className={Common.block}>
-                        <p className={Common.title}>系统配置</p>
-                        <p className={Style.configTip}>以下配置存于 Redis，留空则使用代码内默认值。失焦自动保存。标注「需重启」的项修改后需重启服务生效。</p>
-                        <div className={Style.configList}>
-                            {Object.keys(systemConfig.adminConfig).map((key) => (
-                                <div key={key} className={Style.configRow}>
-                                    <label className={Style.configLabel}>
-                                        {systemConfig.adminConfigLabels[key] || key}
-                                        {systemConfig.restartRequiredKeys?.includes(key) ? ' (需重启)' : ''}
-                                    </label>
-                                    <Input
-                                        className={Style.configInput}
-                                        value={adminConfigValues[key] ?? ''}
-                                        onChange={(v) => setAdminConfigValues((prev) => ({ ...prev, [key]: v }))}
-                                        onBlur={() => handleSetSystemConfig(key, adminConfigValuesRef.current[key] ?? '')}
-                                        placeholder="留空使用默认值"
-                                    />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
                 <div className={Common.block}>
                     <p className={Common.title}>重置用户密码</p>
                     <div className={Style.inputBlock}>
