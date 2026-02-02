@@ -30,6 +30,7 @@ import store from '../../state/store';
 import {
     sendMessage,
     sendBotMessage,
+    sendGroupBotMessage,
 } from '../../service';
 import Tooltip from '../../components/Tooltip';
 import useAero from '../../hooks/useAero';
@@ -96,6 +97,7 @@ function ChatInput(props: InputAreaProps) {
     const focus = useSelector((state: State) => state.focus);
     const status = useSelector((state: State) => state.status);
     const linkman = useSelector((state: State) => state.linkmans[focus]);
+    const groupAISwitch = useSelector((state: State) => state.status.groupAISwitch);
     const voiceSwitch = useSelector((state: State) => state.status.voiceSwitch);
     const selfVoiceSwitch = useSelector(
         (state: State) => state.status.selfVoiceSwitch,
@@ -259,6 +261,25 @@ function ChatInput(props: InputAreaProps) {
             content,
             createTime: Date.now(),
             from: {
+                _id: process.env.DEFAULT_BOT_NAME || 'AI',
+                username: process.env.DEFAULT_BOT_NAME || 'AI',
+                avatar: window.localStorage.getItem('botAvatar') || '',
+                tag: 'bot',
+            },
+            loading: true,
+        };
+        action.addLinkmanMessage(focus, message);
+        return _id;
+    }
+
+    function addGroupBotMessage(type: string, content: string) {
+        const _id = focus + Date.now();
+        const message = {
+            _id,
+            type,
+            content,
+            createTime: Date.now(),
+            from: {
                 _id: linkman._id,
                 username: process.env.DEFAULT_BOT_NAME,
                 avatar: window.localStorage.getItem('botAvatar'),
@@ -334,6 +355,20 @@ function ChatInput(props: InputAreaProps) {
             );
             if (!botErr) {
                 action.updateMessage(focus, botMessageId, botMsg);
+            }
+        }
+        if (linkman.type === 'group' && groupAISwitch) {
+            const botMessageId = addGroupBotMessage(
+                'text',
+                `${process.env.DEFAULT_BOT_NAME || 'AI'}正在回复${username}...`,
+            );
+            const [groupBotErr, groupBotMsg] = await sendGroupBotMessage(
+                linkmanId,
+                type,
+                content,
+            );
+            if (!groupBotErr) {
+                action.updateMessage(focus, botMessageId, groupBotMsg);
             }
         }
     }
@@ -974,7 +1009,11 @@ function ChatInput(props: InputAreaProps) {
                                 $input.current.value = '';
                                 setInputHasContent(false);
                                 setTextAreaHeight($input.current, minHeight, maxHeight);
-                                $input.current.focus();
+                                if (isMobile) {
+                                    $input.current.blur();
+                                } else {
+                                    $input.current.focus();
+                                }
                             }
                         }}
                     />

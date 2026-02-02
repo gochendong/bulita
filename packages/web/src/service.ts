@@ -335,6 +335,20 @@ export async function sendBotMessage(
 }
 
 /**
+ * 发送群组 Bot 消息（群聊 AI 回复）
+ * @param to 群组 id
+ * @param type 消息类型
+ * @param content 消息内容
+ */
+export async function sendGroupBotMessage(
+    to: string,
+    type: string,
+    content: string,
+) {
+    return fetch('sendGroupBotMessage', { to, type, content });
+}
+
+/**
  * 删除消息
  * @param messageId 要删除的消息id
  */
@@ -461,6 +475,27 @@ export async function getSealList() {
 export async function getSystemConfig() {
     const [, systemConfig] = await fetch('getSystemConfig');
     return systemConfig;
+}
+
+/**
+ * 获取公开系统配置（群聊 AI 开关等，供聊天区使用）
+ */
+export async function getPublicSystemConfig() {
+    const [, config] = await fetch('getPublicSystemConfig');
+    return config;
+}
+
+export async function toggleGroupAI(enable: boolean) {
+    const [, result] = await fetch('toggleGroupAI', { enable });
+    return !!result;
+}
+
+/**
+ * 设置系统配置项（管理员）
+ */
+export async function setSystemConfig(key: string, value: string) {
+    const [, result] = await fetch('setSystemConfig', { key, value });
+    return !!result;
 }
 
 /**

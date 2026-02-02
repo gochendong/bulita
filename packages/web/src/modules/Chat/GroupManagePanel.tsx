@@ -73,7 +73,7 @@ function GroupManagePanel(props: GroupManagePanelProps) {
         if (!groupName.trim() || groupName === name) return;
         const isSuccess = await changeGroupName(groupId, groupName.trim());
         if (isSuccess) {
-            Message.success('修改群名称成功');
+            Message.success('群名称已更新');
             action.setLinkmanProperty(groupId, 'name', groupName.trim());
         }
     }
@@ -82,7 +82,7 @@ function GroupManagePanel(props: GroupManagePanelProps) {
         if (groupAnnouncement === announcement) return;
         const isSuccess = await changeGroupAnnouncement(groupId, groupAnnouncement.trim());
         if (isSuccess) {
-            Message.success('修改群公告成功');
+            Message.success('群公告已更新');
             action.setLinkmanProperty(groupId, 'announcement', groupAnnouncement.trim());
         }
     }
@@ -112,7 +112,7 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                     'avatar',
                     URL.createObjectURL(image.result),
                 );
-                Message.success('修改群头像成功');
+                Message.success('群头像已更新');
             }
         } catch (err) {
             console.error(err);
@@ -224,13 +224,15 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                 <div className={Style.content}>
                     {isLogin && selfId === creator ? (
                         <div className={Style.block}>
-                            <p className={Style.blockTitle}>修改群名称</p>
-                            <Input
-                                className={Style.input}
-                                value={groupName}
-                                onChange={setGroupName}
-                                onBlur={handleChangeGroupName}
-                            />
+                            <p className={Style.blockTitle}>群名称</p>
+                            <div className={Style.name}>
+                                <Input
+                                    className={Style.input}
+                                    value={groupName}
+                                    onChange={setGroupName}
+                                    onBlur={handleChangeGroupName}
+                                />
+                            </div>
                         </div>
                     ) : null}
                     {isLogin && selfId === creator ? (
@@ -252,7 +254,7 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                     ) : null}
                     {isLogin && selfId === creator ? (
                         <div className={Style.block}>
-                            <p className={Style.blockTitle}>修改群头像</p>
+                            <p className={Style.blockTitle}>群头像</p>
                             <img
                                 className={Style.avatar}
                                 src={getOSSFileUrl(avatar)}
@@ -265,13 +267,13 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                     <div className={Style.block}>
                         <p className={Style.blockTitle}>功能</p>
                         {selfId === creator ? (
-                            <Button
-                                className={Style.button}
-                                type="danger"
+                            <button
+                                type="button"
+                                className={Style.dissolveGroupBtn}
                                 onClick={() => setDialogStatus(true)}
                             >
                                 解散群组
-                            </Button>
+                            </button>
                         ) : (
                             <Button
                                 className={Style.button}

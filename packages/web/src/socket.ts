@@ -21,6 +21,7 @@ import {
     loginByToken,
     getLinkmanHistoryMessages,
     getLinkmansLastMessagesV2,
+    getPublicSystemConfig,
 } from './service';
 import store from './state/store';
 // import useAction from "./hooks/useAction";
@@ -179,10 +180,19 @@ socket.on('connect', async () => {
                 type: ActionTypes.SetLinkmansLastMessages,
                 payload: linkmanMessages,
             });
+            const publicConfig = await getPublicSystemConfig();
+            if (publicConfig?.groupAISwitch !== undefined) {
+                dispatch({
+                    type: ActionTypes.SetStatus,
+                    payload: { key: 'groupAISwitch', value: publicConfig.groupAISwitch },
+                });
+            }
+            if (publicConfig?.defaultTitle !== undefined && publicConfig.defaultTitle !== '') {
+                defaultTitle = publicConfig.defaultTitle;
+                document.title = defaultTitle;
+            }
             return;
-        } 
-        // window.localStorage.removeItem('token');
-        
+        }
     }
     loginFailback();
 });
@@ -195,7 +205,8 @@ socket.on('disconnect', () => {
 let intervalIDs = [];
 let windowStatus = 'focus';
 let notifications = 0;
-const defaultTitle = process.env.DEFAULT_TITLE;
+/** 网站标题，优先从服务端 getPublicSystemConfig 获取，否则使用构建时 env */
+let defaultTitle = typeof process !== 'undefined' && process.env?.DEFAULT_TITLE ? process.env.DEFAULT_TITLE : '';
 window.onfocus = () => {
     windowStatus = 'focus';
     for (let i = 0; i < intervalIDs.length; i++) {

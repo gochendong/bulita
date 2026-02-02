@@ -23,21 +23,16 @@ import {
     getNewUserKey,
     Redis,
 } from '@bulita/database/redis/initRedis';
+import { getConfig, getConfigWithDefault } from '../utils/runtimeConfig';
 import chalk from 'chalk';
 
 const { XMLHttpRequest } = require('xmlhttprequest');
-
-const BOTS = process.env.BOTS ? process.env.BOTS.split(',') : [];
 const {IP_LOCATION_API} = process.env;
 
 const { isValid } = Types.ObjectId;
 
 /** 一天时间 */
 const OneDay = 1000 * 60 * 60 * 24;
-
-const PASSWORD_REGEX = process.env.PASSWORD_REGEX || '';
-const PASSWORD_TIPS = process.env.PASSWORD_TIPS || '';
-const pattern = new RegExp(PASSWORD_REGEX);
 
 interface Environment {
     /** 客户端系统 */
@@ -78,13 +73,14 @@ async function handleNewUser(user: UserDocument, ip = '') {
         await Redis.set(getNewUserKey(userId), userId, Redis.Day);
 
         if (ip) {
+            const registerIpInterval = await getConfigWithDefault('REGISTER_IP_INTERVAL');
             const registeredCount = await Redis.get(
                 getNewRegisteredUserIpKey(ip),
             );
             await Redis.set(
                 getNewRegisteredUserIpKey(ip),
                 (parseInt(registeredCount || '0', 10) + 1).toString(),
-                process.env.REGISTER_IP_INTERVAL,
+                registerIpInterval,
             );
         }
     }
@@ -120,7 +116,7 @@ async function addDefaultLinkmans(user: UserDocument) {
     }
     await defaultGroup.save();
 
-    const defaultLinkmans = process.env.DEFAULT_LINKMANS;
+    const defaultLinkmans = await getConfigWithDefault('DEFAULT_LINKMANS');
 
     if (defaultLinkmans) {
         const defaultLinkmansArray = defaultLinkmans.split(',');
@@ -155,13 +151,15 @@ async function addDefaultLinkmans(user: UserDocument) {
 export async function register(
     ctx: Context<{ username: string; password: string } & Environment>,
 ) {
-    if (process.env.ENABLE_REGISTER_USER !== 'true') {
+    const enableRegister = await getConfigWithDefault('ENABLE_REGISTER_USER');
+    if (enableRegister !== 'true') {
         throw AssertionError({message: '本站暂不开放注册'});
     }
     let { username, password, os, browser, environment } = ctx.data;
+    const defaultUsername = await getConfigWithDefault('DEFAULT_USERNAME');
 
     for (let i = 3; i < 10; i++) {
-        username = `${process.env.DEFAULT_USERNAME}${randomString(i)}`;
+        username = `${defaultUsername}${randomString(i)}`;
         const user = await User.findOne({ username });
         if (user) {
             continue;
@@ -178,7 +176,8 @@ export async function register(
     );
 
     let tag = '';
-    if (BOTS.includes(username)) {
+    const botsList = (await getConfigWithDefault('BOTS')).split(',').map((s: string) => s.trim()).filter(Boolean);
+    if (botsList.includes(username)) {
         tag = 'bot';
     } else if (IP_LOCATION_API) {
         const url = `${IP_LOCATION_API}${ctx.socket.ip.split(',')[0]}`;
@@ -338,7 +337,8 @@ export async function login(
     await handleNewUser(user);
 
     let tag = '';
-    if (BOTS.includes(user.username)) {
+    const botsList = (await getConfigWithDefault('BOTS')).split(',').map((s: string) => s.trim()).filter(Boolean);
+    if (botsList.includes(user.username)) {
         tag = 'bot';
     } else if (IP_LOCATION_API) {
         const url = `${IP_LOCATION_API}${ctx.socket.ip.split(',')[0]}`;
@@ -466,7 +466,8 @@ export async function loginByToken(
     await handleNewUser(user);
 
     let tag = '';
-    if (BOTS.includes(user.username)) {
+    const botsList = (await getConfigWithDefault('BOTS')).split(',').map((s: string) => s.trim()).filter(Boolean);
+    if (botsList.includes(user.username)) {
         tag = 'bot';
     } else if (IP_LOCATION_API) {
         const url = `${IP_LOCATION_API}${ctx.socket.ip.split(',')[0]}`;
@@ -527,8 +528,9 @@ export async function loginByToken(
     );
 
     let bot = null;
-    if (process.env.DEFAULT_BOT_NAME) {
-        bot = await User.findOne({ username: process.env.DEFAULT_BOT_NAME }, {
+    const defaultBotName = await getConfigWithDefault('DEFAULT_BOT_NAME');
+    if (defaultBotName) {
+        bot = await User.findOne({ username: defaultBotName }, {
             _id: 1,
             username: 1,
             avatar: 1,
@@ -696,8 +698,11 @@ export async function changePassword(
     const { oldPassword, newPassword } = ctx.data;
     assert(newPassword, '新密码不能为空');
     assert(oldPassword === newPassword, '两次密码输入不一致');
-    if (PASSWORD_REGEX) {
-        assert(pattern.test(newPassword), PASSWORD_TIPS);
+    const passwordRegex = await getConfigWithDefault('PASSWORD_REGEX');
+    const passwordTips = await getConfigWithDefault('PASSWORD_TIPS');
+    if (passwordRegex) {
+        const pattern = new RegExp(passwordRegex);
+        assert(pattern.test(newPassword), passwordTips);
     }
     const user = await User.findOne({ _id: ctx.socket.user });
     if (!user) {
@@ -795,7 +800,8 @@ export async function resetUserPassword(ctx: Context<{ username: string }>) {
         throw new AssertionError({ message: '用户不存在' });
     }
 
-    const newPassword = process.env.DEFAULT_PASSWORD;
+    const newPassword = await getConfigWithDefault('DEFAULT_PASSWORD');
+    assert(newPassword, '默认密码未配置，请在管理台设置 DEFAULT_PASSWORD');
     const salt = await bcrypt.genSalt(SALT_ROUNDS);
     const hash = await bcrypt.hash(newPassword, salt);
 

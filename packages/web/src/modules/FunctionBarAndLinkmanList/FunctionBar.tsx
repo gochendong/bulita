@@ -82,7 +82,7 @@ function FunctionBar() {
                 if (result?.users?.length || result?.groups?.length) {
                     setSearchResult(result);
                 } else {
-                    Message.warning('没有搜索到内容, 记得回车哦~');
+                    Message.warning('没有搜索到内容');
                     setSearchResult({ users: [], groups: [] });
                 }
             }
@@ -164,6 +164,7 @@ function FunctionBar() {
                     // @ts-ignore
                     onChange={setKeywords}
                     onFocus={handleFocus}
+                    onBlur={handleInputEnter}
                     onEnter={handleInputEnter}
                 />
             </form>
@@ -191,7 +192,7 @@ function FunctionBar() {
                     searchResult.groups.length === 0 ? (
                         // eslint-disable-next-line react/jsx-indent
                         <p className={Style.none}>
-                            没有搜索到内容, 记得回车哦~~
+                            没有搜索到内容
                         </p>
                     ) : (
                         <div className={Style.allList}>
@@ -263,7 +264,7 @@ function FunctionBar() {
                 <TabPane tab="用户" key="user">
                     {searchResult.users.length === 0 ? (
                         <p className={Style.none}>
-                            没有搜索到内容, 记得回车哦~~
+                            没有搜索到内容
                         </p>
                     ) : (
                         <div className={`${Style.userList} ${Style.only}`}>
@@ -274,7 +275,7 @@ function FunctionBar() {
                 <TabPane tab="群组" key="group">
                     {searchResult.groups.length === 0 ? (
                         <p className={Style.none}>
-                            没有搜索到内容, 记得回车哦~~
+                            没有搜索到内容
                         </p>
                     ) : (
                         <div className={`${Style.groupList} ${Style.only}`}>
