@@ -217,9 +217,10 @@ function Admin(props: AdminProps) {
                                 </div>
                             </div>
                         )}
-                        <div className={Common.block}>
-                            <p className={Common.title}>快捷开关</p>
-                            {!systemConfig?.disableSendMessage ? (
+                <div className={Common.block}>
+                    <p className={Common.title}>快捷开关</p>
+                    <div className={Style.buttonWrap}>
+                    {!systemConfig?.disableSendMessage ? (
                                 <Button
                                     className={styles.button}
                                     type="danger"

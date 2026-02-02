@@ -22,7 +22,7 @@ import useIsLogin from '../../hooks/useIsLogin';
 import useAction from '../../hooks/useAction';
 import Dropdown from '../../components/Dropdown';
 import IconButton from '../../components/IconButton';
-import Avatar from '../../components/Avatar';
+import Avatar, { avatarFailback } from '../../components/Avatar';
 import Message from '../../components/Message';
 import { Menu, MenuItem } from '../../components/Menu';
 import { State } from '../../state/reducer';
@@ -858,7 +858,7 @@ function ChatInput(props: InputAreaProps) {
         if (groupAISwitch && botName && !hasBot && regex.test(botName)) {
             return [
                 {
-                    user: { _id: `bot-${botName}`, username: botName, avatar: '' },
+                    user: { _id: `bot-${botName}`, username: botName, avatar: avatarFailback },
                     os: '',
                     browser: '',
                     environment: '',
@@ -1027,7 +1027,8 @@ function ChatInput(props: InputAreaProps) {
                         height={32}
                         iconSize={18}
                         icon="clear"
-                        onClick={() => {
+                        onMouseDown={(e) => {
+                            e.preventDefault();
                             if ($input.current) {
                                 $input.current.value = '';
                                 setInputHasContent(false);

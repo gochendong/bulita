@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
 import readDiskFIle from '../../utils/readDiskFile';
-import uploadFile, { getOSSFileUrl } from '../../utils/uploadFile';
+import uploadFile, { getAvatarUrl } from '../../utils/uploadFile';
 import Style from './GroupManagePanel.less';
 import useIsLogin from '../../hooks/useIsLogin';
 import { State, GroupMember } from '../../state/reducer';
@@ -182,7 +182,7 @@ function GroupManagePanel(props: GroupManagePanelProps) {
             >
                 <div
                     className={Style.userinfoBlock}
-                    onClick={() => handleShowUserInfo(u)}
+                    onClick={() => handleShowUserInfo({ ...u, isOnline: member.isOnline, lastLoginTime: u.lastLoginTime })}
                     role="button"
                 >
                     <Avatar size={28} src={u.avatar} />
@@ -257,7 +257,7 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                             <p className={Style.blockTitle}>群头像</p>
                             <img
                                 className={Style.avatar}
-                                src={getOSSFileUrl(avatar)}
+                                src={getAvatarUrl(avatar)}
                                 alt="群头像预览"
                                 onClick={handleChangeGroupAvatar}
                             />

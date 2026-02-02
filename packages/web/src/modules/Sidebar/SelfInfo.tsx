@@ -6,7 +6,7 @@ import 'cropperjs/dist/cropper.css';
 import { useSelector } from 'react-redux';
 import config from '@bulita/config/client';
 import readDiskFile from '../../utils/readDiskFile';
-import uploadFile, { getOSSFileUrl } from '../../utils/uploadFile';
+import uploadFile, { getAvatarUrl } from '../../utils/uploadFile';
 import Dialog from '../../components/Dialog';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
@@ -271,7 +271,7 @@ function SelfInfo(props: SelfInfoProps) {
                                 <img
                                     className={loading ? 'blur' : ''}
                                     alt="头像预览"
-                                    src={getOSSFileUrl(avatar as string)}
+                                    src={getAvatarUrl(avatar as string)}
                                     onClick={selectAvatar}
                                 />
                                 <ReactLoading

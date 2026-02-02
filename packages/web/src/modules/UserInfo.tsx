@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
 import getFriendId from '@bulita/utils/getFriendId';
-import { getOSSFileUrl } from '../utils/uploadFile';
+import { getAvatarUrl } from '../utils/uploadFile';
 import Style from './InfoDialog.less';
 import Dialog from '../components/Dialog';
 import Avatar from '../components/Avatar';
@@ -26,7 +26,8 @@ interface UserInfoProps {
         username: string;
         avatar: string;
         ip: string;
-        isOnline?: string;
+        isOnline?: boolean;
+        lastLoginTime?: string | null;
         email: string;
         level: number;
         signature: string;
@@ -137,6 +138,21 @@ function UserInfo(props: UserInfoProps) {
         }
     }
 
+    function formatLastOnline(dateStr: string | null): string {
+        if (!dateStr) return '从未登录';
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffM = Math.floor(diffMs / 60000);
+        const diffH = Math.floor(diffMs / 3600000);
+        const diffD = Math.floor(diffMs / 86400000);
+        if (diffM < 1) return '刚刚';
+        if (diffM < 60) return `${diffM} 分钟前`;
+        if (diffH < 24) return `${diffH} 小时前`;
+        if (diffD < 30) return `${diffD} 天前`;
+        return date.toLocaleDateString();
+    }
+
     function searchIp(ip: string) {
         window.open(`https://www.baidu.com/s?wd=${ip}`);
     }
@@ -166,10 +182,15 @@ function UserInfo(props: UserInfoProps) {
                                 className={`${Style.largeAvatar} ${
                                     largerAvatar ? 'show' : 'hide'
                                 }`}
-                                src={getOSSFileUrl(user.avatar)}
+                                src={getAvatarUrl(user.avatar)}
                                 alt="用户头像"
                             />
                             <p>{user.username}</p>
+                            {user.isOnline === false && user.lastLoginTime != null && (
+                                <p className={Style.lastOnline}>
+                                    最后在线：{formatLastOnline(user.lastLoginTime)}
+                                </p>
+                            )}
                             <p className={Style.ip}>
                                 {userIps.map((ip) => (
                                     <span

@@ -43,7 +43,11 @@ function Input(props: InputProps) {
         }
     }
 
-    function handleClickClear() {
+    function handleClickClear(e?: React.MouseEvent) {
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
         onChange('');
         // @ts-ignore
         if ($input.current) {
@@ -85,7 +89,7 @@ function Input(props: InputProps) {
                     height={32}
                     iconSize={18}
                     icon="clear"
-                    onClick={handleClickClear}
+                    onMouseDown={(e) => handleClickClear(e)}
                 />
             )}
         </div>

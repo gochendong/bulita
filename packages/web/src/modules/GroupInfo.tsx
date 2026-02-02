@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 
-import { getOSSFileUrl } from '../utils/uploadFile';
+import { getAvatarUrl } from '../utils/uploadFile';
 import Dialog from '../components/Dialog';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
@@ -80,7 +80,7 @@ function GroupInfo(props: GroupInfoProps) {
                         className={`${Style.largeAvatar} ${
                             largerAvatar ? 'show' : 'hide'
                         }`}
-                        src={getOSSFileUrl(group.avatar)}
+                        src={getAvatarUrl(group.avatar)}
                         alt="群组头像"
                     />
                     <p>{group.name}</p>

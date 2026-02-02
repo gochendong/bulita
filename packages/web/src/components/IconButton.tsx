@@ -10,6 +10,7 @@ type Props = {
     className?: string;
     style?: Object;
     onClick?: () => void;
+    onMouseDown?: (e: React.MouseEvent) => void;
 };
 
 function IconButton({
@@ -18,6 +19,7 @@ function IconButton({
     icon,
     iconSize,
     onClick = () => {},
+    onMouseDown,
     className = '',
     style = {},
 }: Props) {
@@ -26,6 +28,7 @@ function IconButton({
             className={`${Style.iconButton} ${className}`}
             style={{ width, height, ...style }}
             onClick={onClick}
+            onMouseDown={onMouseDown}
             role="button"
         >
             <i

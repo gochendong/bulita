@@ -1,7 +1,9 @@
 import React, { SyntheticEvent, useState, useMemo } from 'react';
-import { getOSSFileUrl } from '../utils/uploadFile';
+import { getAvatarUrl } from '../utils/uploadFile';
 
-export const avatarFailback = '/avatar/0.jpg';
+/** 默认/占位头像（packages/assets/images/avatar/ai.png） */
+import avatarFailbackImg from '@bulita/assets/images/avatar/ai.png';
+export const avatarFailback = avatarFailbackImg;
 
 type Props = {
     /** 头像链接 */
@@ -39,13 +41,12 @@ function Avatar({
     }
 
     const url = useMemo(() => {
-        if (/^(blob|data):/.test(src)) {
-            return src;
-        }
-        return getOSSFileUrl(
+        if (!src) return avatarFailback;
+        if (/^(blob|data):/.test(src)) return src;
+        return getAvatarUrl(
             src,
             `image/resize,w_${size * 2},h_${size * 2}/quality,q_90`,
-        );
+        ) || avatarFailback;
     }, [src]);
 
     return (
