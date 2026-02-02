@@ -21,6 +21,10 @@ interface LinkmanProps {
     unread: number;
     time: Date;
     tag: string;
+    /** 好友是否在线（仅好友） */
+    isOnline?: boolean;
+    /** 好友最后在线时间（仅好友、离线时） */
+    lastLoginTime?: string | null;
 }
 
 function Linkman(props: LinkmanProps) {
@@ -75,6 +79,15 @@ function Linkman(props: LinkmanProps) {
                     <p className={Style.name}>{name}</p>
                     <p className={Style.time}>{formatTime()}</p>
                 </div>
+                {isOnline !== undefined && (
+                    <div className={Style.onlineStatus}>
+                        {isOnline ? (
+                            <span className={Style.onlineText}>在线</span>
+                        ) : lastLoginTime != null ? (
+                            <span className={Style.offlineText}>离线 {formatLastOnline(lastLoginTime)}</span>
+                        ) : null}
+                    </div>
+                )}
                 <div
                     className={`${Style.rowContainer} ${Style.previewUnreadBlock}`}
                 >

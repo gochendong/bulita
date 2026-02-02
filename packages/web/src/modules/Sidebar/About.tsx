@@ -42,6 +42,11 @@ function About(props: AboutProps) {
                     </a>
                 </div>
                 <div className={Common.block2}>
+                    <p className={Common.title}>
+                        打包方式: {process.env.BUNDLER || 'webpack'}
+                    </p>
+                </div>
+                <div className={Common.block2}>
                     <p>
                         Powered by
                         <a

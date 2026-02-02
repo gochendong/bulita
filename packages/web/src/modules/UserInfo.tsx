@@ -17,6 +17,7 @@ import {
     sealUser,
     getUserIps,
     sealUserOnlineIp,
+    getUserOnlineStatus,
 } from '../service';
 
 interface UserInfoProps {
@@ -58,6 +59,8 @@ function UserInfo(props: UserInfoProps) {
     const [largerAvatar, toggleLargetAvatar] = useState(false);
 
     const [userIps, setUserIps] = useState([]);
+    /** 管理员查看时拉取的在线/最后在线（即使用户不是好友也能看到） */
+    const [adminOnlineStatus, setAdminOnlineStatus] = useState<{ isOnline: boolean; lastLoginTime: string | null } | null>(null);
 
     useEffect(() => {
         if (isAdmin && user && user._id) {
@@ -67,6 +70,23 @@ function UserInfo(props: UserInfoProps) {
             })();
         }
     }, [isAdmin, selfId, user]);
+
+    useEffect(() => {
+        if (!visible || !user || !isAdmin) {
+            setAdminOnlineStatus(null);
+            return;
+        }
+        const rawUserId = user._id.replace(selfId, '');
+        if (!rawUserId) return;
+        getUserOnlineStatus(rawUserId).then((status) => {
+            if (status) {
+                setAdminOnlineStatus({
+                    isOnline: status.isOnline,
+                    lastLoginTime: status.lastLoginTime ?? null,
+                });
+            }
+        });
+    }, [visible, user, isAdmin, selfId]);
 
     if (!user) {
         return null;
@@ -186,11 +206,21 @@ function UserInfo(props: UserInfoProps) {
                                 alt="用户头像"
                             />
                             <p>{user.username}</p>
-                            {user.isOnline === false && user.lastLoginTime != null && (
-                                <p className={Style.lastOnline}>
-                                    最后在线：{formatLastOnline(user.lastLoginTime)}
-                                </p>
-                            )}
+                            {(() => {
+                                const isOnline = adminOnlineStatus?.isOnline ?? user.isOnline;
+                                const lastLoginTime = adminOnlineStatus?.lastLoginTime ?? user.lastLoginTime;
+                                if (isOnline === true) {
+                                    return <p className={Style.onlineStatus}>当前在线</p>;
+                                }
+                                if (isOnline === false && lastLoginTime != null) {
+                                    return (
+                                        <p className={Style.lastOnline}>
+                                            最后在线：{formatLastOnline(lastLoginTime)}
+                                        </p>
+                                    );
+                                }
+                                return null;
+                            })()}
                             <p className={Style.ip}>
                                 {userIps.map((ip) => (
                                     <span

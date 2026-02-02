@@ -125,5 +125,8 @@ module.exports = {
         new Dotenv({
             silent: true,
         }),
+        new webpack.DefinePlugin({
+            'process.env.BUNDLER': JSON.stringify('webpack'),
+        }),
     ],
 };

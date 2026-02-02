@@ -254,15 +254,14 @@ function Admin(props: AdminProps) {
                             )}
                             {!systemConfig?.groupAISwitch ? (
                                 <Button
-                                    className={styles.button}
+                                    className={`${Style.groupAIButton}`}
                                     onClick={() => handleToggleGroupAI(true)}
                                 >
                                     开启群聊 AI
                                 </Button>
                             ) : (
                                 <Button
-                                    className={styles.button}
-                                    type="danger"
+                                    className={`${Style.groupAIButton} ${Style.groupAIButtonOff}`}
                                     onClick={() => handleToggleGroupAI(false)}
                                 >
                                     关闭群聊 AI

@@ -868,7 +868,8 @@ function getUserOnlineStatusWrapper() {
     const cache: Record<
         string,
         {
-            value: boolean;
+            isOnline: boolean;
+            lastLoginTime: string | null;
             expireTime: number;
         }
     > = {};
@@ -881,18 +882,31 @@ function getUserOnlineStatusWrapper() {
 
         if (cache[userId] && cache[userId].expireTime > Date.now()) {
             return {
-                isOnline: cache[userId].value,
+                isOnline: cache[userId].isOnline,
+                lastLoginTime: cache[userId].lastLoginTime,
             };
         }
 
         const sockets = await Socket.find({ user: userId });
         const isOnline = sockets.length > 0;
+        let lastLoginTime: string | null = null;
+        if (!isOnline) {
+            const user = await User.findOne(
+                { _id: userId },
+                { lastLoginTime: 1 },
+            );
+            lastLoginTime = user?.lastLoginTime
+                ? (user.lastLoginTime as Date).toISOString()
+                : null;
+        }
         cache[userId] = {
-            value: isOnline,
+            isOnline,
+            lastLoginTime,
             expireTime: Date.now() + UserOnlineStatusCacheExpireTime,
         };
         return {
             isOnline,
+            lastLoginTime,
         };
     };
 }

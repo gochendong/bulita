@@ -6,7 +6,7 @@ import getFriendId from '@bulita/utils/getFriendId';
 import config from '@bulita/config/client';
 import notification from './utils/notification';
 import voice from './utils/voice';
-import { initOSS } from './utils/uploadFile';
+import { initOSS, getAvatarUrl } from './utils/uploadFile';
 import playSound from './utils/playSound';
 import { Message, Linkman } from './state/reducer';
 import {
@@ -327,7 +327,7 @@ socket.on('message', async (message: any) => {
         intervalIDs.push(intervalID); // 将intervalID添加到数组中
         notification(
             title,
-            message.from.avatar,
+            getAvatarUrl(message.from.avatar) || message.from.avatar || '',
             body,
             Math.random().toString(),
         );

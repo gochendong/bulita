@@ -420,7 +420,7 @@ export async function getGroupAllMembers(ctx: Context<{ groupId: string }>) {
 
     const users = await User.find(
         { _id: { $in: group.members } },
-        { username: 1, avatar: 1, createTime: 1, lastLoginTime: 1 },
+        { username: 1, avatar: 1, createTime: 1, lastLoginTime: 1, tag: 1 },
     );
     const userMap = new Map(
         users.map((u) => [u._id.toString(), u.toObject()]),
@@ -444,8 +444,9 @@ export async function getGroupAllMembers(ctx: Context<{ groupId: string }>) {
                       avatar: user.avatar,
                       createTime: user.createTime,
                       lastLoginTime: user.lastLoginTime,
+                      tag: user.tag || '',
                   }
-                : { _id: id, username: '', avatar: '', createTime: null, lastLoginTime: null },
+                : { _id: id, username: '', avatar: '', createTime: null, lastLoginTime: null, tag: '' },
             isCreator: id === creatorId,
             isOnline: onlineIds.has(id),
         };

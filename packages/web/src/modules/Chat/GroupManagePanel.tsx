@@ -189,7 +189,9 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                     <div className={Style.memberInfo}>
                         <p className={Style.username}>
                             {u.username}
-                            <UserBadge createTime={u.createTime} />
+                            {u.tag !== 'bot' && u.createTime && (
+                                <UserBadge createTime={u.createTime} />
+                            )}
                             {member.isCreator && (
                                 <span className={Style.creatorTag}>群主</span>
                             )}

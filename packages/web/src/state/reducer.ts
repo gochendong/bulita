@@ -80,6 +80,8 @@ export interface Linkman extends Group, User {
     type: string;
     unread: number;
     messages: MessagesMap;
+    /** 好友最后在线时间（离线时） */
+    lastLoginTime?: string | null;
 }
 
 export interface LinkmansMap {

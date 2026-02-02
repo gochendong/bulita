@@ -51,6 +51,10 @@ interface MessageProps {
     isAdmin?: boolean;
     /** 发送者的注册时间（用于显示UserBadge） */
     senderCreateTime?: string | null;
+    /** 发送者是否在线（用于点击头像弹窗） */
+    senderIsOnline?: boolean;
+    /** 发送者最后在线时间（用于点击头像弹窗） */
+    senderLastLoginTime?: string | null;
 }
 
 interface MessageState {
@@ -168,12 +172,14 @@ class Message extends Component<MessageProps, MessageState> {
     };
 
     handleClickAvatar(showUserInfo: (userinfo: any) => void) {
-        const { isSelf, userId, type, username, avatar } = this.props;
+        const { isSelf, userId, type, username, avatar, senderIsOnline, senderLastLoginTime } = this.props;
         if (!isSelf && type !== 'system') {
             showUserInfo({
                 _id: userId,
                 username,
                 avatar,
+                isOnline: senderIsOnline,
+                lastLoginTime: senderLastLoginTime,
             });
         }
     }
@@ -277,11 +283,11 @@ class Message extends Component<MessageProps, MessageState> {
                     <div className={Style.nicknameTimeBlock}>
                         {tag && (
                             <span className={tag === '群主' ? Style.creatorTagInMessage : Style.tag}>
-                                {tag}
+                                {tag === 'bot' ? '机器人' : tag}
                             </span>
                         )}
                         <span className={Style.nickname}>{username}</span>
-                        {!isSelf && type !== 'system' && senderCreateTime && (
+                        {!isSelf && type !== 'system' && tag !== 'bot' && senderCreateTime && (
                             <UserBadge createTime={senderCreateTime} />
                         )}
                         {process.env.ADMINS.split(',').includes(username) && (

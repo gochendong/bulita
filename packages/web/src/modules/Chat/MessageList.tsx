@@ -68,30 +68,45 @@ function MessageList(props: MessageListProps) {
     const $list = useRef<HTMLDivElement>(null);
     // 群成员信息缓存（用于获取createTime显示UserBadge）
     const [groupMembersMap, setGroupMembersMap] = useState<Map<string, string | null>>(new Map());
+    // 群成员在线状态（用于点击头像时显示在线/离线）
+    const [groupMembersStatusMap, setGroupMembersStatusMap] = useState<Map<string, { isOnline: boolean; lastLoginTime: string | null }>>(new Map());
 
-    // 如果是群聊，获取所有成员信息并缓存createTime
+    // 如果是群聊，获取所有成员信息并缓存createTime、在线状态
     useEffect(() => {
         if (isGroup && focus) {
             if (isLogin) {
                 getGroupAllMembers(focus).then((members) => {
-                    const map = new Map<string, string | null>();
+                    const createTimeMap = new Map<string, string | null>();
+                    const statusMap = new Map<string, { isOnline: boolean; lastLoginTime: string | null }>();
                     members.forEach((member) => {
-                        map.set(member.user._id, member.user.createTime);
+                        createTimeMap.set(member.user._id, member.user.createTime);
+                        statusMap.set(member.user._id, {
+                            isOnline: member.isOnline,
+                            lastLoginTime: member.user.lastLoginTime || null,
+                        });
                     });
-                    setGroupMembersMap(map);
+                    setGroupMembersMap(createTimeMap);
+                    setGroupMembersStatusMap(statusMap);
                 });
             } else {
                 // 游客用户获取默认群组的所有成员
                 getDefaultGroupAllMembers().then((members) => {
-                    const map = new Map<string, string | null>();
+                    const createTimeMap = new Map<string, string | null>();
+                    const statusMap = new Map<string, { isOnline: boolean; lastLoginTime: string | null }>();
                     members.forEach((member) => {
-                        map.set(member.user._id, member.user.createTime);
+                        createTimeMap.set(member.user._id, member.user.createTime);
+                        statusMap.set(member.user._id, {
+                            isOnline: member.isOnline,
+                            lastLoginTime: member.user.lastLoginTime || null,
+                        });
                     });
-                    setGroupMembersMap(map);
+                    setGroupMembersMap(createTimeMap);
+                    setGroupMembersStatusMap(statusMap);
                 });
             }
         } else {
             setGroupMembersMap(new Map());
+            setGroupMembersStatusMap(new Map());
         }
     }, [focus, isGroup, isLogin]);
 
@@ -159,10 +174,11 @@ function MessageList(props: MessageListProps) {
         }
 
         let { tag } = message.from;
-        if (!isGroup && message.from.tag !== 'bot') {
+        if (message.from.tag === 'bot') {
+            tag = 'bot';
+        } else if (!isGroup) {
             tag = '';
-        }
-        if (isGroup && message.from._id === creator) {
+        } else if (message.from._id === creator) {
             tag = '群主';
         }
         // if (message.from.username === "AI") {
@@ -173,18 +189,24 @@ function MessageList(props: MessageListProps) {
         // }
 
         // 获取发送者的createTime（用于显示UserBadge）
-        // 所有非自己的消息都应该显示UserBadge，但系统消息除外
+        // 机器人只显示「机器人」标签，不显示 UserBadge（传奇等）
         let senderCreateTime: string | null = null;
-        if (!isSelf && message.from._id !== 'system') {
+        let senderIsOnline: boolean | undefined;
+        let senderLastLoginTime: string | null = null;
+        if (!isSelf && message.from._id !== 'system' && message.from.tag !== 'bot') {
             if (linkman.type === 'friend') {
-                // 好友聊天，使用联系人的createTime
                 senderCreateTime = linkman.createTime || null;
+                senderIsOnline = linkman.isOnline;
+                senderLastLoginTime = linkman.lastLoginTime ?? null;
             } else if (linkman.type === 'group') {
-                // 群聊，从群成员信息中查找
                 senderCreateTime = groupMembersMap.get(message.from._id) || null;
-                // 如果找不到，尝试从message.from中获取（某些情况下消息可能包含用户信息）
                 if (!senderCreateTime && (message.from as any).createTime) {
                     senderCreateTime = (message.from as any).createTime;
+                }
+                const status = groupMembersStatusMap.get(message.from._id);
+                if (status) {
+                    senderIsOnline = status.isOnline;
+                    senderLastLoginTime = status.lastLoginTime;
                 }
             }
         }
@@ -210,6 +232,8 @@ function MessageList(props: MessageListProps) {
                 shouldScroll={shouldScroll}
                 tagColorMode={tagColorMode}
                 senderCreateTime={senderCreateTime}
+                senderIsOnline={senderIsOnline}
+                senderLastLoginTime={senderLastLoginTime}
             />
         );
     }

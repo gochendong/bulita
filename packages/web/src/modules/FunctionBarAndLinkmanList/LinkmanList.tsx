@@ -34,6 +34,8 @@ function LinkmanList() {
                 preview={preview}
                 time={time}
                 unread={linkman.unread}
+                isOnline={linkman.type === 'friend' ? linkman.isOnline : undefined}
+                lastLoginTime={linkman.type === 'friend' ? linkman.lastLoginTime : undefined}
             />
         );
     }

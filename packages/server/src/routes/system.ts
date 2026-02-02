@@ -52,20 +52,35 @@ export async function search(ctx: Context<{ keywords: string }>) {
 
     const escapedKeywords = RegexEscape(keywords);
     const users = await User.find(
-        { username: { $regex: escapedKeywords } },
-        { avatar: 1, username: 1 },
+        { username: { $regex: escapedKeywords, $options: 'i' } },
+        { avatar: 1, username: 1, lastLoginTime: 1 },
     );
+    const userIds = users.map((u) => u._id.toString());
+    const sockets = await Socket.find({ user: { $in: userIds } });
+    const onlineIds = new Set(sockets.map((s) => s.user.toString()));
+    const usersWithStatus = users.map((u) => {
+        const obj = u.toObject();
+        return {
+            _id: obj._id,
+            avatar: obj.avatar,
+            username: obj.username,
+            isOnline: onlineIds.has(u._id.toString()),
+            lastLoginTime: obj.lastLoginTime
+                ? (obj.lastLoginTime as Date).toISOString()
+                : null,
+        };
+    });
     const onlyDefault = await getConfigWithDefault('ONLY_SEARCH_DEFAULT_GROUP');
     const groups = await Group.find(
         {
-            name: { $regex: escapedKeywords },
+            name: { $regex: escapedKeywords, $options: 'i' },
             isDefault: onlyDefault === 'true',
         },
         { avatar: 1, name: 1, members: 1 },
     );
 
     return {
-        users,
+        users: usersWithStatus,
         groups: groups.map((group) => ({
             _id: group._id,
             avatar: group.avatar,

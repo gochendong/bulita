@@ -331,7 +331,7 @@ function ChatInput(props: InputAreaProps) {
                 loading: false,
                 sendFailed: true,
             });
-            Message.error('发送失败，请检查网络后重试');
+            Message.error('发送失败，请检查网络后重试，可点击消息旁「重试」按钮重新发送');
             return;
         }
         sendingLockRef.current = false;

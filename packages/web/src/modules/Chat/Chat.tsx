@@ -66,8 +66,11 @@ function Chat() {
         }
         
         async function fetchUserOnlineStatus() {
-            const isOnline = await getUserOnlineStatus(focus.replace(self, ''));
-            action.setLinkmanProperty(focus, 'isOnline', isOnline);
+            const status = await getUserOnlineStatus(focus.replace(self, ''));
+            if (status) {
+                action.setLinkmanProperty(focus, 'isOnline', status.isOnline);
+                action.setLinkmanProperty(focus, 'lastLoginTime', status.lastLoginTime ?? null);
+            }
         }
         
         const request =
@@ -146,8 +149,12 @@ function Chat() {
             }
             toggleGroupManagePanel(true);
         } else {
-            // @ts-ignore
-            context.showUserInfo(linkman);
+            context.showUserInfo({
+                ...linkman,
+                username: linkman.name || (linkman as any).username,
+                isOnline: linkman.isOnline,
+                lastLoginTime: linkman.lastLoginTime ?? null,
+            });
         }
     }
 
@@ -164,6 +171,7 @@ function Chat() {
                 onlineMembersCount={linkman.onlineMembers?.length}
                 totalMemberCount={linkman.membersCount}
                 isOnline={linkman.isOnline}
+                lastLoginTime={linkman.lastLoginTime}
                 onClickFunction={handleClickFunction}
             />
             {linkman.type === 'group' && linkman.announcement ? (

@@ -422,6 +422,7 @@ export interface GroupAllMemberItem {
         avatar: string;
         createTime: string | null;
         lastLoginTime: string | null;
+        tag?: string;
     };
     isCreator: boolean;
     isOnline: boolean;
@@ -526,9 +527,9 @@ export async function getUserIps(userId: string) {
     return res;
 }
 
-export async function getUserOnlineStatus(userId: string) {
+export async function getUserOnlineStatus(userId: string): Promise<{ isOnline: boolean; lastLoginTime?: string | null } | null> {
     const [, res] = await fetch('getUserOnlineStatus', { userId });
-    return res && res.isOnline;
+    return res ? { isOnline: res.isOnline, lastLoginTime: res.lastLoginTime } : null;
 }
 
 export async function updateHistory(linkmanId: string, messageId: string) {

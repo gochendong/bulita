@@ -40,9 +40,26 @@ type Props = {
     /** 群组总人数（仅群组） */
     totalMemberCount?: number;
     isOnline?: boolean;
+    /** 好友最后在线时间（仅好友、离线时） */
+    lastLoginTime?: string | null;
     /** 功能按钮点击事件 */
     onClickFunction: () => void;
 };
+
+function formatLastOnline(dateStr: string | null): string {
+    if (!dateStr) return '从未登录';
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffM = Math.floor(diffMs / 60000);
+    const diffH = Math.floor(diffMs / 3600000);
+    const diffD = Math.floor(diffMs / 86400000);
+    if (diffM < 1) return '刚刚';
+    if (diffM < 60) return `${diffM} 分钟前`;
+    if (diffH < 24) return `${diffH} 小时前`;
+    if (diffD < 30) return `${diffD} 天前`;
+    return date.toLocaleDateString();
+}
 
 function HeaderBar(props: Props) {
     const {
@@ -56,6 +73,7 @@ function HeaderBar(props: Props) {
         onlineMembersCount,
         totalMemberCount,
         isOnline,
+        lastLoginTime,
         onClickFunction,
     } = props;
 
@@ -103,7 +121,7 @@ function HeaderBar(props: Props) {
                 {type === 'group' && totalMemberCount != null && (
                     <span className={styles.count}>{` (${totalMemberCount}人)`}</span>
                 )}
-                {type === 'friend' && createTime && (
+                {type === 'friend' && createTime && tag !== 'bot' && (
                     <UserBadge createTime={createTime} />
                 )}
                 {tag === 'bot' && (
@@ -111,6 +129,14 @@ function HeaderBar(props: Props) {
                 )}
                 {process.env.ADMINS.split(',').includes(name) && (
                     <span className={Style.adminTag}>管理员</span>
+                )}
+                {type === 'friend' && isOnline === true && (
+                    <span className={Style.onlineStatusText}>当前在线</span>
+                )}
+                {type === 'friend' && isOnline === false && lastLoginTime != null && (
+                    <span className={Style.lastOnlineText}>
+                        离线 最后在线：{formatLastOnline(lastLoginTime)}
+                    </span>
                 )}
                 {signature ? (
                     <span className={Style.signature} title={signature}>{signature}</span>

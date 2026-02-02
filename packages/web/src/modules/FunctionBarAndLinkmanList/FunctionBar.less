@@ -19,16 +19,20 @@
     border-radius: 20px;
     font-size: 14px;
     color: @input-text;
+    display: flex;
+    align-items: center;
 
     :global {
         input {
-            padding-left: 42px;
-            padding-right: 16px;
-            padding-top: 2px;
+            flex: 1;
+            height: 100%;
+            padding: 0 16px 0 42px;
+            line-height: 20px;
             border-radius: 20px;
             border: 1px solid @input-border;
             background-color: @input-bg;
             transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+            box-sizing: border-box;
 
             &::placeholder {
                 color: @input-placeholder;

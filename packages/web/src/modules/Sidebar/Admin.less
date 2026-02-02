@@ -3,7 +3,25 @@
     max-width: 94vw;
     :global(.rc-dialog-body) {
         max-height: 85vh;
-        overflow-y: auto;
+        overflow-y: scroll;
+        overflow-x: hidden;
+        padding-right: 8px;
+        scrollbar-width: thin;
+        scrollbar-color: #c4b8ab #f0ebe6;
+        &::-webkit-scrollbar {
+            width: 10px;
+        }
+        &::-webkit-scrollbar-track {
+            background: #f0ebe6;
+            border-radius: 5px;
+        }
+        &::-webkit-scrollbar-thumb {
+            background: #c4b8ab;
+            border-radius: 5px;
+        }
+        &::-webkit-scrollbar-thumb:hover {
+            background: #a89a8c;
+        }
     }
 }
 
@@ -47,6 +65,33 @@
     width: 100px;
     height: 36px;
     margin: 0;
+}
+
+.groupAIButton {
+    min-width: 100px;
+    height: 36px;
+    margin: 0;
+    padding: 0 10px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: #fff;
+    &:hover {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: #fff;
+    }
+}
+
+.groupAIButtonOff {
+    background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+    color: #fff;
+    &:hover {
+        background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+        color: #fff;
+    }
 }
 
 .sealList {
