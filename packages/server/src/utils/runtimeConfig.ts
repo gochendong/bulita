@@ -99,11 +99,13 @@ export async function getConfig(key: string): Promise<string | undefined> {
 }
 
 /**
- * 获取配置，未设置时使用代码内默认值（不依赖 .env）
+ * 获取配置：优先 Redis（管理台），其次 .env，最后代码默认值（减少但不取消对 .env 的依赖）
  */
 export async function getConfigWithDefault(key: string): Promise<string> {
     const v = await getConfig(key);
     if (v !== null && v !== undefined && v !== '') return v;
+    const envVal = process.env[key];
+    if (envVal !== undefined && envVal !== '') return envVal;
     return DEFAULT_ADMIN_CONFIG[key] ?? '';
 }
 
@@ -118,7 +120,7 @@ export async function setConfig(key: string, value: string): Promise<void> {
 }
 
 /**
- * 获取所有管理员可编辑配置的当前值（Redis 或代码默认值）
+ * 获取所有管理员可编辑配置的当前值（Redis 或 .env 或代码默认值）
  */
 export async function getAllAdminConfig(): Promise<Record<string, string>> {
     const out: Record<string, string> = {};
