@@ -156,6 +156,8 @@ export interface State {
         functionBarAndLinkmanListVisible: boolean;
         /** enable search expression when input some phrase */
         enableSearchExpression: boolean;
+        /** 群聊 AI 开关（由管理员在控制台设置，从服务端拉取） */
+        groupAISwitch: boolean;
     };
 }
 
@@ -279,6 +281,7 @@ export const initialState: State = {
         sidebarVisible: !isMobile,
         functionBarAndLinkmanListVisible: !isMobile,
         enableSearchExpression: localStorage.enableSearchExpression,
+        groupAISwitch: false,
         pendingRetryMessage: null as { linkmanId: string; messageId: string } | null,
     },
 };

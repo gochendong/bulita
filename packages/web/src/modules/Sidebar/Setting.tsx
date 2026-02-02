@@ -90,7 +90,7 @@ function Setting(props: SettingProps) {
             window.localStorage.removeItem(LocalStorageKey.PrimaryTextColor);
             window.localStorage.removeItem(LocalStorageKey.BackgroundImage);
             window.localStorage.removeItem(LocalStorageKey.Aero);
-            Message.success('已修改主题');
+            Message.success('主题已更新');
         } else {
             window.localStorage.setItem(
                 LocalStorageKey.PrimaryColor,

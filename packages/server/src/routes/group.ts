@@ -41,10 +41,13 @@ async function getGroupOnlineMembersHelper(group: GroupDocument) {
  * @param ctx Context
  */
 export async function createGroup(ctx: Context<{ name: string }>) {
+    const { getConfigWithDefault } = await import('../utils/runtimeConfig');
+    const maxGroupNumStr = await getConfigWithDefault('MAX_GROUP_NUM');
+    const maxGroupsCount = parseInt(maxGroupNumStr, 10) || 0;
     const ownGroupCount = await Group.count({ creator: ctx.socket.user });
     assert(
-        ctx.socket.isAdmin || ownGroupCount < config.maxGroupsCount,
-        `创建群组失败, 当前最多允许创建${config.maxGroupsCount}个群组`,
+        ctx.socket.isAdmin || ownGroupCount < maxGroupsCount,
+        `创建群组失败, 当前最多允许创建${maxGroupsCount}个群组`,
     );
 
     const { name } = ctx.data;

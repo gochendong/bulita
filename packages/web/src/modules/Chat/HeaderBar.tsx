@@ -107,10 +107,7 @@ function HeaderBar(props: Props) {
                     <UserBadge createTime={createTime} />
                 )}
                 {tag === 'bot' && (
-                    <span className={Style.tag}>
-                        {/*<div className='online' />*/}
-                        {'机器人'}
-                    </span>
+                    <span className={Style.adminTag}>机器人</span>
                 )}
                 {process.env.ADMINS.split(',').includes(name) && (
                     <span className={Style.adminTag}>管理员</span>

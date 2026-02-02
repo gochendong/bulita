@@ -19,8 +19,16 @@ import {
     getSealUserKey,
     DisableSendMessageKey,
     DisableNewUserSendMessageKey,
+    GroupAISwitchKey,
     Redis,
 } from '@bulita/database/redis/initRedis';
+import {
+    getConfig,
+    setConfig,
+    getAllAdminConfig,
+    ADMIN_CONFIG_KEYS,
+    ADMIN_CONFIG_LABELS,
+} from '../utils/runtimeConfig';
 
 /** 百度语言合成token */
 let baiduToken = '';
@@ -45,10 +53,11 @@ export async function search(ctx: Context<{ keywords: string }>) {
         { username: { $regex: escapedKeywords } },
         { avatar: 1, username: 1 },
     );
+    const onlyDefault = await getConfigWithDefault('ONLY_SEARCH_DEFAULT_GROUP');
     const groups = await Group.find(
         {
             name: { $regex: escapedKeywords },
-            isDefault: process.env.ONLY_SEARCH_DEFAULT_GROUP === 'true',
+            isDefault: onlyDefault === 'true',
         },
         { avatar: 1, name: 1, members: 1 },
     );
@@ -157,10 +166,11 @@ export async function sealUser(ctx: Context<{ username: string }>) {
     const isSealUser = await Redis.has(getSealUserKey(userId));
     assert(!isSealUser, '用户已在封禁名单');
 
+    const duration = await getConfigWithDefault('SEAL_USER_DURATION');
     await Redis.set(
         getSealUserKey(userId),
         userId,
-        process.env.SEAL_USER_DURATION,
+        duration,
     );
 
     return {
@@ -233,7 +243,8 @@ export async function sealUserOnlineIp(ctx: Context<{ userId: string }>) {
 
     await Promise.all(
         ipList.map(async (ip) => {
-            await Redis.set(getSealIpKey(ip), ip, process.env.SEAL_IP_DURATION);
+            const duration = await getConfigWithDefault('SEAL_IP_DURATION');
+    await Redis.set(getSealIpKey(ip), ip, duration);
         }),
     );
 
@@ -352,9 +363,50 @@ export async function toggleNewUserSendMessage(
 }
 
 export async function getSystemConfig() {
+    const groupAISwitch =
+        (await Redis.get(GroupAISwitchKey)) ?? 'false';
+    const adminConfig = await getAllAdminConfig();
     return {
         disableSendMessage: (await Redis.get(DisableSendMessageKey)) === 'true',
         disableNewUserSendMessage:
             (await Redis.get(DisableNewUserSendMessageKey)) === 'true',
+        groupAISwitch: groupAISwitch === 'true',
+        adminConfig,
+        adminConfigLabels: ADMIN_CONFIG_LABELS,
+        restartRequiredKeys: [...RESTART_REQUIRED_KEYS],
     };
+}
+
+/**
+ * 获取公开系统配置（供前端聊天区使用，无需管理员）
+ */
+export async function getPublicSystemConfig() {
+    const groupAISwitch =
+        (await Redis.get(GroupAISwitchKey)) ?? 'false';
+    const defaultTitle = await getConfigWithDefault('DEFAULT_TITLE');
+    return {
+        groupAISwitch: groupAISwitch === 'true',
+        defaultTitle,
+    };
+}
+
+/**
+ * 切换群聊 AI 开关，需要管理员权限
+ */
+export async function toggleGroupAI(ctx: Context<{ enable: boolean }>) {
+    const { enable } = ctx.data;
+    await Redis.set(GroupAISwitchKey, enable ? 'true' : 'false');
+    return { msg: 'ok' };
+}
+
+/**
+ * 设置系统配置项（仅允许 ADMIN_CONFIG_KEYS），需要管理员权限
+ */
+export async function setSystemConfig(ctx: Context<{ key: string; value: string }>) {
+    const { key, value } = ctx.data;
+    if (!ADMIN_CONFIG_KEYS.includes(key as any)) {
+        throw new AssertionError({ message: `不允许修改配置: ${key}` });
+    }
+    await setConfig(key, value);
+    return { msg: 'ok' };
 }
