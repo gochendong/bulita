@@ -1053,6 +1053,40 @@ function ChatInput(props: InputAreaProps) {
                         </button>
                     </div>
                 )}
+                {at.enable &&
+                    linkman.type === 'group' &&
+                    getSuggestion().length > 0 && (
+                    <div
+                        className={Style.atPanel}
+                        data-float-panel="true"
+                        role="listbox"
+                        aria-label="选择要 @ 的成员"
+                    >
+                        {getSuggestion().map((member) => (
+                            <div
+                                key={member.user._id}
+                                className={Style.atPanelItem}
+                                role="option"
+                                onClick={() => replaceAt(member.user.username)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        replaceAt(member.user.username);
+                                    }
+                                }}
+                                tabIndex={0}
+                            >
+                                <Avatar
+                                    size={28}
+                                    src={member.user.avatar || avatarFailback}
+                                />
+                                <span className={Style.atPanelUsername}>
+                                    {member.user.username}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                )}
                 <textarea
                     className={Style.input}
                     autoFocus={!isMobile}

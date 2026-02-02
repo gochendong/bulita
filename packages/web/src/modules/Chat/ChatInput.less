@@ -109,6 +109,41 @@
     }
 }
 
+.atPanel {
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    margin-bottom: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: #fffbf9;
+    border-radius: @input-radius-sm;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border: 1px solid @input-border;
+    z-index: 100;
+    min-width: 160px;
+}
+
+.atPanelItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: @input-text;
+
+    &:hover {
+        background: rgba(0, 0, 0, 0.04);
+    }
+}
+
+.atPanelUsername {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .pendingAttachmentItem {
     position: relative;
     flex-shrink: 0;
@@ -173,7 +208,6 @@
     line-height: 1.5;
     outline: none;
     border: 1px solid @input-border;
-    border-left: none;
     font-size: 15px;
     color: @input-text;
     background-color: @input-bg;
