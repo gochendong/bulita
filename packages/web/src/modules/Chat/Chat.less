@@ -11,7 +11,7 @@
     position: relative;
 
     &[data-aero=true] {
-        background-color: rgba(253, 248, 245, 0.9);
+        background-color: rgba(248, 249, 250, 0.95);
     }
 
     @media @mobile {
@@ -46,14 +46,15 @@
     display: flex;
     align-items: center;
     padding: 8px 12px;
-    background: linear-gradient(90deg, rgba(255, 235, 205, 0.9) 0%, rgba(255, 248, 240, 0.95) 100%);
-    border-bottom: 1px solid rgba(232, 228, 223, 0.6);
+    background: linear-gradient(90deg, @google-blue-light 0%, rgba(248, 249, 250, 0.9) 100%);
+    border-bottom: 1px solid transparent;
+    box-shadow: 0 1px 0 0 rgba(218, 220, 224, 0.4);
     cursor: pointer;
     min-height: 36px;
     flex-shrink: 0;
 
     &:hover {
-        background: linear-gradient(90deg, rgba(255, 228, 196, 0.95) 0%, rgba(255, 245, 238, 1) 100%);
+        background: linear-gradient(90deg, rgba(66, 133, 244, 0.18) 0%, rgba(248, 249, 250, 1) 100%);
     }
 }
 
@@ -65,7 +66,7 @@
 
 .groupAnnouncementText {
     font-size: 13px;
-    color: #5c4a3a;
+    color: @warm-text;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

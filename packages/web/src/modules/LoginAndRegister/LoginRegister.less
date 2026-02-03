@@ -7,7 +7,7 @@
     color: @warm-text;
     text-align: center;
     letter-spacing: 0.05em;
-    background: linear-gradient(135deg, rgba(212, 160, 144, 0.1) 0%, rgba(232, 224, 216, 0.05) 100%);
+    background: linear-gradient(135deg, @google-blue-light 0%, rgba(248, 249, 250, 0.5) 100%);
     margin: -20px -20px 0 -20px;
     padding-top: 24px;
     padding-bottom: 16px;
@@ -63,7 +63,7 @@
     height: 44px;
     border: none;
     border-radius: @input-radius-sm;
-    background: linear-gradient(135deg, @warm-accent 0%, darken(@warm-accent, 8%) 100%);
+    background: linear-gradient(135deg, @google-blue 0%, darken(@google-blue, 6%) 100%);
     color: #fff;
     font-size: @font-size-base;
     font-weight: @font-weight-semibold;
@@ -96,11 +96,11 @@
     font-size: @font-size-base;
     font-weight: @font-weight-semibold;
     transition: box-shadow 0.2s ease, transform 0.1s ease;
-    background: linear-gradient(135deg, @warm-accent 0%, darken(@warm-accent, 8%) 100%);
-    box-shadow: 0 2px 8px rgba(212, 160, 144, 0.35);
+    background: linear-gradient(135deg, @google-blue 0%, darken(@google-blue, 6%) 100%);
+    box-shadow: 0 1px 3px rgba(66, 133, 244, 0.35);
 
     &:hover:not(:disabled) {
-        box-shadow: 0 4px 12px rgba(212, 160, 144, 0.45);
+        box-shadow: 0 2px 8px rgba(66, 133, 244, 0.4);
     }
     &:active:not(:disabled) {
         transform: scale(0.98);
@@ -112,12 +112,12 @@
 }
 
 .href {
-    color: @warm-accent;
+    color: @google-blue;
     text-decoration: none;
     font-weight: @font-weight-medium;
 }
 
-// 与 Dialog、Tabs 整体协调的暖色
+// 与 Dialog、Tabs 整体协调的 Google 风格
 :global {
     .rc-dialog-content {
         border-radius: @warm-radius;
@@ -128,10 +128,10 @@
         font-size: @font-size-base;
     }
     .rc-tabs-tab-active {
-        color: @warm-text;
+        color: @google-blue;
         font-weight: @font-weight-medium;
     }
     .rc-tabs-ink-bar {
-        background: @warm-accent;
+        background: @google-blue;
     }
 }
