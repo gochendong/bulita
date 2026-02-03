@@ -918,6 +918,25 @@ function getUserOnlineStatusWrapper() {
 export const getUserOnlineStatus = getUserOnlineStatusWrapper();
 
 /**
+ * 管理员按用户名查找用户（用于删除前校验）, 需要管理员权限
+ * @param ctx Context
+ */
+export async function getAdminUserByUsername(
+    ctx: Context<{ username: string }>,
+) {
+    const { username } = ctx.data;
+    assert(username, '用户名不能为空');
+    const name = (username as string).trim();
+    if (!name) {
+        return { exists: false };
+    }
+    const user = await User.findOne({ username: name });
+    return user
+        ? { exists: true, username: user.username, _id: user._id.toString() }
+        : { exists: false };
+}
+
+/**
  * 删除用户, 需要管理员权限
  * @param ctx Context
  */
@@ -929,6 +948,16 @@ export async function deleteUser(ctx: Context<{ username: string }>) {
     if (!user) {
         throw new AssertionError({ message: '用户不存在' });
     }
+
+    const adminsStr = await getConfigWithDefault('ADMINS');
+    const adminUsernames = adminsStr
+        ? adminsStr.split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [];
+    assert(
+        !adminUsernames.includes(username),
+        '不能删除管理员账号',
+    );
+
     const userId = user._id;
 
     // 断开 Socket 连接

@@ -548,6 +548,20 @@ export async function toggleNewUserSendMessage(enable: boolean) {
 }
 
 /**
+ * 管理员按用户名查找用户（用于删除前校验）
+ * @param username 目标用户名
+ */
+export async function getAdminUserByUsername(
+    username: string,
+): Promise<{ exists: boolean; username?: string; _id?: string } | null> {
+    const [err, res] = await fetch('getAdminUserByUsername', {
+        username: username.trim(),
+    });
+    if (err) return null;
+    return res;
+}
+
+/**
  * 删除用户
  * @param username 目标用户名
  */

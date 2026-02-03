@@ -20,6 +20,7 @@ import {
     toggleGroupAI,
     getSystemConfig,
     setSystemConfig as setSystemConfigApi,
+    getAdminUserByUsername,
     deleteUser,
 } from '../../service';
 
@@ -55,6 +56,8 @@ function Admin(props: AdminProps) {
     const [resetPasswordUsername, setResetPasswordUsername] = useState('');
     const [sealUsername, setSealUsername] = useState('');
     const [deleteUsername, setDeleteUsername] = useState('');
+    const deleteUsernameRef = useRef(deleteUsername);
+    deleteUsernameRef.current = deleteUsername;
     const [sealList, setSealList] = useState({ users: [], ips: [] });
     const [sealIpAddress, setSealIpAddress] = useState('');
     const [systemConfig, setSystemConfig] = useState<SystemConfig>();
@@ -183,6 +186,20 @@ function Admin(props: AdminProps) {
             handleGetSystemConfig();
         } else {
             Message.error('保存失败');
+        }
+    }
+
+    /**
+     * 失焦时查找用户是否存在
+     */
+    async function handleLookupDeleteUser() {
+        const name = deleteUsernameRef.current.trim();
+        if (!name) return;
+        const res = await getAdminUserByUsername(name);
+        if (res?.exists) {
+            Message.success(`用户「${res.username}」存在`);
+        } else {
+            Message.warning('用户不存在');
         }
     }
 
@@ -327,6 +344,7 @@ function Admin(props: AdminProps) {
                                     className={Style.input}
                                     value={deleteUsername}
                                     onChange={setDeleteUsername}
+                                    onBlur={() => handleLookupDeleteUser()}
                                     placeholder="要删除的用户名"
                                 />
                                 <Button
