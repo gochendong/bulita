@@ -12,10 +12,12 @@ import App from './App';
 import store from './state/store';
 import getData from './localStorage';
 
-// 注册 Service Worker
-if (window.location.protocol === 'https:' && 'serviceWorker' in navigator) {
+// 取消注册 Service Worker，避免其缓存导致普通刷新拿不到最新版本
+if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register(`/service-worker.js`);
+        navigator.serviceWorker.getRegistrations().then((regs) => {
+            regs.forEach((r) => r.unregister());
+        });
     });
 }
 
