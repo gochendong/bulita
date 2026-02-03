@@ -413,6 +413,7 @@ class Message extends Component<MessageProps, MessageState> {
                                                     onClick={() => {
                                                         this.handleDeleteMessage();
                                                     }}
+                                                    itemIcon={null}
                                                 >
                                                     <MenuItem key="recall">撤回消息</MenuItem>
                                                 </Menu>

@@ -308,12 +308,22 @@
         font-size: 12px;
         line-height: 1.4;
         list-style: none;
+        background: none;
 
         /* 隐藏 rc-menu 默认前缀小图标，避免显示空白方块 */
         &::before {
             display: none;
             content: none;
         }
+    }
+
+    /* 移除菜单项内部的图标容器 */
+    :global(.rc-menu-item) .anticon,
+    :global(.rc-menu-item) .rc-menu-item-icon {
+        display: none;
+        width: 0;
+        height: 0;
+        margin: 0;
     }
 }
 
