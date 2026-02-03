@@ -32,6 +32,7 @@ interface UserInfoProps {
         email: string;
         level: number;
         signature: string;
+        tag?: string;
     };
     onClose: () => void;
 }
@@ -209,7 +210,7 @@ function UserInfo(props: UserInfoProps) {
                             {(() => {
                                 const isOnline = adminOnlineStatus?.isOnline ?? user.isOnline;
                                 const lastLoginTime = adminOnlineStatus?.lastLoginTime ?? user.lastLoginTime;
-                                if (isOnline === true) {
+                                if (user.tag === 'bot' || isOnline === true) {
                                     return <p className={Style.onlineStatus}>当前在线</p>;
                                 }
                                 if (isOnline === false && lastLoginTime != null) {

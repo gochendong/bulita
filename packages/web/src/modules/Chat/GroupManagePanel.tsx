@@ -57,8 +57,10 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                 const sorted = [...members].sort((a, b) => {
                     if (a.isCreator) return -1;
                     if (b.isCreator) return 1;
-                    if (a.isOnline && !b.isOnline) return -1;
-                    if (!a.isOnline && b.isOnline) return 1;
+                    const aOnline = a.isOnline || a.user.tag === 'bot';
+                    const bOnline = b.isOnline || b.user.tag === 'bot';
+                    if (aOnline && !bOnline) return -1;
+                    if (!aOnline && bOnline) return 1;
                     // 离线成员按最后离线时间排序，最后离线的排在上面
                     const timeA = a.user.lastLoginTime ? new Date(a.user.lastLoginTime).getTime() : 0;
                     const timeB = b.user.lastLoginTime ? new Date(b.user.lastLoginTime).getTime() : 0;
@@ -174,11 +176,12 @@ function GroupManagePanel(props: GroupManagePanelProps) {
     }
 
     const ownerMembers = allMembers.filter((m) => m.isCreator);
-    const onlineMembersList = allMembers.filter((m) => !m.isCreator && m.isOnline);
-    const offlineMembersList = allMembers.filter((m) => !m.isCreator && !m.isOnline);
+    const onlineMembersList = allMembers.filter((m) => !m.isCreator && (m.isOnline || m.user.tag === 'bot'));
+    const offlineMembersList = allMembers.filter((m) => !m.isCreator && !m.isOnline && m.user.tag !== 'bot');
 
     function renderMemberRow(member: GroupAllMemberItem) {
         const { user: u } = member;
+        const isOnline = member.isOnline || u.tag === 'bot';
         return (
             <div
                 key={u._id}
@@ -186,7 +189,7 @@ function GroupManagePanel(props: GroupManagePanelProps) {
             >
                 <div
                     className={Style.userinfoBlock}
-                    onClick={() => handleShowUserInfo({ ...u, isOnline: member.isOnline, lastLoginTime: u.lastLoginTime })}
+                    onClick={() => handleShowUserInfo({ ...u, isOnline, lastLoginTime: u.lastLoginTime })}
                     role="button"
                 >
                     <Avatar size={28} src={u.avatar} />
@@ -199,12 +202,12 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                             {member.isCreator && (
                                 <span className={Style.creatorTag}>群主</span>
                             )}
-                            {member.isOnline && !member.isCreator && (
+                            {isOnline && !member.isCreator && (
                                 <span className={Style.onlineTag}>在线</span>
                             )}
                         </p>
                         <p className={Style.memberTime}>
-                            {member.isOnline
+                            {isOnline
                                 ? '当前在线'
                                 : `离线于 ${formatTime(u.lastLoginTime)}`}
                         </p>

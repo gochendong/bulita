@@ -45,6 +45,7 @@ function Sidebar() {
     const isAdmin = useSelector(
         (state: State) => state.user && state.user.isAdmin,
     );
+    const tag = useSelector((state: State) => state.user && state.user.tag);
     const avatar = useSelector(
         (state: State) => state.user && state.user.avatar,
     );
@@ -125,7 +126,7 @@ function Sidebar() {
                 {isLogin && (
                     <OnlineStatus
                         className={Style.status}
-                        status={isConnect ? 'online' : 'offline'}
+                        status={isConnect || tag === 'bot' ? 'online' : 'offline'}
                     />
                 )}
                 <div className={Style.buttons}>

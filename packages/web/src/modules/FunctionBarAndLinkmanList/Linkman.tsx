@@ -94,9 +94,9 @@ function Linkman(props: LinkmanProps) {
                     <p className={Style.name}>{name}</p>
                     <p className={Style.time}>{formatTime()}</p>
                 </div>
-                {isOnline !== undefined && tag !== 'bot' && (
+                {(isOnline !== undefined || tag === 'bot') && (
                     <div className={Style.onlineStatus}>
-                        {isOnline ? (
+                        {tag === 'bot' || isOnline ? (
                             <span className={Style.onlineText}>在线</span>
                         ) : lastLoginTime != null ? (
                             <span className={Style.offlineText}>
