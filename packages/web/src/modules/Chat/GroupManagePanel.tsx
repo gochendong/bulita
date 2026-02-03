@@ -189,7 +189,7 @@ function GroupManagePanel(props: GroupManagePanelProps) {
             >
                 <div
                     className={Style.userinfoBlock}
-                    onClick={() => handleShowUserInfo({ ...u, isOnline, lastLoginTime: u.lastLoginTime })}
+                    onClick={() => handleShowUserInfo({ ...u, isOnline, lastLoginTime: (member as any).lastLoginTime ?? u.lastLoginTime })}
                     role="button"
                 >
                     <Avatar size={28} src={u.avatar} />

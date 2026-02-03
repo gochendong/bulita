@@ -213,7 +213,7 @@ function UserInfo(props: UserInfoProps) {
                                 if (user.tag === 'bot' || isOnline === true) {
                                     return <p className={Style.onlineStatus}>当前在线</p>;
                                 }
-                                if (isOnline === false && lastLoginTime != null) {
+                                if (lastLoginTime != null) {
                                     return (
                                         <p className={Style.lastOnline}>
                                             最后在线：{formatLastOnline(lastLoginTime)}
