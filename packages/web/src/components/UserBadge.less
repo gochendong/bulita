@@ -12,29 +12,39 @@
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
+/* 参考炉石传说：days 越长颜色越深，普通→稀有→史诗→传说 */
 .level1 {
-    background: linear-gradient(135deg, @google-green 0%, darken(@google-green, 10%) 100%);
-    color: #fff;
-}
-
-.level2 {
-    background: linear-gradient(135deg, @google-yellow 0%, @google-orange 100%);
-    color: #202124;
-}
-
-.level3 {
-    background: linear-gradient(135deg, @google-blue 0%, darken(@google-blue, 8%) 100%);
-    color: #fff;
-}
-
-.level4 {
-    background: linear-gradient(135deg, @google-purple 0%, darken(@google-purple, 10%) 100%);
+    /* 萌新 <7天 - 普通(灰) */
+    background: linear-gradient(135deg, #b0bec5 0%, #90a4ae 100%);
     color: #fff;
     text-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
-.level5 {
-    background: linear-gradient(135deg, @google-teal 0%, @google-blue 100%);
+.level2 {
+    /* 新星 7-29天 - 稀有(蓝) */
+    background: linear-gradient(135deg, #64b5f6 0%, #42a5f5 100%);
+    color: #fff;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.25);
+}
+
+.level3 {
+    /* 常驻 30-89天 - 史诗(紫) */
+    background: linear-gradient(135deg, #7986cb 0%, #5c6bc0 100%);
     color: #fff;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.level4 {
+    /* 元老 90-364天 - 深紫 */
+    background: linear-gradient(135deg, #5e35b1 0%, #4527a0 100%);
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.level5 {
+    /* 传奇 365+天 - 传说(金/橙) */
+    background: linear-gradient(135deg, #ffca28 0%, #ff8f00 100%);
+    color: #1a1a1a;
+    text-shadow: 0 1px 1px rgba(255, 255, 255, 0.4);
+    box-shadow: 0 1px 3px rgba(255, 143, 0, 0.4);
 }
