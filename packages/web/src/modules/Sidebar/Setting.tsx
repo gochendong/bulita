@@ -170,6 +170,10 @@ function Setting(props: SettingProps) {
                                 <div className={Style.switch}>
                                     <p className={Style.switchText}>声音提醒</p>
                                     <Switch
+                                        onColor="#52d88a"
+                                        offColor="#d4d4d8"
+                                        uncheckedIcon={false}
+                                        checkedIcon={false}
                                         onChange={(value) =>
                                             action.setStatus(
                                                 'soundSwitch',
@@ -182,6 +186,10 @@ function Setting(props: SettingProps) {
                                 <div className={Style.switch}>
                                     <p className={Style.switchText}>桌面提醒</p>
                                     <Switch
+                                        onColor="#52d88a"
+                                        offColor="#d4d4d8"
+                                        uncheckedIcon={false}
+                                        checkedIcon={false}
                                         onChange={(value) =>
                                             action.setStatus(
                                                 'notificationSwitch',
@@ -196,6 +204,10 @@ function Setting(props: SettingProps) {
                                         根据输入内容推荐表情
                                     </p>
                                     <Switch
+                                        onColor="#52d88a"
+                                        offColor="#d4d4d8"
+                                        uncheckedIcon={false}
+                                        checkedIcon={false}
                                         onChange={(value) =>
                                             action.setStatus(
                                                 'enableSearchExpression',
@@ -292,6 +304,10 @@ function Setting(props: SettingProps) {
                                     <p className={Common.title}>毛玻璃效果</p>
                                     <div>
                                         <Switch
+                                            onColor="#52d88a"
+                                            offColor="#d4d4d8"
+                                            uncheckedIcon={false}
+                                            checkedIcon={false}
                                             onChange={(value) =>
                                                 action.setStatus('aero', value)
                                             }

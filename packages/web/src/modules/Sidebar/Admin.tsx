@@ -262,6 +262,10 @@ function Admin(props: AdminProps) {
                                                 {isBoolConfig ? (
                                                     <div className={Style.configSwitch}>
                                                         <Switch
+                                                            onColor="#52d88a"
+                                                            offColor="#d4d4d8"
+                                                            uncheckedIcon={false}
+                                                            checkedIcon={false}
                                                             onChange={(value: boolean) => {
                                                                 const strVal = value
                                                                     ? 'true'
