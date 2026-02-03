@@ -293,7 +293,8 @@
 }
 
 .recallDropdown {
-    min-width: 90px;
+    min-width: 80px;
+    margin-top: 4px; /* 与触发按钮留出间距，避免重叠 */
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     border-radius: 4px;
     overflow: hidden;
@@ -303,8 +304,9 @@
         padding: 2px 0;
     }
     :global(.rc-menu-item) {
-        padding: 6px 12px;
-        font-size: 13px;
+        padding: 4px 10px;
+        font-size: 12px;
+        line-height: 1.4;
     }
 }
 
