@@ -208,7 +208,6 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
 
     const banedIPLocs = await getConfigWithDefault('BANED_IP_LOCS');
     const defaultUsername = await getConfigWithDefault('DEFAULT_USERNAME');
-    const banedOnlyUnsetPassword = await getConfigWithDefault('BANED_ONLY_UNSET_PASSWORD');
 
     if (banedIPLocs) {
         const banedIPLocsArray = banedIPLocs.split(',');
@@ -217,17 +216,9 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
             toGroup.isDefault &&
             banedIPLocsArray.includes(user.tag)
         ) {
-            if (banedOnlyUnsetPassword === 'true') {
-                if (!user.password) {
-                    throw new AssertionError({
-                        message: `${user.tag}的${defaultUsername}不能在群组中发言, 请先在左上角设置密码`,
-                    });
-                }
-            } else {
-                throw new AssertionError({
-                    message: `${user.tag}的${defaultUsername}不能在群组中发言`,
-                });
-            }
+            throw new AssertionError({
+                message: `${user.tag}的${defaultUsername}不能在群组中发言`,
+            });
         }
     }
 
@@ -327,24 +318,6 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
                 notificationTokens.map(({ token }) => token),
                 messageData as unknown as MessageDocument,
             );
-        }
-
-        const notifyKey = await getConfigWithDefault('NOTIFY_KEY');
-        if (
-            notifyKey &&
-            toUser &&
-            toUser.tag !== 'bot' &&
-            toUser.password &&
-            user.username !== toUser.username
-        ) {
-            const jsonStr = JSON.stringify({
-                from_user_id: user.id,
-                to_user_id: toUser?.id,
-                from_username: user.username,
-                msg_type: type,
-                content: message.content,
-            });
-            await Redis.lpush(notifyKey, jsonStr);
         }
 
         if (

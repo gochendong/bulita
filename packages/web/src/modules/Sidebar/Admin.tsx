@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import { css } from 'linaria';
+import Switch from 'react-switch';
 import Style from './Admin.less';
 import Common from './Common.less';
 import Dialog from '../../components/Dialog';
@@ -234,21 +235,76 @@ function Admin(props: AdminProps) {
                                 <p className={Common.title}>系统配置</p>
                                 <p className={Style.configTip}>以下配置优先写入 Redis。输入框留空表示该项设为空（不会使用 .env）。点击输入框外即保存。标注「需重启」的项修改后需重启服务生效。</p>
                                 <div className={Style.configList}>
-                                    {Object.keys(systemConfig.adminConfig).map((key) => (
-                                        <div key={key} className={Style.configRow}>
-                                            <label className={Style.configLabel}>
-                                                {systemConfig.adminConfigLabels[key] || key}
-                                                {systemConfig.restartRequiredKeys?.includes(key) ? ' (需重启)' : ''}
-                                            </label>
-                                            <Input
-                                                className={Style.configInput}
-                                                value={adminConfigValues[key] ?? ''}
-                                                onChange={(v) => setAdminConfigValues((prev) => ({ ...prev, [key]: v }))}
-                                                onBlur={() => handleSetSystemConfig(key, adminConfigValuesRef.current[key] ?? '')}
-                                                placeholder="留空表示该项为空"
-                                            />
-                                        </div>
-                                    ))}
+                                    {Object.keys(systemConfig.adminConfig).map((key) => {
+                                        const label =
+                                            systemConfig.adminConfigLabels[key] || key;
+                                        const isBoolConfig =
+                                            ['ENABLE_REGISTER_USER', 'ONLY_SEARCH_DEFAULT_GROUP'].includes(
+                                                key,
+                                            );
+                                        const rawValue =
+                                            adminConfigValues[key] ??
+                                            systemConfig.adminConfig[key] ??
+                                            '';
+                                        const boolValue =
+                                            rawValue === 'true' || rawValue === true;
+
+                                        return (
+                                            <div key={key} className={Style.configRow}>
+                                                <label className={Style.configLabel}>
+                                                    {label}
+                                                    {systemConfig.restartRequiredKeys?.includes(
+                                                        key,
+                                                    )
+                                                        ? ' (需重启)'
+                                                        : ''}
+                                                </label>
+                                                {isBoolConfig ? (
+                                                    <div className={Style.configSwitch}>
+                                                        <Switch
+                                                            onChange={(value: boolean) => {
+                                                                const strVal = value
+                                                                    ? 'true'
+                                                                    : 'false';
+                                                                setAdminConfigValues(
+                                                                    (prev) => ({
+                                                                        ...prev,
+                                                                        [key]: strVal,
+                                                                    }),
+                                                                );
+                                                                handleSetSystemConfig(
+                                                                    key,
+                                                                    strVal,
+                                                                );
+                                                            }}
+                                                            checked={boolValue}
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <Input
+                                                        className={Style.configInput}
+                                                        value={String(rawValue)}
+                                                        onChange={(v) =>
+                                                            setAdminConfigValues(
+                                                                (prev) => ({
+                                                                    ...prev,
+                                                                    [key]: v,
+                                                                }),
+                                                            )
+                                                        }
+                                                        onBlur={() =>
+                                                            handleSetSystemConfig(
+                                                                key,
+                                                                adminConfigValuesRef
+                                                                    .current[key] ?? '',
+                                                            )
+                                                        }
+                                                        placeholder="留空表示该项为空"
+                                                    />
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}

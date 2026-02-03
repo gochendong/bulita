@@ -13,7 +13,6 @@ export const ADMIN_CONFIG_KEYS = [
     'DEFAULT_BOT_NAME',
     'DEFAULT_LINKMANS',
     'BANED_IP_LOCS',
-    'BANED_ONLY_UNSET_PASSWORD',
     'MAX_CALL_PER_MINUTES',
     'NEW_USER_MAX_CALL_PER_MINUTES',
     'LIFT_BAN_DURATION',
@@ -24,7 +23,6 @@ export const ADMIN_CONFIG_KEYS = [
     'PASSWORD_TIPS',
     'MAX_GROUP_NUM',
     'PRIVATE_MSG_CALLBACK_DOMAIN',
-    'NOTIFY_KEY',
 ] as const;
 
 /** 仅在启动时读取的配置，修改后需重启服务才能生效 */
@@ -48,7 +46,6 @@ export const ADMIN_CONFIG_LABELS: Record<string, string> = {
     DEFAULT_BOT_NAME: '默认群组中自动回复的机器人名',
     DEFAULT_LINKMANS: '默认自动添加的联系人(逗号分隔)',
     BANED_IP_LOCS: '禁止发言的IP地区(逗号分隔)',
-    BANED_ONLY_UNSET_PASSWORD: '仅禁止未设置密码的用户',
     MAX_CALL_PER_MINUTES: '用户每分钟发言上限',
     NEW_USER_MAX_CALL_PER_MINUTES: '新用户每分钟发言上限',
     LIFT_BAN_DURATION: '禁言自动解除时长(秒)',
@@ -59,7 +56,6 @@ export const ADMIN_CONFIG_LABELS: Record<string, string> = {
     PASSWORD_TIPS: '密码规则提示',
     MAX_GROUP_NUM: '用户最大建群数(0=不允许建群，管理员不限)',
     PRIVATE_MSG_CALLBACK_DOMAIN: '私聊消息通知回调域名',
-    NOTIFY_KEY: '私聊通知 Redis 键(敏感)',
 };
 
 /** 代码内默认值，不依赖 .env */
@@ -75,7 +71,6 @@ export const DEFAULT_ADMIN_CONFIG: Record<string, string> = {
     DEFAULT_BOT_NAME: '',
     DEFAULT_LINKMANS: '',
     BANED_IP_LOCS: '',
-    BANED_ONLY_UNSET_PASSWORD: 'true',
     MAX_CALL_PER_MINUTES: '8',
     NEW_USER_MAX_CALL_PER_MINUTES: '5',
     LIFT_BAN_DURATION: '10',
