@@ -899,11 +899,14 @@ function getUserOnlineStatusWrapper() {
                 ? (user.lastLoginTime as Date).toISOString()
                 : null;
         }
+
+        // 缓存结果
         cache[userId] = {
             isOnline,
             lastLoginTime,
             expireTime: Date.now() + UserOnlineStatusCacheExpireTime,
         };
+
         return {
             isOnline,
             lastLoginTime,
@@ -911,3 +914,55 @@ function getUserOnlineStatusWrapper() {
     };
 }
 export const getUserOnlineStatus = getUserOnlineStatusWrapper();
+
+/**
+ * 删除用户, 需要管理员权限
+ * @param ctx Context
+ */
+export async function deleteUser(ctx: Context<{ username: string }>) {
+    const { username } = ctx.data;
+    assert(username, '用户名不能为空');
+
+    const user = await User.findOne({ username });
+    if (!user) {
+        throw new AssertionError({ message: '用户不存在' });
+    }
+    const userId = user._id;
+
+    // 断开 Socket 连接
+    const sockets = await Socket.find({ user: userId });
+    const io = (ctx.socket as any).__socket.server;
+    sockets.forEach((socketRecord) => {
+        const connectedSocket = io.sockets.sockets.get(socketRecord.id);
+        if (connectedSocket) {
+            connectedSocket.emit('deleteUser', '您的账号已被删除');
+            connectedSocket.disconnect(true);
+        }
+    });
+    await Socket.deleteMany({ user: userId });
+
+    // 处理创建的群组：转让给系统用户
+    const systemUser = await User.findOne({ tag: 'system' });
+    if (systemUser) {
+        await Group.updateMany({ creator: userId }, { creator: systemUser._id });
+    }
+
+    // 删除用户
+    await User.deleteOne({ _id: userId });
+
+    // 删除好友关系
+    await Friend.deleteMany({ $or: [{ from: userId }, { to: userId }] });
+
+    // 退出所有群组
+    await Group.updateMany({}, { $pull: { members: userId } });
+
+    // 删除发送的消息
+    await Message.deleteMany({ $or: [{ from: userId }, { to: userId }] });
+
+    // 删除通知
+    await Notification.deleteMany({ user: userId });
+
+    return {
+        msg: 'ok',
+    };
+}

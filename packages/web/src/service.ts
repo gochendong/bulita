@@ -546,3 +546,12 @@ export async function toggleNewUserSendMessage(enable: boolean) {
     const [, result] = await fetch('toggleNewUserSendMessage', { enable });
     return !!result;
 }
+
+/**
+ * 删除用户
+ * @param username 目标用户名
+ */
+export async function deleteUser(username: string) {
+    const [err] = await fetch('deleteUser', { username });
+    return !err;
+}

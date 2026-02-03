@@ -20,6 +20,7 @@ import {
     toggleGroupAI,
     getSystemConfig,
     setSystemConfig as setSystemConfigApi,
+    deleteUser,
 } from '../../service';
 
 const styles = {
@@ -53,6 +54,7 @@ function Admin(props: AdminProps) {
     const [tag, setTag] = useState('');
     const [resetPasswordUsername, setResetPasswordUsername] = useState('');
     const [sealUsername, setSealUsername] = useState('');
+    const [deleteUsername, setDeleteUsername] = useState('');
     const [sealList, setSealList] = useState({ users: [], ips: [] });
     const [sealIpAddress, setSealIpAddress] = useState('');
     const [systemConfig, setSystemConfig] = useState<SystemConfig>();
@@ -184,6 +186,22 @@ function Admin(props: AdminProps) {
         }
     }
 
+    async function handleDeleteUser() {
+        if (!deleteUsername) {
+            Message.warning('请输入要删除的用户名');
+            return;
+        }
+        // eslint-disable-next-line no-restricted-globals
+        if (!confirm(`确定要删除用户 ${deleteUsername} 吗？此操作不可恢复！`)) {
+            return;
+        }
+        const isSuccess = await deleteUser(deleteUsername);
+        if (isSuccess) {
+            Message.success(`用户 ${deleteUsername} 已被删除`);
+            setDeleteUsername('');
+        }
+    }
+
     return (
         <Dialog
             className={Style.admin}
@@ -300,6 +318,24 @@ function Admin(props: AdminProps) {
                                     onBlur={() => tagUsername.trim() && tag.trim() && handleSetTag()}
                                     placeholder="标签内容"
                                 />
+                            </div>
+                        </div>
+                        <div className={Common.block}>
+                            <p className={Common.title}>删除用户</p>
+                            <div className={Style.inputBlock}>
+                                <Input
+                                    className={Style.input}
+                                    value={deleteUsername}
+                                    onChange={setDeleteUsername}
+                                    placeholder="要删除的用户名"
+                                />
+                                <Button
+                                    className={Style.button}
+                                    type="danger"
+                                    onClick={handleDeleteUser}
+                                >
+                                    删除
+                                </Button>
                             </div>
                         </div>
                         <div className={Common.block}>

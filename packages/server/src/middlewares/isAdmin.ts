@@ -20,6 +20,7 @@ export default function isAdmin(socket: Socket) {
         'toggleGroupAI',
         'getSystemConfig',
         'setSystemConfig',
+        'deleteUser',
     ]);
     return async ([event, , cb]: MiddlewareArgs, next: MiddlewareNext) => {
         socket.data.isAdmin =
