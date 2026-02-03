@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 
 import IconButton from '../../components/IconButton';
 import Avatar from '../../components/Avatar';
@@ -25,6 +25,7 @@ function FunctionBar() {
         users: [],
         groups: [],
     });
+    const keywordsRef = useRef(keywords);
 
     const context = useContext(ShowUserOrGroupInfoContext);
     const placeholder = '';
@@ -34,6 +35,7 @@ function FunctionBar() {
         toggleAddButtonVisible(true);
         setSearchResult({ users: [], groups: [] });
         setKeywords('');
+        keywordsRef.current = '';
     }
 
     function handleBodyClick(e: any) {
@@ -56,6 +58,10 @@ function FunctionBar() {
         resetSearch();
     }
     useEffect(() => {
+        keywordsRef.current = keywords;
+    }, [keywords]);
+
+    useEffect(() => {
         document.body.addEventListener('click', handleBodyClick, false);
         return () => {
             document.body.removeEventListener('click', handleBodyClick, false);
@@ -68,9 +74,10 @@ function FunctionBar() {
     }
 
     function handleInputEnter() {
+        const valueToSearch = keywordsRef.current;
         setTimeout(async () => {
-            if (keywords) {
-                const result = await search(keywords);
+            if (valueToSearch) {
+                const result = await search(valueToSearch);
                 if (result?.users?.length || result?.groups?.length) {
                     setSearchResult(result);
                 } else {
@@ -153,8 +160,10 @@ function FunctionBar() {
                     type="text"
                     placeholder={placeholder}
                     value={keywords}
-                    // @ts-ignore
-                    onChange={setKeywords}
+                    onChange={(v) => {
+                        keywordsRef.current = v;
+                        setKeywords(v);
+                    }}
                     onFocus={handleFocus}
                     onBlur={handleInputEnter}
                     onEnter={handleInputEnter}

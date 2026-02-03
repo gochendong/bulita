@@ -21,6 +21,8 @@ import store from '../../../state/store';
 import { ActionTypes, DeleteMessagePayload } from '../../../state/action';
 import { deleteMessage } from '../../../service';
 import IconButton from '../../../components/IconButton';
+import Dropdown from '../../../components/Dropdown';
+import { Menu, MenuItem } from '../../../components/Menu';
 import { State } from '../../../state/reducer';
 import Tooltip from '../../../components/Tooltip';
 import MessageToast from '../../../components/Message';
@@ -403,22 +405,38 @@ class Message extends Component<MessageProps, MessageState> {
                                     </button>
                                 </Tooltip>
                                 {(isAdmin || (!client.disableDeleteMessage && isSelf)) && (
-                                    <Tooltip
-                                        placement={isSelf ? 'left' : 'right'}
-                                        mouseEnterDelay={0.3}
-                                        overlay={<span>撤回消息</span>}
+                                    <Dropdown
+                                        trigger={['click']}
+                                        overlay={
+                                            <div className={Style.recallDropdown}>
+                                                <Menu
+                                                    onClick={() => {
+                                                        this.handleDeleteMessage();
+                                                    }}
+                                                >
+                                                    <MenuItem key="recall">撤回消息</MenuItem>
+                                                </Menu>
+                                            </div>
+                                        }
+                                        placement={isSelf ? 'bottomRight' : 'bottomLeft'}
+                                        getPopupContainer={() => document.body}
                                     >
-                                        <div>
-                                            <IconButton
-                                                className={Style.button}
-                                                icon="recall"
-                                                iconSize={12}
-                                                width={15}
-                                                height={15}
-                                                onClick={this.handleDeleteMessage}
-                                            />
-                                        </div>
-                                    </Tooltip>
+                                        <Tooltip
+                                            placement={isSelf ? 'left' : 'right'}
+                                            mouseEnterDelay={0.3}
+                                            overlay={<span>更多</span>}
+                                        >
+                                            <div>
+                                                <IconButton
+                                                    className={Style.button}
+                                                    icon="omit"
+                                                    iconSize={12}
+                                                    width={15}
+                                                    height={15}
+                                                />
+                                            </div>
+                                        </Tooltip>
+                                    </Dropdown>
                                 )}
                             </div>
                         )}

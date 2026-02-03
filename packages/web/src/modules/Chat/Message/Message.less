@@ -292,6 +292,22 @@
     }
 }
 
+.recallDropdown {
+    min-width: 90px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border-radius: 4px;
+    overflow: hidden;
+
+    :global(.rc-menu) {
+        border: none;
+        padding: 2px 0;
+    }
+    :global(.rc-menu-item) {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+}
+
 .textMessage {
     user-select: text;
     word-break: break-word;

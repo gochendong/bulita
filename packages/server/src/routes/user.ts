@@ -254,15 +254,17 @@ export async function register(
                 systemUser = newUser;
             }
             
+            // 欢迎文案不包含用户名，由前端 SystemMessage 用 originUsername 展示为「用户名 + 欢迎加入！…」
+            const welcomeContent = '欢迎加入！开始你的聊天吧～';
             const welcomeMessage = await Message.create({
                 from: systemUser._id,
                 to: defaultGroup._id.toString(),
                 type: 'system',
-                content: `欢迎 ${newUser.username} 加入！开始你的聊天吧～`,
+                content: welcomeContent,
             } as MessageDocument);
 
             // 广播欢迎消息到群组
-            // 注意：from 对象需要包含前端需要的所有字段
+            // 注意：from 对象需要包含前端需要的所有字段，originUsername 为新用户名供前端展示
             const messageData = {
                 _id: welcomeMessage._id,
                 createTime: welcomeMessage.createTime,
@@ -270,12 +272,12 @@ export async function register(
                     _id: systemUser._id.toString(),
                     username: '系统',
                     avatar: systemUser.avatar || '',
-                    originUsername: '系统',
+                    originUsername: newUser.username,
                     tag: 'system',
                 },
                 to: defaultGroup._id.toString(),
                 type: 'system',
-                content: welcomeMessage.content,
+                content: welcomeContent,
             };
             
             // 使用 socket.io 广播消息到群组
