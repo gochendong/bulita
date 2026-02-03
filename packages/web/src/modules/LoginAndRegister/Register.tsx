@@ -7,7 +7,7 @@ import convertMessage from '@bulita/utils/convertMessage';
 import Style from './LoginRegister.less';
 import Input from '../../components/Input';
 import useAction from '../../hooks/useAction';
-import { register, getLinkmansLastMessagesV2 } from '../../service';
+import { register, getLinkmansLastMessagesV2, loginByToken } from '../../service';
 // import { Message } from '../../state/reducer';
 import Message from '../../components/Message';
 import { ActionTypes } from '../../state/action';
@@ -33,13 +33,25 @@ function Register() {
             // 检查 user 是否是有效的用户对象（有 token 和 _id）
             if (user && user.token && user._id) {
                 try {
-                    action.setUser(user);
-                    action.toggleLoginRegisterDialog(false);
                     window.localStorage.setItem('token', user.token);
 
+                    // 注册成功后，立刻通过 token 再登录一次
+                    // 确保服务端登录态（socket.user、Socket 记录等）和前端状态完全一致
+                    const loginUser = await loginByToken(
+                        user.token,
+                        platform.os?.family,
+                        platform.name,
+                        platform.description,
+                    );
+
+                    const finalUser = loginUser || user;
+
+                    action.setUser(finalUser);
+                    action.toggleLoginRegisterDialog(false);
+
                     const linkmanIds = [
-                        ...(user.groups || []).map((group: any) => group._id),
-                        ...(user.friends || []).map((friend: any) =>
+                        ...(finalUser.groups || []).map((group: any) => group._id),
+                        ...(finalUser.friends || []).map((friend: any) =>
                             getFriendId(friend.from, friend.to._id),
                         ),
                     ];
