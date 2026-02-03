@@ -50,15 +50,18 @@ const io = new Server(httpServer, {
     maxHttpBufferSize: 1024 * 1024 * 1024, // 设置为1024MB
 });
 
-// serve index.html
+// serve index.html（不缓存，刷新即获取最新版本）
 app.use(async (ctx, next) => {
     if (
         /\/invite\/group\/[\w\d]+/.test(ctx.request.url) ||
         !/(\.)|(\/invite\/group\/[\w\d]+)/.test(ctx.request.url)
     ) {
+        ctx.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        ctx.set('Pragma', 'no-cache');
+        ctx.set('Expires', '0');
         await koaSend(ctx, 'index.html', {
             root: path.join(__dirname, '../public'),
-            maxage: 1000 * 60 * 60 * 24 * 7,
+            maxage: 0,
             gzip: true,
         });
     } else {
@@ -66,10 +69,10 @@ app.use(async (ctx, next) => {
     }
 });
 
-// serve public static files
+// serve public static files（不缓存，刷新即获取最新版本）
 app.use(
     koaStatic(path.join(__dirname, '../public'), {
-        maxAge: 1000 * 60 * 60 * 24 * 7,
+        maxAge: 0,
         gzip: true,
     }),
 );
