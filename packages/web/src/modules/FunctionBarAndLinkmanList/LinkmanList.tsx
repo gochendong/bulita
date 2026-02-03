@@ -9,7 +9,7 @@ import Style from './LinkmanList.less';
 function LinkmanList() {
     const linkmans = useSelector((state: State) => state.linkmans);
 
-    function renderLinkman(linkman: Linkman) {
+    function renderLinkman(linkman: Linkman, index: number) {
         const messages = Object.values(linkman.messages);
         const lastMessage =
             messages.length > 0 ? messages[messages.length - 1] : null;
@@ -36,6 +36,7 @@ function LinkmanList() {
                 unread={linkman.unread}
                 isOnline={linkman.type === 'friend' ? linkman.isOnline : undefined}
                 lastLoginTime={linkman.type === 'friend' ? linkman.lastLoginTime : undefined}
+                colorIndex={index}
             />
         );
     }
@@ -69,7 +70,7 @@ function LinkmanList() {
 
     return (
         <div className={Style.linkmanList}>
-            {filteredLinkmans.sort(sort).map((linkman) => renderLinkman(linkman))}
+            {filteredLinkmans.sort(sort).map((linkman, index) => renderLinkman(linkman, index))}
         </div>
     );
 }

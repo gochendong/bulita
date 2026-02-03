@@ -25,10 +25,12 @@ interface LinkmanProps {
     isOnline?: boolean;
     /** 好友最后在线时间（仅好友、离线时） */
     lastLoginTime?: string | null;
+    /** 用于彩色左边条的索引（0–7 循环） */
+    colorIndex?: number;
 }
 
 function Linkman(props: LinkmanProps) {
-    const { id, name, avatar, preview, unread, time, tag, isOnline, lastLoginTime } = props;
+    const { id, name, avatar, preview, unread, time, tag, isOnline, lastLoginTime, colorIndex = 0 } = props;
 
     const action = useAction();
     const focus = useSelector((state: State) => state.focus);
@@ -84,6 +86,7 @@ function Linkman(props: LinkmanProps) {
     return (
         <div
             className={`${Style.linkman} ${id === focus ? Style.focus : ''}`}
+            data-color-index={colorIndex % 8}
             onClick={handleClick}
             role="button"
             {...aero}

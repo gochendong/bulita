@@ -28,6 +28,18 @@
     max-width: 300px;
     display: flex;
     flex-direction: column;
+    position: relative;
+
+    &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        background: linear-gradient(180deg, @google-blue, @google-green, @google-yellow, @google-red);
+        opacity: 0.9;
+    }
 
     &[data-aero=true] {
         background-color: rgba(253, 248, 245, 0.95);
@@ -37,5 +49,10 @@
     @media @mobile {
         background-color: @warm-bg;
         border: 1px solid @warm-border;
+
+        &::before {
+            width: 3px;
+            background: @google-blue;
+        }
     }
 }

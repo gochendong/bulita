@@ -134,45 +134,53 @@ function Sidebar() {
                         isAdmin &&
                         renderTooltip(
                             '管理员',
-                            <IconButton
-                                width={40}
-                                height={40}
-                                icon="administrator"
-                                iconSize={28}
-                                onClick={() => toggleAdminDialogVisible(true)}
-                            />,
+                            <div className={Style.iconWrapPurple}>
+                                <IconButton
+                                    width={40}
+                                    height={40}
+                                    icon="administrator"
+                                    iconSize={28}
+                                    onClick={() => toggleAdminDialogVisible(true)}
+                                />
+                            </div>,
                         )}
                     {renderTooltip(
                         '关于',
-                        <IconButton
-                            width={40}
-                            height={40}
-                            icon="about"
-                            iconSize={26}
-                            onClick={() => toggleAboutDialogVisible(true)}
-                        />,
+                        <div className={Style.iconWrapBlue}>
+                            <IconButton
+                                width={40}
+                                height={40}
+                                icon="about"
+                                iconSize={26}
+                                onClick={() => toggleAboutDialogVisible(true)}
+                            />
+                        </div>,
                     )}
                     {isLogin &&
                         renderTooltip(
                             '设置',
-                            <IconButton
-                                width={40}
-                                height={40}
-                                icon="setting"
-                                iconSize={26}
-                                onClick={() => toggleSettingDialogVisible(true)}
-                            />,
+                            <div className={Style.iconWrapTeal}>
+                                <IconButton
+                                    width={40}
+                                    height={40}
+                                    icon="setting"
+                                    iconSize={26}
+                                    onClick={() => toggleSettingDialogVisible(true)}
+                                />
+                            </div>,
                         )}
                     {isLogin &&
                         renderTooltip(
                             '退出登录',
-                            <IconButton
-                                width={40}
-                                height={40}
-                                icon="logout"
-                                iconSize={26}
-                                onClick={logout}
-                            />,
+                            <div className={Style.iconWrapRed}>
+                                <IconButton
+                                    width={40}
+                                    height={40}
+                                    icon="logout"
+                                    iconSize={26}
+                                    onClick={logout}
+                                />
+                            </div>,
                         )}
                 </div>
 

@@ -5,8 +5,19 @@
     display: flex;
     align-items: center;
     padding: 10px 16px;
+    padding-left: 13px;
     cursor: default;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, border-color 0.2s;
+    border-left: 3px solid transparent;
+
+    &[data-color-index='0'] { border-left-color: @google-blue; }
+    &[data-color-index='1'] { border-left-color: @google-red; }
+    &[data-color-index='2'] { border-left-color: @google-yellow; }
+    &[data-color-index='3'] { border-left-color: @google-green; }
+    &[data-color-index='4'] { border-left-color: @google-purple; }
+    &[data-color-index='5'] { border-left-color: @google-teal; }
+    &[data-color-index='6'] { border-left-color: @google-orange; }
+    &[data-color-index='7'] { border-left-color: @google-pink; }
 }
 
 .focus {

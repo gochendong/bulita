@@ -151,12 +151,24 @@
 
 .memberSectionTitle {
     font-size: 12px;
-    color: @input-placeholder;
+    font-weight: @font-weight-semibold;
     margin: 10px 0 6px 0;
+    padding-left: 10px;
     line-height: 1.4;
+    border-left: 3px solid transparent;
 
-    &:first-child {
+    &:first-of-type {
         margin-top: 0;
+        color: @google-purple;
+        border-left-color: @google-purple;
+    }
+    &:nth-of-type(2) {
+        color: @google-green;
+        border-left-color: @google-green;
+    }
+    &:nth-of-type(3) {
+        color: @google-teal;
+        border-left-color: @google-teal;
     }
 }
 
@@ -166,7 +178,7 @@
     padding: 4px 0;
 
     &:hover {
-        background: rgba(210, 165, 130, 0.08);
+        background: @google-blue-light;
     }
 }
 
@@ -204,7 +216,8 @@
 
 .onlineTag {
     font-size: 11px;
-    color: @warm-accent;
+    color: @google-green;
+    font-weight: @font-weight-semibold;
 }
 
 .memberTime {

@@ -960,7 +960,7 @@ function ChatInput(props: InputAreaProps) {
                 getPopupContainer={() => document.body}
             >
                 <IconButton
-                    className={Style.iconButton}
+                    className={`${Style.iconButton} ${Style.expressionIcon}`}
                     width={32}
                     height={32}
                     icon="expression"
@@ -969,7 +969,7 @@ function ChatInput(props: InputAreaProps) {
             </Dropdown>
             <div className={Style.addMenuWrap} ref={addTriggerRef}>
                 <IconButton
-                    className={Style.iconButton}
+                    className={`${Style.iconButton} ${Style.addIcon}`}
                     width={32}
                     height={32}
                     icon="add"

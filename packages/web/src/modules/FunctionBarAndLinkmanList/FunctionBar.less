@@ -66,7 +66,7 @@
     left: 16px;
     top: 50%;
     transform: translateY(-50%);
-    color: @input-placeholder;
+    color: @google-blue;
     pointer-events: none;
     z-index: 1;
 }
@@ -80,27 +80,27 @@
     padding: 0 12px;
     height: 40px;
     border-radius: 20px;
-    background: rgba(212, 160, 144, 0.08);
-    border: 1px solid rgba(212, 160, 144, 0.2);
+    background: @google-green-light;
+    border: 1px solid rgba(52, 168, 83, 0.35);
     cursor: pointer;
     transition: background 0.2s ease, border-color 0.2s ease;
 
     &:hover {
-        background: rgba(212, 160, 144, 0.15);
-        border-color: rgba(212, 160, 144, 0.4);
+        background: rgba(52, 168, 83, 0.2);
+        border-color: @google-green;
         :global {
             .iconfont {
-                color: @warm-text-muted;
+                color: @google-green;
             }
         }
         .createGroupLabel {
-            color: @warm-text;
+            color: @google-green;
         }
     }
 
     :global {
         .iconfont {
-            color: @warm-text-muted;
+            color: @google-green;
             font-size: 18px;
         }
     }
@@ -108,8 +108,8 @@
 
 .createGroupLabel {
     font-size: 13px;
-    color: @warm-text-muted;
-    font-weight: @font-weight-normal;
+    color: @google-green;
+    font-weight: @font-weight-semibold;
 }
 
 .searchResult {
@@ -141,12 +141,13 @@
         cursor: pointer;
         height: 56px;
         padding-left: 8px;
+        border-radius: @warm-radius-sm;
         & > p {
             color: @warm-text;
             margin-left: 10px;
         }
         &:hover {
-            background-color: @warm-accent-light;
+            background-color: @google-blue-light;
         }
     }
 }
@@ -158,6 +159,7 @@
         cursor: pointer;
         height: 56px;
         align-items: center;
+        border-radius: @warm-radius-sm;
         & > div {
             margin-left: 10px;
             & > p {
@@ -169,7 +171,7 @@
             }
         }
         &:hover {
-            background-color: @warm-accent-light;
+            background-color: @google-green-light;
         }
     }
 }
@@ -183,10 +185,14 @@
     & > div {
         & > p {
             font-size: 14px;
-            color: @warm-text;
             font-weight: bold;
             line-height: 31px;
+            padding-left: 8px;
+            border-left: 3px solid transparent;
         }
+        &:first-child > p { color: @google-blue; border-left-color: @google-blue; }
+        &:last-child > p { color: @google-green; border-left-color: @google-green; }
+        &:only-child > p { color: @google-teal; border-left-color: @google-teal; }
     }
 }
 

@@ -9,6 +9,17 @@
     justify-content: space-between;
     position: relative;
 
+    &::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 3px;
+        background: linear-gradient(90deg, @google-blue, @google-green, @google-yellow);
+        opacity: 0.85;
+    }
+
     &[data-aero=true] {
         border-bottom: 1px solid rgba(232, 224, 216, 0.6);
     }
