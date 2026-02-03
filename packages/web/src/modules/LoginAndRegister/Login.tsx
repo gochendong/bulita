@@ -48,6 +48,8 @@ function Login() {
                 action.setUser(user);
                 action.toggleLoginRegisterDialog(false);
                 window.localStorage.setItem('token', user.token);
+                // 确保登录后前端连接状态为在线，避免必须刷新页面才能发送消息
+                dispatch({ type: ActionTypes.Connect, payload: '' });
 
                 const linkmanIds = [
                     ...user.groups.map((group: any) => group._id),

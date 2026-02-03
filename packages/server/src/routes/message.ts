@@ -109,6 +109,7 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         assert(toUser, '用户不存在');
     }
 
+    // 根据 Redis 中的禁言开关（全员禁言 / 新用户禁言 / 未注册用户禁言）限制发言
     if (
         toGroup ||
         (toUser &&
