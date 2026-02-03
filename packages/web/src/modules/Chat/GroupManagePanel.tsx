@@ -206,11 +206,11 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                                 <span className={Style.onlineTag}>在线</span>
                             )}
                         </p>
-                        <p className={Style.memberTime}>
-                            {isOnline
-                                ? '当前在线'
-                                : `离线于 ${formatTime(u.lastLoginTime)}`}
-                        </p>
+                        {!isOnline && (
+                            <p className={Style.memberTime}>
+                                离线于 {formatTime(u.lastLoginTime)}
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>
