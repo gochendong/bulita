@@ -2,14 +2,11 @@ import { getAdminConfigKey, Redis } from '@bulita/database/redis/initRedis';
 
 /** 管理员可在控制台修改的配置键，未在此列表的键不允许通过控制台写入 */
 export const ADMIN_CONFIG_KEYS = [
-    'ADMINS',
     'DEFAULT_PASSWORD',
-    'BOTS',
     'ENABLE_REGISTER_USER',
     'ONLY_SEARCH_DEFAULT_GROUP',
     'DEFAULT_TITLE',
     'DEFAULT_USERNAME',
-    'DEFAULT_GROUP_NAME',
     'DEFAULT_BOT_NAME',
     'DEFAULT_LINKMANS',
     'BANED_IP_LOCS',
@@ -27,22 +24,16 @@ export const ADMIN_CONFIG_KEYS = [
 
 /** 仅在启动时读取的配置，修改后需重启服务才能生效 */
 export const RESTART_REQUIRED_KEYS: readonly string[] = [
-    'ADMINS',
     'DEFAULT_PASSWORD',
-    'BOTS',
-    'DEFAULT_GROUP_NAME',
 ];
 
 /** 配置项中文说明（供管理台展示） */
 export const ADMIN_CONFIG_LABELS: Record<string, string> = {
-    ADMINS: '管理员用户名(逗号分隔)',
     DEFAULT_PASSWORD: '默认密码/重置密码(敏感)',
-    BOTS: '机器人用户名(逗号分隔)',
     ENABLE_REGISTER_USER: '允许新用户注册',
     ONLY_SEARCH_DEFAULT_GROUP: '仅搜索默认群组',
     DEFAULT_TITLE: '网站标题',
     DEFAULT_USERNAME: '默认游客用户名前缀',
-    DEFAULT_GROUP_NAME: '默认群组名称(仅新安装时生效)',
     DEFAULT_BOT_NAME: '默认群组中自动回复的机器人名',
     DEFAULT_LINKMANS: '默认自动添加的联系人(逗号分隔)',
     BANED_IP_LOCS: '禁止发言的IP地区(逗号分隔)',
