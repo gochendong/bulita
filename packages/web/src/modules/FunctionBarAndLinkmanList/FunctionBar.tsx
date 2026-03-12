@@ -1,13 +1,7 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 
 import IconButton from '../../components/IconButton';
 import Avatar from '../../components/Avatar';
-import {
-    Tabs,
-    TabPane,
-    TabContent,
-    ScrollableInkTabBar,
-} from '../../components/Tabs';
 import CreateGroup from './CreateGroup';
 import { ShowUserOrGroupInfoContext } from '../../context';
 import { search } from '../../service';
@@ -25,23 +19,23 @@ function FunctionBar() {
     const [keywords, setKeywords] = useState('');
     const [addButtonVisible, toggleAddButtonVisible] = useState(true);
     const [searchResultVisible, toggleSearchResultVisible] = useState(false);
-    const [searchResultActiveKey, setSearchResultActiveKey] = useState('all');
     const [createGroupDialogVisible, toggleCreateGroupDialogVisible] =
         useState(false);
     const [searchResult, setSearchResult] = useState<SearchResult>({
         users: [],
         groups: [],
     });
+    const keywordsRef = useRef(keywords);
 
     const context = useContext(ShowUserOrGroupInfoContext);
-    const placeholder = '搜索用户和群组';
+    const placeholder = '';
 
     function resetSearch() {
         toggleSearchResultVisible(false);
         toggleAddButtonVisible(true);
-        setSearchResultActiveKey('all');
         setSearchResult({ users: [], groups: [] });
         setKeywords('');
+        keywordsRef.current = '';
     }
 
     function handleBodyClick(e: any) {
@@ -64,6 +58,10 @@ function FunctionBar() {
         resetSearch();
     }
     useEffect(() => {
+        keywordsRef.current = keywords;
+    }, [keywords]);
+
+    useEffect(() => {
         document.body.addEventListener('click', handleBodyClick, false);
         return () => {
             document.body.removeEventListener('click', handleBodyClick, false);
@@ -76,13 +74,14 @@ function FunctionBar() {
     }
 
     function handleInputEnter() {
+        const valueToSearch = keywordsRef.current;
         setTimeout(async () => {
-            if (keywords) {
-                const result = await search(keywords);
+            if (valueToSearch) {
+                const result = await search(valueToSearch);
                 if (result?.users?.length || result?.groups?.length) {
                     setSearchResult(result);
                 } else {
-                    Message.warning('没有搜索到内容, 记得回车哦~');
+                    Message.warning('没有搜索到内容');
                     setSearchResult({ users: [], groups: [] });
                 }
             }
@@ -146,6 +145,9 @@ function FunctionBar() {
 
     return (
         <div className={Style.functionBar}>
+            <span className={Style.searchIcon} title="搜索用户和群组">
+                <i className="iconfont icon-search" />
+            </span>
             <form
                 className={Style.form}
                 autoComplete="off"
@@ -158,126 +160,64 @@ function FunctionBar() {
                     type="text"
                     placeholder={placeholder}
                     value={keywords}
-                    // @ts-ignore
-                    onChange={setKeywords}
+                    onChange={(v) => {
+                        keywordsRef.current = v;
+                        setKeywords(v);
+                    }}
                     onFocus={handleFocus}
+                    onBlur={handleInputEnter}
                     onEnter={handleInputEnter}
                 />
             </form>
-            <IconButton
+            <button
+                type="button"
                 className={Style.createGroupButton}
-                style={{ display: addButtonVisible ? 'block' : 'none' }}
-                width={40}
-                height={40}
-                icon="add"
-                iconSize={38}
+                style={{ display: addButtonVisible ? 'flex' : 'none' }}
                 onClick={() => toggleCreateGroupDialogVisible(true)}
-            />
-            <Tabs
+                aria-label="创建群组"
+                title="创建群组"
+            >
+                <i className="iconfont icon-add" />
+                <span className={Style.createGroupLabel}>建群</span>
+            </button>
+            <div
                 className={Style.searchResult}
                 style={{ display: searchResultVisible ? 'block' : 'none' }}
-                activeKey={searchResultActiveKey}
-                onChange={setSearchResultActiveKey}
-                renderTabBar={() => <ScrollableInkTabBar />}
-                renderTabContent={() => <TabContent />}
             >
-                <TabPane tab="全部" key="all">
-                    {searchResult.users.length === 0 &&
-                    searchResult.groups.length === 0 ? (
-                        // eslint-disable-next-line react/jsx-indent
-                        <p className={Style.none}>
-                            没有搜索到内容, 记得回车哦~~
-                        </p>
-                    ) : (
-                        <div className={Style.allList}>
-                            <div
-                                style={{
-                                    display:
-                                        searchResult.users.length > 0
-                                            ? 'block'
-                                            : 'none',
-                                }}
-                            >
-                                <p>用户</p>
-                                <div className={Style.userList}>
-                                    {renderSearchUsers(3)}
-                                </div>
-                                <div
-                                    className={Style.more}
-                                    style={{
-                                        display:
-                                            searchResult.users.length > 3
-                                                ? 'block'
-                                                : 'none',
-                                    }}
-                                >
-                                    <span
-                                        onClick={() =>
-                                            setSearchResultActiveKey('user')
-                                        }
-                                        role="button"
-                                    >
-                                        查看更多
-                                    </span>
-                                </div>
-                            </div>
-                            <div
-                                style={{
-                                    display:
-                                        searchResult.groups.length > 0
-                                            ? 'block'
-                                            : 'none',
-                                }}
-                            >
-                                <p>群组</p>
-                                <div className={Style.groupList}>
-                                    {renderSearchGroups(3)}
-                                </div>
-                                <div
-                                    className={Style.more}
-                                    style={{
-                                        display:
-                                            searchResult.groups.length > 3
-                                                ? 'block'
-                                                : 'none',
-                                    }}
-                                >
-                                    <span
-                                        onClick={() =>
-                                            setSearchResultActiveKey('group')
-                                        }
-                                        role="button"
-                                    >
-                                        查看更多
-                                    </span>
-                                </div>
+                {searchResult.users.length === 0 &&
+                searchResult.groups.length === 0 ? (
+                    <p className={Style.none}>没有搜索到内容</p>
+                ) : (
+                    <div className={Style.allList}>
+                        <div
+                            style={{
+                                display:
+                                    searchResult.users.length > 0
+                                        ? 'block'
+                                        : 'none',
+                            }}
+                        >
+                            <p>用户</p>
+                            <div className={Style.userList}>
+                                {renderSearchUsers()}
                             </div>
                         </div>
-                    )}
-                </TabPane>
-                <TabPane tab="用户" key="user">
-                    {searchResult.users.length === 0 ? (
-                        <p className={Style.none}>
-                            没有搜索到内容, 记得回车哦~~
-                        </p>
-                    ) : (
-                        <div className={`${Style.userList} ${Style.only}`}>
-                            {renderSearchUsers()}
+                        <div
+                            style={{
+                                display:
+                                    searchResult.groups.length > 0
+                                        ? 'block'
+                                        : 'none',
+                            }}
+                        >
+                            <p>群组</p>
+                            <div className={Style.groupList}>
+                                {renderSearchGroups()}
+                            </div>
                         </div>
-                    )}
-                </TabPane>
-                <TabPane tab="群组" key="group">
-                    {searchResult.groups.length === 0 ? (
-                        <p className={Style.none}>
-                            没有搜索到内容, 记得回车哦~~
-                        </p>
-                    ) : (
-                        <div className={`${Style.groupList} ${Style.only}`}>
-                            {renderSearchGroups()}
-                        </div>
-                    )}
-                </TabPane>
-            </Tabs>
+                    </div>
+                )}
+            </div>
             <CreateGroup
                 visible={createGroupDialogVisible}
                 onClose={() => toggleCreateGroupDialogVisible(false)}

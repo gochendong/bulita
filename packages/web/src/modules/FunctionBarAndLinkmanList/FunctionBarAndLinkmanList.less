@@ -21,21 +21,21 @@
 }
 
 .container {
-    //background-color: rgb(247, 247, 247); 3.13 ui
-    background-color: white;
-    border: 1px solid rgba(208, 208, 208, 0.5);
+    background-color: @warm-bg;
+    border: 1px solid @warm-border;
+    border-right: 1px solid @warm-border;
     flex: 1;
     max-width: 300px;
     display: flex;
     flex-direction: column;
 
     &[data-aero=true] {
-        background-color: var(--primary-color-0);
+        background-color: rgba(253, 248, 245, 0.95);
+        border-color: rgba(218, 220, 224, 0.6);
     }
 
     @media @mobile {
-        //background-color: rgb(247, 247, 247); 3.13 ui
-        background-color: white;
-        border: 1px solid rgba(208, 208, 208, 0.5);
+        background-color: @warm-bg;
+        border: 1px solid @warm-border;
     }
 }

@@ -33,6 +33,8 @@ export interface Message {
     percent: number;
     createTime: string;
     deleted?: boolean;
+    /** 发送失败，可重试 */
+    sendFailed?: boolean;
 }
 
 export interface MessagesMap {
@@ -55,8 +57,10 @@ export interface Group {
     _id: string;
     name: string;
     avatar: string;
+    announcement?: string;
     createTime: string;
     creator: string;
+    membersCount?: number;
     onlineMembers: GroupMember[];
 }
 
@@ -76,6 +80,8 @@ export interface Linkman extends Group, User {
     type: string;
     unread: number;
     messages: MessagesMap;
+    /** 好友最后在线时间（离线时） */
+    lastLoginTime?: string | null;
 }
 
 export interface LinkmansMap {
@@ -152,6 +158,22 @@ export interface State {
         functionBarAndLinkmanListVisible: boolean;
         /** enable search expression when input some phrase */
         enableSearchExpression: boolean;
+        /** 群聊 AI 开关（由管理员在控制台设置，从服务端拉取） */
+        groupAISwitch: boolean;
+        /** 群聊中 @ 的默认机器人名（用于 @ 列表置顶与判断是否触发群聊 AI） */
+        defaultBotName: string;
+        /** 用户最大建群数，0 表示不限 */
+        maxGroupNum: number;
+        /** 待重试的消息（点击「重试」时使用） */
+        pendingRetryMessage: { linkmanId: string; messageId: string } | null;
+        /** 当前引用的消息（在输入框上方展示） */
+        quotedMessage?: {
+            linkmanId: string;
+            messageId: string;
+            username: string;
+            content: string;
+            type: string;
+        } | null;
     };
 }
 
@@ -241,7 +263,7 @@ function transformFriend(friend: Linkman): Linkman {
         tag: to.tag,
         level: to.level,
         // @ts-ignore
-        createTime: friend.createTime,
+        createTime: to.createTime || friend.createTime,
     };
     initLinkmanFields(transformedFriend as unknown as Linkman, 'friend');
     return transformedFriend as Linkman;
@@ -275,6 +297,11 @@ export const initialState: State = {
         sidebarVisible: !isMobile,
         functionBarAndLinkmanListVisible: !isMobile,
         enableSearchExpression: localStorage.enableSearchExpression,
+        groupAISwitch: false,
+        defaultBotName: '',
+        maxGroupNum: 0,
+        pendingRetryMessage: null,
+        quotedMessage: null,
     },
 };
 

@@ -1,6 +1,38 @@
 import * as OSS from 'ali-oss';
 import fetch from './fetch';
 
+/** 本地头像目录（packages/assets/images/avatar/），由 webpack context 引入 */
+const avatarContext = require.context('@bulita/assets/images/avatar', false, /\.(png|jpg|jpeg|gif)$/);
+
+/**
+ * 解析头像地址：优先使用本地图片（assets/avatar/），否则走 OSS/CDN
+ */
+export function getAvatarUrl(url = '', process = '') {
+    if (!url || typeof url !== 'string') return '';
+    if (/^(blob|data):/.test(url)) return url;
+    const local = getLocalAvatarUrl(url);
+    if (local) return local;
+    return getOSSFileUrl(url, process);
+}
+
+/**
+ * 本地头像文件名（如 zoe.png）转为打包后的 URL，无则返回空
+ */
+export function getLocalAvatarUrl(filename: string): string {
+    const name = filename.split('?')[0].replace(/^.*\//, '');
+    if (!name) return '';
+    try {
+        const key = './' + name;
+        if (avatarContext.keys().indexOf(key) !== -1) {
+            const m = avatarContext(key);
+            return (typeof m === 'string' ? m : (m as { default?: string })?.default) || '';
+        }
+    } catch {
+        // ignore
+    }
+    return '';
+}
+
 let ossClient: OSS;
 let endpoint = '/';
 export async function initOSS() {
@@ -56,13 +88,16 @@ export function getOSSFileUrl(url = '', process = '') {
  * 上传文件
  * @param blob 文件blob数据
  * @param fileName 文件名
+ * @param onProgress 上传进度回调 0-100，OSS 支持实时进度，服务端上传仅在完成时回调 100
  */
 export default async function uploadFile(
     blob: Blob,
     fileName: string,
+    onProgress?: (percent: number) => void,
 ): Promise<string> {
     // 阿里云 OSS 不可用, 上传文件到服务端
     if (!ossClient) {
+        onProgress?.(0);
         const [uploadErr, result] = await fetch('uploadFile', {
             file: blob,
             fileName,
@@ -70,13 +105,26 @@ export default async function uploadFile(
         if (uploadErr) {
             throw Error(uploadErr);
         }
+        onProgress?.(100);
         return result.url;
     }
 
-    // 上传到阿里OSS
-    const result = await ossClient.put(fileName, blob);
-    if (result.res.status === 200) {
-        return endpoint + result.name;
-    }
-    return Promise.reject('上传文件失败');
+    // 上传到阿里OSS，支持进度回调
+    return new Promise((resolve, reject) => {
+        ossClient
+            .put(fileName, blob, {
+                progress: (value: number) => {
+                    onProgress?.(Math.round(value * 100));
+                },
+            })
+            .then((result: { res: { status: number }; name: string }) => {
+                if (result.res.status === 200) {
+                    onProgress?.(100);
+                    resolve(endpoint + result.name);
+                } else {
+                    reject(new Error('上传文件失败'));
+                }
+            })
+            .catch(reject);
+    });
 }

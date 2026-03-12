@@ -1,3 +1,5 @@
+@import '../../styles/variable.less';
+
 .functionBar {
     display: flex;
     height: 70px;
@@ -13,20 +15,37 @@
 
 .input {
     flex: 1;
-    height: 36px;
-    border-radius: 18px;
-    border: none;
+    height: 40px;
+    border-radius: 20px;
     font-size: 14px;
-    color: #333;
+    color: @input-text;
+    display: flex;
+    align-items: center;
 
     :global {
         input {
-            padding-left: 35px;
-            padding-right: 15px;
-            padding-top: 2px;
-            //border: none;
-            border-radius: 18px;
-            background-color: rgba(255, 255, 255, 0.5);
+            flex: 1;
+            height: 100%;
+            padding: 0 16px 0 42px;
+            line-height: 20px;
+            border-radius: 20px;
+            border: 1px solid @input-border;
+            background-color: @input-bg;
+            transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+            box-sizing: border-box;
+
+            &::placeholder {
+                color: @input-placeholder;
+            }
+            &:hover {
+                background-color: @input-bg-hover;
+            }
+            &:focus {
+                outline: none;
+                border-color: @input-border-focus;
+                background-color: @input-bg-hover;
+                box-shadow: @input-shadow-focus;
+            }
         }
     }
 }
@@ -34,35 +53,63 @@
 .inputFocus {
     :global {
         input {
-            background-color: rgba(255, 255, 255, 1);
+            background-color: @input-bg-hover;
+            border-color: @input-border-focus;
+            box-shadow: @input-shadow-focus;
         }
     }
 }
 
 .searchIcon {
-    font-size: 22px;
+    font-size: 20px;
     position: absolute;
-    left: 20px;
-    top: 22px;
-    color: #666;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: @google-blue;
+    pointer-events: none;
+    z-index: 1;
 }
 
 .createGroupButton {
-    margin-left: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    margin-left: 8px;
+    padding: 0 12px;
+    height: 40px;
+    border-radius: 20px;
+    background: @google-green-light;
+    border: 1px solid rgba(52, 168, 83, 0.35);
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease;
 
     &:hover {
+        background: rgba(52, 168, 83, 0.2);
+        border-color: @google-green;
         :global {
             .iconfont {
-                color: rgba(0, 0, 0, 0.5);
+                color: @google-green;
             }
+        }
+        .createGroupLabel {
+            color: @google-green;
         }
     }
 
     :global {
         .iconfont {
-            color: rgba(0, 0, 0, 0.1);
+            color: @google-green;
+            font-size: 18px;
         }
     }
+}
+
+.createGroupLabel {
+    font-size: 13px;
+    color: @google-green;
+    font-weight: @font-weight-semibold;
 }
 
 .searchResult {
@@ -70,10 +117,11 @@
     top: 60px;
     left: 8px;
     width: 276px;
-    background-color: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
+    background-color: @warm-card;
+    border: 1px solid @warm-border;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border-top-left-radius: @warm-radius-sm;
+    border-top-right-radius: @warm-radius-sm;
     z-index: 1300;
     
     :global {
@@ -93,12 +141,13 @@
         cursor: pointer;
         height: 56px;
         padding-left: 8px;
+        border-radius: @warm-radius-sm;
         & > p {
-            color: #333;
+            color: @warm-text;
             margin-left: 10px;
         }
         &:hover {
-            background-color: #eee;
+            background-color: @google-blue-light;
         }
     }
 }
@@ -110,18 +159,19 @@
         cursor: pointer;
         height: 56px;
         align-items: center;
+        border-radius: @warm-radius-sm;
         & > div {
             margin-left: 10px;
             & > p {
-                color: #333;
+                color: @warm-text;
                 &:last-child {
-                    color: #666;
+                    color: @warm-text-muted;
                     font-size: 14px;
                 }
             }
         }
         &:hover {
-            background-color: #eee;
+            background-color: @google-green-light;
         }
     }
 }
@@ -129,14 +179,20 @@
 .allList {
     padding: 8px 12px;
     max-height: 440px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 
     & > div {
         & > p {
             font-size: 14px;
-            color: #333;
             font-weight: bold;
             line-height: 31px;
+            padding-left: 8px;
+            border-left: 3px solid transparent;
         }
+        &:first-child > p { color: @google-blue; border-left-color: @google-blue; }
+        &:last-child > p { color: @google-green; border-left-color: @google-green; }
+        &:only-child > p { color: @google-teal; border-left-color: @google-teal; }
     }
 }
 
@@ -144,11 +200,11 @@
     font-size: 14px;
     line-height: 80px;
     text-align: center;
-    color: #333;
+    color: @warm-text-muted;
 }
 
 .more {
-    color: var(--primary-color-10);
+    color: @warm-accent;
     font-size: 12px;
     text-align: center;
     & > span {

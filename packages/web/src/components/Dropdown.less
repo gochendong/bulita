@@ -2,7 +2,17 @@
     .rc-dropdown {
         max-width: 100%;
     }
-    
+
+    /* 只保留内层菜单样式，外层不画框，避免出现两个重叠长方形 */
+    .rc-dropdown-dropdown,
+    .rc-trigger-popup {
+        z-index: 1500;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+    }
+
     .rc-select-dropdown {
         z-index: 1500 !important;
     }

@@ -50,23 +50,29 @@ function Chat() {
         };
     }, []);
 
-    async function fetchGroupOnlineMembers() {
-        let onlineMembers: GroupMember[] | { cache: true } = [];
-        if (isLogin) {
-            onlineMembers = await getGroupOnlineMembers(focus);
-        }
-        if (Array.isArray(onlineMembers)) {
-            action.setLinkmanProperty(focus, 'onlineMembers', onlineMembers);
-        }
-    }
-    async function fetchUserOnlineStatus() {
-        const isOnline = await getUserOnlineStatus(focus.replace(self, ''));
-        action.setLinkmanProperty(focus, 'isOnline', isOnline);
-    }
     useEffect(() => {
         if (!linkman) {
-            return () => {};
+            return;
         }
+        
+        async function fetchGroupOnlineMembers() {
+            let onlineMembers: GroupMember[] | { cache: true } = [];
+            if (isLogin) {
+                onlineMembers = await getGroupOnlineMembers(focus);
+            }
+            if (Array.isArray(onlineMembers)) {
+                action.setLinkmanProperty(focus, 'onlineMembers', onlineMembers);
+            }
+        }
+        
+        async function fetchUserOnlineStatus() {
+            const status = await getUserOnlineStatus(focus.replace(self, ''));
+            if (status) {
+                action.setLinkmanProperty(focus, 'isOnline', status.isOnline);
+                action.setLinkmanProperty(focus, 'lastLoginTime', status.lastLoginTime ?? null);
+            }
+        }
+        
         const request =
             linkman.type === 'group'
                 ? fetchGroupOnlineMembers
@@ -74,7 +80,8 @@ function Chat() {
         request();
         const timer = setInterval(() => request(), 1000 * 60);
         return () => clearInterval(timer);
-    }, [focus]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [focus, linkman?.type, isLogin, self]);
 
     async function intervalUpdateHistory() {
         // Must get real-time state
@@ -142,8 +149,12 @@ function Chat() {
             }
             toggleGroupManagePanel(true);
         } else {
-            // @ts-ignore
-            context.showUserInfo(linkman);
+            context.showUserInfo({
+                ...linkman,
+                username: linkman.name || (linkman as any).username,
+                isOnline: linkman.isOnline,
+                lastLoginTime: linkman.lastLoginTime ?? null,
+            });
         }
     }
 
@@ -156,11 +167,33 @@ function Chat() {
                 signature={linkman.signature}
                 tag={linkman.tag}
                 level={linkman.level}
+                createTime={linkman.createTime}
                 onlineMembersCount={linkman.onlineMembers?.length}
+                totalMemberCount={linkman.membersCount}
                 isOnline={linkman.isOnline}
+                lastLoginTime={linkman.lastLoginTime}
                 onClickFunction={handleClickFunction}
             />
-            <MessageList />
+            {linkman.type === 'group' && linkman.announcement ? (
+                <div
+                    className={Style.groupAnnouncement}
+                    onClick={handleClickFunction}
+                    role="button"
+                >
+                    <span className={Style.groupAnnouncementIcon}>📢</span>
+                    <span className={Style.groupAnnouncementText}>
+                        {linkman.announcement}
+                    </span>
+                </div>
+            ) : null}
+            <MessageList
+                onRetry={(linkmanId, messageId) =>
+                    action.setStatus('pendingRetryMessage', {
+                        linkmanId,
+                        messageId,
+                    })
+                }
+            />
             <ChatInput />
 
             {linkman.type === 'group' && (
@@ -168,7 +201,9 @@ function Chat() {
                     visible={groupManagePanel}
                     onClose={() => toggleGroupManagePanel(false)}
                     groupId={linkman._id}
+                    name={linkman.name}
                     avatar={linkman.avatar}
+                    announcement={linkman.announcement || ''}
                     creator={linkman.creator}
                     onlineMembers={linkman.onlineMembers}
                 />

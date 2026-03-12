@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 
 import { css } from 'linaria';
@@ -9,6 +9,9 @@ import {
     getLinkmanHistoryMessages,
     getDefaultGroupHistoryMessages,
     updateHistory,
+    getGroupAllMembers,
+    getDefaultGroupAllMembers,
+    GroupAllMemberItem,
 } from '../../service';
 import MessageComponent from './Message/Message';
 
@@ -37,7 +40,12 @@ const styles = {
     `,
 };
 
-function MessageList() {
+interface MessageListProps {
+    onRetry?: (linkmanId: string, messageId: string) => void;
+}
+
+function MessageList(props: MessageListProps) {
+    const { onRetry } = props;
     const action = useAction();
     const selfId = useSelector((state: State) => state.user?._id || '');
     const focus = useSelector((state: State) => state.focus);
@@ -50,6 +58,7 @@ function MessageList() {
     const messages = useSelector(
         (state: State) => state.linkmans[focus].messages,
     );
+    const linkman = useSelector((state: State) => state.linkmans[focus]);
     const unread = useSelector((state: State) => state.linkmans[focus].unread);
     const isLogin = useIsLogin();
     const tagColorMode = useSelector(
@@ -57,6 +66,49 @@ function MessageList() {
     );
 
     const $list = useRef<HTMLDivElement>(null);
+    // 群成员信息缓存（用于获取createTime显示UserBadge）
+    const [groupMembersMap, setGroupMembersMap] = useState<Map<string, string | null>>(new Map());
+    // 群成员在线状态（用于点击头像时显示在线/离线）
+    const [groupMembersStatusMap, setGroupMembersStatusMap] = useState<Map<string, { isOnline: boolean; lastLoginTime: string | null }>>(new Map());
+
+    // 如果是群聊，获取所有成员信息并缓存createTime、在线状态
+    useEffect(() => {
+        if (isGroup && focus) {
+            if (isLogin) {
+                getGroupAllMembers(focus).then((members) => {
+                    const createTimeMap = new Map<string, string | null>();
+                    const statusMap = new Map<string, { isOnline: boolean; lastLoginTime: string | null }>();
+                    members.forEach((member) => {
+                        createTimeMap.set(member.user._id, member.user.createTime);
+                        statusMap.set(member.user._id, {
+                            isOnline: member.isOnline,
+                            lastLoginTime: member.user.lastLoginTime || null,
+                        });
+                    });
+                    setGroupMembersMap(createTimeMap);
+                    setGroupMembersStatusMap(statusMap);
+                });
+            } else {
+                // 游客用户获取默认群组的所有成员
+                getDefaultGroupAllMembers().then((members) => {
+                    const createTimeMap = new Map<string, string | null>();
+                    const statusMap = new Map<string, { isOnline: boolean; lastLoginTime: string | null }>();
+                    members.forEach((member) => {
+                        createTimeMap.set(member.user._id, member.user.createTime);
+                        statusMap.set(member.user._id, {
+                            isOnline: member.isOnline,
+                            lastLoginTime: member.user.lastLoginTime || null,
+                        });
+                    });
+                    setGroupMembersMap(createTimeMap);
+                    setGroupMembersStatusMap(statusMap);
+                });
+            }
+        } else {
+            setGroupMembersMap(new Map());
+            setGroupMembersStatusMap(new Map());
+        }
+    }, [focus, isGroup, isLogin]);
 
     function clearUnread() {
         action.setLinkmanProperty(focus, 'unread', 0);
@@ -122,10 +174,11 @@ function MessageList() {
         }
 
         let { tag } = message.from;
-        if (!isGroup && message.from.tag !== 'bot') {
+        if (message.from.tag === 'bot') {
+            tag = 'bot';
+        } else if (!isGroup) {
             tag = '';
-        }
-        if (isGroup && message.from._id === creator) {
+        } else if (message.from._id === creator) {
             tag = '群主';
         }
         // if (message.from.username === "AI") {
@@ -134,6 +187,29 @@ function MessageList() {
         // if (!tag && isGroup && message.from._id === creator) {
         //     tag = '群主';
         // }
+
+        // 获取发送者的createTime（用于显示UserBadge）
+        // 机器人只显示「机器人」标签，不显示 UserBadge（传奇等）
+        let senderCreateTime: string | null = null;
+        let senderIsOnline: boolean | undefined;
+        let senderLastLoginTime: string | null = null;
+        if (!isSelf && message.from._id !== 'system' && message.from.tag !== 'bot') {
+            if (linkman.type === 'friend') {
+                senderCreateTime = linkman.createTime || null;
+                senderIsOnline = linkman.isOnline;
+                senderLastLoginTime = linkman.lastLoginTime ?? null;
+            } else if (linkman.type === 'group') {
+                senderCreateTime = groupMembersMap.get(message.from._id) || null;
+                if (!senderCreateTime && (message.from as any).createTime) {
+                    senderCreateTime = (message.from as any).createTime;
+                }
+                const status = groupMembersStatusMap.get(message.from._id);
+                if (status) {
+                    senderIsOnline = status.isOnline;
+                    senderLastLoginTime = status.lastLoginTime;
+                }
+            }
+        }
 
         return (
             <MessageComponent
@@ -151,8 +227,13 @@ function MessageList() {
                 tag={tag}
                 loading={message.loading}
                 percent={message.percent}
+                sendFailed={message.sendFailed}
+                onRetry={onRetry}
                 shouldScroll={shouldScroll}
                 tagColorMode={tagColorMode}
+                senderCreateTime={senderCreateTime}
+                senderIsOnline={senderIsOnline}
+                senderLastLoginTime={senderLastLoginTime}
             />
         );
     }

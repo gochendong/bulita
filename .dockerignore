@@ -1,46 +1,31 @@
-# 依赖（已通过 package.json 安装）
-node_modules/
-**/node_modules/
+# 依赖（在镜像内重新安装）
+**/node_modules
 
-# 构建产物
-dist/
-coverage/
+# 构建产物（在镜像内重新构建）
+packages/docs/
+packages/web/.linaria-cache/
+packages/web/dist/
 
-# IDE 配置
-.idea/
-.vscode/
-
-# 缓存
-.linaria-cache/
-.eslintcache
-lerna-debug.log
-*.log
-
-# 系统文件
-.DS_Store
-Thumbs.db
-
-# Git
-.git/
+# Git 与 IDE
+.git
 .gitignore
-.gitattributes
+.cursor
+.vscode
+*.swp
+*.swo
 
-# 文档
-README.md
-docs/
-*.md
-
-# 测试
-test/
-**/*.test.ts
-**/*.test.tsx
+# 测试与文档
 **/*.spec.ts
 **/*.spec.tsx
+**/test/
+**/__tests__
+*.md
+!README.md
 
-# 数据
-data/
-
-# CI/CD
-.github/
-.gitlab-ci.yml
-.travis.yml
+# 其他
+yarn-error.log
+.env.local
+.env.*.local
+docker-compose*.yaml
+Dockerfile*
+.dockerignore

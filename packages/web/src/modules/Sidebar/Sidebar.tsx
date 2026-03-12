@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import loadable from '@loadable/component';
+import platform from 'platform';
 
 import { isMobile } from '@bulita/utils/ua';
 import { State } from '../../state/reducer';
@@ -12,6 +13,9 @@ import OnlineStatus from './OnlineStatus';
 import useAction from '../../hooks/useAction';
 import socket from '../../socket';
 import Message from '../../components/Message';
+import { guest } from '../../service';
+import convertMessage from '@bulita/utils/convertMessage';
+import { ActionTypes } from '../../state/action';
 
 import Admin from './Admin';
 import About from './About';
@@ -19,6 +23,7 @@ import About from './About';
 import Style from './Sidebar.less';
 import useAero from '../../hooks/useAero';
 import { LocalStorageKey } from '../../localStorage';
+import store from '../../state/store';
 
 const SelfInfoAsync = loadable(
     () =>
@@ -40,6 +45,7 @@ function Sidebar() {
     const isAdmin = useSelector(
         (state: State) => state.user && state.user.isAdmin,
     );
+    const tag = useSelector((state: State) => state.user && state.user.tag);
     const avatar = useSelector(
         (state: State) => state.user && state.user.avatar,
     );
@@ -58,12 +64,37 @@ function Sidebar() {
         return null;
     }
 
-    function logout() {
+    async function logout() {
         action.logout();
         window.localStorage.removeItem('token');
         Message.success('您已退出聊天室');
-        socket.disconnect();
-        socket.connect();
+        
+        // 加载游客视角
+        try {
+            const defaultGroup = await guest(
+                platform.os?.family,
+                platform.name,
+                platform.description,
+            );
+            if (defaultGroup) {
+                const { messages } = defaultGroup;
+                store.dispatch({
+                    type: ActionTypes.SetGuest,
+                    payload: defaultGroup,
+                });
+
+                messages.forEach(convertMessage);
+                store.dispatch({
+                    type: ActionTypes.AddLinkmanHistoryMessages,
+                    payload: {
+                        linkmanId: defaultGroup._id,
+                        messages,
+                    },
+                });
+            }
+        } catch (error) {
+            console.error('加载游客视角失败:', error);
+        }
     }
 
     function renderTooltip(text: string, component: JSX.Element) {
@@ -95,7 +126,7 @@ function Sidebar() {
                 {isLogin && (
                     <OnlineStatus
                         className={Style.status}
-                        status={isConnect ? 'online' : 'offline'}
+                        status={isConnect || tag === 'bot' ? 'online' : 'offline'}
                     />
                 )}
                 <div className={Style.buttons}>
@@ -103,45 +134,53 @@ function Sidebar() {
                         isAdmin &&
                         renderTooltip(
                             '管理员',
-                            <IconButton
-                                width={40}
-                                height={40}
-                                icon="administrator"
-                                iconSize={28}
-                                onClick={() => toggleAdminDialogVisible(true)}
-                            />,
+                            <div className={Style.iconWrapPurple}>
+                                <IconButton
+                                    width={40}
+                                    height={40}
+                                    icon="administrator"
+                                    iconSize={28}
+                                    onClick={() => toggleAdminDialogVisible(true)}
+                                />
+                            </div>,
                         )}
                     {renderTooltip(
                         '关于',
-                        <IconButton
-                            width={40}
-                            height={40}
-                            icon="about"
-                            iconSize={26}
-                            onClick={() => toggleAboutDialogVisible(true)}
-                        />,
+                        <div className={Style.iconWrapBlue}>
+                            <IconButton
+                                width={40}
+                                height={40}
+                                icon="about"
+                                iconSize={26}
+                                onClick={() => toggleAboutDialogVisible(true)}
+                            />
+                        </div>,
                     )}
                     {isLogin &&
                         renderTooltip(
                             '设置',
-                            <IconButton
-                                width={40}
-                                height={40}
-                                icon="setting"
-                                iconSize={26}
-                                onClick={() => toggleSettingDialogVisible(true)}
-                            />,
+                            <div className={Style.iconWrapTeal}>
+                                <IconButton
+                                    width={40}
+                                    height={40}
+                                    icon="setting"
+                                    iconSize={26}
+                                    onClick={() => toggleSettingDialogVisible(true)}
+                                />
+                            </div>,
                         )}
                     {isLogin &&
                         renderTooltip(
                             '退出登录',
-                            <IconButton
-                                width={40}
-                                height={40}
-                                icon="logout"
-                                iconSize={26}
-                                onClick={logout}
-                            />,
+                            <div className={Style.iconWrapRed}>
+                                <IconButton
+                                    width={40}
+                                    height={40}
+                                    icon="logout"
+                                    iconSize={26}
+                                    onClick={logout}
+                                />
+                            </div>,
                         )}
                 </div>
 

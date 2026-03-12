@@ -21,10 +21,14 @@ import store from '../../../state/store';
 import { ActionTypes, DeleteMessagePayload } from '../../../state/action';
 import { deleteMessage } from '../../../service';
 import IconButton from '../../../components/IconButton';
+import Dropdown from '../../../components/Dropdown';
+import { Menu, MenuItem } from '../../../components/Menu';
 import { State } from '../../../state/reducer';
 import Tooltip from '../../../components/Tooltip';
+import MessageToast from '../../../components/Message';
 import themes from '../../../themes';
 import FileMessage from './FileMessage';
+import UserBadge from '../../../components/UserBadge';
 
 const { dispatch } = store;
 
@@ -42,9 +46,17 @@ interface MessageProps {
     content: string;
     loading: boolean;
     percent: number;
+    sendFailed?: boolean;
+    onRetry?: (linkmanId: string, messageId: string) => void;
     shouldScroll: boolean;
     tagColorMode: string;
     isAdmin?: boolean;
+    /** 发送者的注册时间（用于显示UserBadge） */
+    senderCreateTime?: string | null;
+    /** 发送者是否在线（用于点击头像弹窗） */
+    senderIsOnline?: boolean;
+    /** 发送者最后在线时间（用于点击头像弹窗） */
+    senderLastLoginTime?: string | null;
 }
 
 interface MessageState {
@@ -76,19 +88,57 @@ class Message extends Component<MessageProps, MessageState> {
     }
 
     handleMouseEnter = () => {
-        const { isAdmin, isSelf, type } = this.props;
+        const { type } = this.props;
         if (type === 'system') {
             return;
         }
-        if (isAdmin || (!client.disableDeleteMessage && isSelf)) {
-            this.setState({ showButtonList: true });
-        }
+        this.setState({ showButtonList: true });
     };
 
     handleMouseLeave = () => {
-        const { isAdmin, isSelf } = this.props;
-        if (isAdmin || (!client.disableDeleteMessage && isSelf)) {
-            this.setState({ showButtonList: false });
+        this.setState({ showButtonList: false });
+    };
+
+    /**
+     * 复制消息内容到剪贴板
+     */
+    handleCopyMessage = async () => {
+        const { type, content } = this.props;
+        let text = '';
+        try {
+            switch (type) {
+                case 'text':
+                    text = content;
+                    break;
+                case 'image':
+                    text = content.includes('?') ? content.split('?')[0] : content;
+                    if (text.startsWith('blob:') || text.startsWith('data:')) {
+                        text = '[图片]';
+                    }
+                    break;
+                case 'file': {
+                    const parsed = JSON.parse(content || '{}');
+                    text = parsed.fileUrl ? `${parsed.filename}\n${parsed.fileUrl}` : parsed.filename || '[文件]';
+                    break;
+                }
+                case 'code':
+                    text = content.replace(/^@language=[^@]+@/, '');
+                    break;
+                case 'url':
+                    text = content;
+                    break;
+                case 'system':
+                    text = content;
+                    break;
+                default:
+                    text = content || '';
+            }
+            if (text && navigator.clipboard?.writeText) {
+                await navigator.clipboard.writeText(text);
+                MessageToast.success('已复制到剪贴板');
+            }
+        } catch (err) {
+            MessageToast.error('复制失败');
         }
     };
 
@@ -124,12 +174,14 @@ class Message extends Component<MessageProps, MessageState> {
     };
 
     handleClickAvatar(showUserInfo: (userinfo: any) => void) {
-        const { isSelf, userId, type, username, avatar } = this.props;
+        const { isSelf, userId, type, username, avatar, senderIsOnline, senderLastLoginTime } = this.props;
         if (!isSelf && type !== 'system') {
             showUserInfo({
                 _id: userId,
                 username,
                 avatar,
+                isOnline: senderIsOnline,
+                lastLoginTime: senderLastLoginTime,
             });
         }
     }
@@ -138,6 +190,12 @@ class Message extends Component<MessageProps, MessageState> {
         const { time } = this.props;
         const messageTime = new Date(time);
         const nowTime = new Date();
+        
+        // 检查日期是否有效
+        if (isNaN(messageTime.getTime())) {
+            return '';
+        }
+        
         if (Time.isToday(nowTime, messageTime)) {
             return Time.getHourMinute(messageTime);
         }
@@ -194,7 +252,7 @@ class Message extends Component<MessageProps, MessageState> {
     }
 
     render() {
-        const { isSelf, avatar, tag, tagColorMode, username, type } =
+        const { isSelf, avatar, tag, tagColorMode, username, type, content, loading, sendFailed, onRetry, linkmanId, id, isAdmin, senderCreateTime } =
             this.props;
         const { showButtonList } = this.state;
 
@@ -225,8 +283,18 @@ class Message extends Component<MessageProps, MessageState> {
                 </ShowUserOrGroupInfoContext.Consumer>
                 <div className={Style.right}>
                     <div className={Style.nicknameTimeBlock}>
-                        {tag && <span className={Style.tag}>{tag}</span>}
+                        {tag && (
+                            <span className={tag === '群主' ? Style.creatorTagInMessage : Style.tag}>
+                                {tag === 'bot' ? '机器人' : tag}
+                            </span>
+                        )}
                         <span className={Style.nickname}>{username}</span>
+                        {!isSelf && type !== 'system' && tag !== 'bot' && senderCreateTime && (
+                            <UserBadge createTime={senderCreateTime} />
+                        )}
+                        {process.env.ADMINS.split(',').includes(username) && (
+                            <span className={Style.adminTagInMessage}>管理员</span>
+                        )}
                         <span className={Style.time}>{this.formatTime()}</span>
                     </div>
                     <div
@@ -234,33 +302,143 @@ class Message extends Component<MessageProps, MessageState> {
                         onMouseEnter={this.handleMouseEnter}
                         onMouseLeave={this.handleMouseLeave}
                     >
-                        <div
-                            className={
-                                type === 'image'
-                                    ? Style.imageContent
-                                    : Style.content
-                            }
-                        >
+<div
+                        className={
+                            type === 'image'
+                                ? Style.imageContent
+                                : Style.content
+                        }
+                    >
                             {this.renderContent()}
                         </div>
+                        {isSelf && loading && (
+                            <span className={Style.sendStatus}>
+                                <span className={Style.sendStatusDot} />
+                                发送中
+                            </span>
+                        )}
+                        {isSelf && sendFailed && onRetry && (
+                            <span className={Style.sendFailed}>
+                                <span className={Style.sendFailedText}>发送失败</span>
+                                <button
+                                    type="button"
+                                    className={Style.retryButton}
+                                    onClick={() => onRetry(linkmanId, id)}
+                                >
+                                    重试
+                                </button>
+                            </span>
+                        )}
                         {showButtonList && (
                             <div className={Style.buttonList}>
                                 <Tooltip
                                     placement={isSelf ? 'left' : 'right'}
                                     mouseEnterDelay={0.3}
-                                    overlay={<span>撤回消息</span>}
+                                    overlay={<span>复制</span>}
                                 >
-                                    <div>
-                                        <IconButton
-                                            className={Style.button}
-                                            icon="recall"
-                                            iconSize={12}
-                                            width={15}
-                                            height={15}
-                                            onClick={this.handleDeleteMessage}
-                                        />
-                                    </div>
+                                    <button
+                                        type="button"
+                                        className={Style.copyButton}
+                                        onClick={this.handleCopyMessage}
+                                        aria-label="复制"
+                                        title="复制"
+                                    >
+                                        <svg
+                                            width="11"
+                                            height="11"
+                                            viewBox="0 0 12 12"
+                                            fill="none"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                        >
+                                            <path
+                                                d="M4 2C4 1.44772 4.44772 1 5 1H9C9.55228 1 10 1.44772 10 2V6C10 6.55228 9.55228 7 9 7H8V8C8 8.55228 7.55228 9 7 9H3C2.44772 9 2 8.55228 2 8V4C2 3.44772 2.44772 3 3 3H4V2Z"
+                                                stroke="currentColor"
+                                                strokeWidth="1.2"
+                                                fill="none"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                            <path
+                                                d="M4 3H7C7.55228 3 8 3.44772 8 4V7"
+                                                stroke="currentColor"
+                                                strokeWidth="1.2"
+                                                fill="none"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        </svg>
+                                    </button>
                                 </Tooltip>
+                                <Tooltip
+                                    placement={isSelf ? 'left' : 'right'}
+                                    mouseEnterDelay={0.3}
+                                    overlay={<span>引用</span>}
+                                >
+                                    <button
+                                        type="button"
+                                        className={Style.copyButton}
+                                        onClick={() => {
+                                            if (type === 'system') return;
+                                            const preview =
+                                                type === 'text'
+                                                    ? content || ''
+                                                    : `[${type} 消息]`;
+                                            dispatch({
+                                                type: ActionTypes.SetStatus,
+                                                payload: {
+                                                    key: 'quotedMessage',
+                                                    value: {
+                                                        linkmanId,
+                                                        messageId: id,
+                                                        username,
+                                                        content: preview,
+                                                        type,
+                                                    },
+                                                },
+                                            });
+                                            MessageToast.success('已引用该条消息');
+                                        }}
+                                        aria-label="引用"
+                                        title="引用"
+                                    >
+                                        「」
+                                    </button>
+                                </Tooltip>
+                                {(isAdmin || (!client.disableDeleteMessage && isSelf)) && (
+                                    <Dropdown
+                                        trigger={['click']}
+                                        overlay={
+                                            <div className={Style.recallDropdown}>
+                                                <Menu
+                                                    onClick={() => {
+                                                        this.handleDeleteMessage();
+                                                    }}
+                                                    itemIcon={null}
+                                                >
+                                                    <MenuItem key="recall">撤回消息</MenuItem>
+                                                </Menu>
+                                            </div>
+                                        }
+                                        placement={isSelf ? 'bottomRight' : 'bottomLeft'}
+                                        getPopupContainer={() => document.body}
+                                    >
+                                        <Tooltip
+                                            placement={isSelf ? 'left' : 'right'}
+                                            mouseEnterDelay={0.3}
+                                            overlay={<span>更多</span>}
+                                        >
+                                            <div>
+                                                <IconButton
+                                                    className={Style.button}
+                                                    icon="omit"
+                                                    iconSize={12}
+                                                    width={15}
+                                                    height={15}
+                                                />
+                                            </div>
+                                        </Tooltip>
+                                    </Dropdown>
+                                )}
                             </div>
                         )}
                     </div>

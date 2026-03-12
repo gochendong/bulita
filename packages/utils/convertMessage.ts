@@ -23,19 +23,29 @@ function convertSystemMessage(message: any) {
         message.from.avatar = WuZeiNiangImage;
         message.from.tag = 'system';
 
-        const content = JSON.parse(message.content);
-        switch (content.command) {
-            case 'roll': {
-                message.content = `掷出了${content.value}点 (上限${content.top}点)`;
-                break;
+        // 尝试解析 JSON，如果不是 JSON 格式则保持原内容
+        try {
+            const content = JSON.parse(message.content);
+            // 如果解析成功且包含 command 字段，则处理命令
+            if (content && typeof content === 'object' && 'command' in content) {
+                switch (content.command) {
+                    case 'roll': {
+                        message.content = `掷出了${content.value}点 (上限${content.top}点)`;
+                        break;
+                    }
+                    case 'rps': {
+                        message.content = `使出了 ${content.value}`;
+                        break;
+                    }
+                    default: {
+                        message.content = '不支持的指令';
+                    }
+                }
             }
-            case 'rps': {
-                message.content = `使出了 ${content.value}`;
-                break;
-            }
-            default: {
-                message.content = '不支持的指令';
-            }
+            // 如果解析成功但没有 command 字段，保持原内容不变
+        } catch (error) {
+            // JSON 解析失败，说明是纯文本内容，保持原内容不变
+            // 例如欢迎消息等纯文本系统消息
         }
     } else if (message.deleted) {
         message.type = 'system';

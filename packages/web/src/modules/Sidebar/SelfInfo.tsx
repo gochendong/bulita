@@ -6,7 +6,7 @@ import 'cropperjs/dist/cropper.css';
 import { useSelector } from 'react-redux';
 import config from '@bulita/config/client';
 import readDiskFile from '../../utils/readDiskFile';
-import uploadFile, { getOSSFileUrl } from '../../utils/uploadFile';
+import uploadFile, { getAvatarUrl } from '../../utils/uploadFile';
 import Dialog from '../../components/Dialog';
 import Button from '../../components/Button';
 import Input from '../../components/Input';
@@ -72,7 +72,7 @@ function SelfInfo(props: SelfInfoProps) {
             const isSuccess = await changeAvatar(avatarUrl);
             if (isSuccess) {
                 action.setAvatar(URL.createObjectURL(blob));
-                Message.success('修改头像成功');
+                Message.success('头像已更新');
             }
         } catch (err) {
             console.error(err);
@@ -124,8 +124,8 @@ function SelfInfo(props: SelfInfoProps) {
         action.logout();
         window.localStorage.removeItem('token');
         Message.success(message);
-        socket.disconnect();
-        socket.connect();
+        // 不需要手动断开和重连，socket.io 会自动处理
+        // socket 会在 connect 事件中自动处理登录状态
     }
 
     const [oldPassword, setOldPassword] = useState('');
@@ -143,32 +143,64 @@ function SelfInfo(props: SelfInfoProps) {
         const isSuccess = await changePassword(oldPassword, newPassword);
         if (isSuccess) {
             onClose();
-            reLogin(`${username} 修改密码成功, 请使用新密码重新登录`);
+            reLogin(`${username} 密码已更新, 请使用新密码重新登录`);
         }
     }
 
     const [username, setUsername] = useState(currentUsername);
     const [signature, setSignature] = useState(currentSignature);
+    /**
+     * 按 token 长度脱敏：两侧各显示若干字符，中间用 * 填充
+     */
+    function maskPushToken(token: string): string {
+        if (!token) return '';
+        const len = token.length;
+        const side = Math.max(2, Math.min(6, Math.floor(len / 4)));
+        if (len <= side * 2) return '*'.repeat(len);
+        const left = token.slice(0, side);
+        const right = token.slice(-side);
+        const midLen = len - side * 2;
+        return left + '*'.repeat(midLen) + right;
+    }
+
     const [pushToken, setPushToken] = useState(currentPushToken);
+    const [pushTokenDisplay, setPushTokenDisplay] = useState(
+        currentPushToken ? maskPushToken(currentPushToken) : ''
+    );
+
+    useEffect(() => {
+        setSignature(currentSignature);
+    }, [currentSignature]);
+
+    useEffect(() => {
+        if (visible) {
+            setPushToken(currentPushToken);
+            setPushTokenDisplay(currentPushToken ? maskPushToken(currentPushToken) : '');
+        }
+    }, [visible, currentPushToken]);
 
     useEffect(() => {
         setSignature(currentSignature);
     }, [currentSignature]);
 
     /**
-     * 修改用户名
+     * 修改用户名（不能为空，留空表示不修改）
      */
     async function handleChangeUsername() {
-        const isSuccess = await changeUsername(username);
+        if (!username.trim()) {
+            setUsername(currentUsername);
+            return;
+        }
+        if (username.trim() === currentUsername) return;
+        const isSuccess = await changeUsername(username.trim());
         if (isSuccess) {
             dispatch({
                 type: ActionTypes.UpdateUserInfo,
                 payload: {
-                    username
+                    username: username.trim(),
                 },
             });
-            Message.success('修改用户名成功');
-            onClose();
+            Message.success('用户名已更新');
         }
     }
 
@@ -176,6 +208,7 @@ function SelfInfo(props: SelfInfoProps) {
      * 修改个性签名
      */
     async function handleChangeSignature() {
+        if (signature === currentSignature) return;
         const isSuccess = await changeSignature(signature);
         if (isSuccess) {
             dispatch({
@@ -184,8 +217,7 @@ function SelfInfo(props: SelfInfoProps) {
                     signature
                 },
             });
-            Message.success('修改个性签名成功');
-            onClose();
+            Message.success('个性签名已更新');
         }
     }
 
@@ -193,6 +225,7 @@ function SelfInfo(props: SelfInfoProps) {
      * 修改私聊通知token
      */
     async function handleChangePushToken() {
+        if (pushToken === currentPushToken) return;
         const isSuccess = await changePushToken(pushToken);
         if (isSuccess) {
             dispatch({
@@ -201,8 +234,7 @@ function SelfInfo(props: SelfInfoProps) {
                     pushToken
                 },
             });
-            Message.success('修改私聊通知token成功');
-            onClose();
+            Message.success('私聊通知token已更新');
         }
     }
 
@@ -244,7 +276,7 @@ function SelfInfo(props: SelfInfoProps) {
                                     className={Style.button}
                                     onClick={handleChangeAvatar}
                                 >
-                                    修改头像
+                                    更换头像
                                 </Button>
                                 <ReactLoading
                                     className={`${Style.loading} ${
@@ -261,7 +293,7 @@ function SelfInfo(props: SelfInfoProps) {
                                 <img
                                     className={loading ? 'blur' : ''}
                                     alt="头像预览"
-                                    src={getOSSFileUrl(avatar as string)}
+                                    src={getAvatarUrl(avatar as string)}
                                     onClick={selectAvatar}
                                 />
                                 <ReactLoading
@@ -278,37 +310,27 @@ function SelfInfo(props: SelfInfoProps) {
                     </div>
                 </div>
                 <div className={Common.block}>
-                    <p className={Common.title}>修改用户名</p>
+                    <p className={Common.title}>用户名</p>
                     <div>
                         <Input
                             className={Style.input}
                             value={username}
                             onChange={setUsername}
+                            onBlur={handleChangeUsername}
                             type="text"
                         />
-                        <Button
-                            className={Style.button}
-                            onClick={handleChangeUsername}
-                        >
-                            确认修改
-                        </Button>
                     </div>
                 </div>
                 <div className={Common.block}>
-                    <p className={Common.title}>修改个性签名</p>
+                    <p className={Common.title}>个性签名</p>
                     <div>
                         <Input
                             className={Style.input}
                             value={signature}
                             onChange={setSignature}
+                            onBlur={handleChangeSignature}
                             type="text"
                         />
-                        <Button
-                            className={Style.button}
-                            onClick={handleChangeSignature}
-                        >
-                            确认修改
-                        </Button>
                     </div>
                 </div>
                 <div className={Common.block}>
@@ -326,43 +348,42 @@ function SelfInfo(props: SelfInfoProps) {
                     <div>
                         <Input
                             className={Style.input}
-                            value={pushToken}
-                            onChange={setPushToken}
+                            value={pushTokenDisplay}
+                            onChange={(v) => {
+                                setPushToken(v);
+                                setPushTokenDisplay(v);
+                            }}
+                            onFocus={() => setPushTokenDisplay(pushToken)}
+                            onBlur={() => {
+                                setPushTokenDisplay(pushToken ? maskPushToken(pushToken) : '');
+                                handleChangePushToken();
+                            }}
                             type="text"
+                            placeholder={pushToken ? '' : '未设置'}
                         />
-                        <Button
-                            className={Style.button}
-                            onClick={handleChangePushToken}
-                        >
-                            确认修改
-                        </Button>
                     </div>
                 </div>
                 <div className={Common.block}>
-                    <p className={Common.title}>修改密码</p>
+                    <p className={Common.title}>密码</p>
                     <div>
                         <Input
                             className={Style.input}
                             value={oldPassword}
                             onChange={setOldPassword}
                             type="password"
-                            placeholder="新密码"
+                            placeholder="当前密码"
                             showClearBtn={false}
+                            autoComplete="new-password"
                         />
                         <Input
                             className={Style.input}
                             value={newPassword}
                             onChange={setNewPassword}
+                            onBlur={() => oldPassword && newPassword && handleChangePassword()}
                             type="password"
-                            placeholder="重复新密码"
+                            placeholder="新密码（填写后点击输入框外即保存）"
                             showClearBtn={false}
                         />
-                        <Button
-                            className={Style.button}
-                            onClick={handleChangePassword}
-                        >
-                            确认修改
-                        </Button>
                     </div>
                 </div>
             </div>

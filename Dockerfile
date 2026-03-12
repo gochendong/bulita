@@ -1,41 +1,33 @@
-# 第一阶段：构建依赖和代码
-FROM node:14-alpine AS builder
+# syntax=docker/dockerfile:1.4
+# 使用 BuildKit 启用缓存挂载，构建时: DOCKER_BUILDKIT=1 docker build .
+FROM node:20-alpine
+
+RUN corepack enable && corepack prepare yarn@1.22.22 --activate
 
 WORKDIR /usr/app/bulita
 
-# 优先复制依赖定义文件，利用 Docker 缓存
-COPY package.json yarn.lock lerna.json ./
-COPY packages/web/package.json ./packages/web/
-COPY packages/server/package.json ./packages/server/
-COPY packages/utils/package.json ./packages/utils/
-COPY packages/config/package.json ./packages/config/
-COPY packages/assets/package.json ./packages/assets/
-COPY packages/database/package.json ./packages/database/
-COPY packages/bin/package.json ./packages/bin/
+# 1. 只复制依赖定义，利用层缓存：依赖未变时跳过 yarn install
+COPY package.json yarn.lock lerna.json tsconfig.json ./
+COPY packages/assets/package.json packages/assets/
+COPY packages/bin/package.json packages/bin/
+COPY packages/config/package.json packages/config/
+COPY packages/database/package.json packages/database/
+COPY packages/server/package.json packages/server/
+COPY packages/utils/package.json packages/utils/
+COPY packages/web/package.json packages/web/
 
-# 使用 --frozen-lockfile 和 --prefer-offline 加速依赖安装
-RUN yarn install --frozen-lockfile --prefer-offline --network-timeout 300000
+# 使用缓存挂载加速 install（需 BuildKit）
+RUN --mount=type=cache,target=/usr/local/share/.cache/yarn/v6 \
+    yarn install --frozen-lockfile
 
-# 复制源代码
+# 2. 再复制源码，代码变更不会导致重新 install
 COPY packages ./packages
-COPY .env ./packages/web
-COPY tsconfig.json ./
 
-# 并行构建（使用 --concurrency 增加并行度）
-RUN yarn build:web --concurrency 4
+# 优先用 .env，不存在则用 .env.example（生产环境用运行时 env 或挂载覆盖）
+COPY .env* ./
+RUN if [ ! -f .env ]; then cp .env.example .env 2>/dev/null || true; fi && cp .env packages/web/
 
-# 第二阶段：运行时镜像
-FROM node:14-alpine AS runner
-
-WORKDIR /usr/app/bulita
-
-# 只复制运行时必需的文件
-COPY package.json yarn.lock lerna.json ./
-COPY packages ./packages
-COPY packages/server/public ./packages/server/public
-COPY .env ./packages/web
-
-# 只安装生产依赖
-RUN yarn install --frozen-lockfile --prefer-offline --production --network-timeout 300000
+# 3. 构建前端
+RUN yarn build:web
 
 CMD ["yarn", "start"]

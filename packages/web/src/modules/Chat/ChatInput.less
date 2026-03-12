@@ -2,21 +2,28 @@
 
 .chatInput {
     height: 100px;
-    background-color: rgba(255, 255, 255, 1);
+    background: transparent;
     display: flex;
     align-items: center;
-    padding: 0px 20px;
-    border-bottom-right-radius: 10px;
+    gap: 12px;
+    padding: 0 20px 0 24px;
+    border-bottom-right-radius: 12px;
     position: relative;
+    border-left: none;
+    box-shadow: none;
+
+    :global(.rc-dropdown) {
+        flex-shrink: 0;
+    }
 
     &[data-aero='true'] {
-        background-color: rgba(255, 255, 255, 0.15);
+        background: transparent;
 
         .input {
-            background-color: rgba(255, 255, 255, 0.6);
-            border: none;
+            background-color: rgba(255, 255, 255, 0.85);
+            border-color: rgba(218, 220, 224, 0.6);
             &::placeholder {
-                color: #888;
+                color: @input-placeholder;
             }
         }
 
@@ -40,8 +47,150 @@
 .form {
     flex: 1;
     display: flex;
+    flex-direction: column;
     position: relative;
-    margin: 0 10px;
+    margin: 0 10px 0 0;
+    min-width: 0;
+}
+
+.pendingAttachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+    max-height: 80px;
+    overflow-y: auto;
+}
+
+.quotePreview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    margin-bottom: 6px;
+    border-radius: @input-radius-sm;
+    background: fade(@input-bg, 85%);
+    border: 1px solid fade(@input-border, 80%);
+    font-size: 12px;
+    color: @input-text;
+}
+
+.quoteContent {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    overflow: hidden;
+}
+
+.quoteLabel {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.quoteText {
+    color: @input-placeholder;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 240px;
+}
+
+.quoteClose {
+    border: none;
+    background: transparent;
+    color: @input-placeholder;
+    cursor: pointer;
+    padding: 0 4px;
+    font-size: 14px;
+    line-height: 1;
+
+    &:hover {
+        color: var(--primary-color-10);
+    }
+}
+
+.atPanel {
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    margin-bottom: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: #fffbf9;
+    border-radius: @input-radius-sm;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border: 1px solid @input-border;
+    z-index: 100;
+    min-width: 160px;
+}
+
+.atPanelItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: @input-text;
+
+    &:hover {
+        background: rgba(0, 0, 0, 0.04);
+    }
+}
+
+.atPanelUsername {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pendingAttachmentItem {
+    position: relative;
+    flex-shrink: 0;
+    border-radius: @input-radius-sm;
+    overflow: hidden;
+    border: 1px solid @input-border;
+    background: @input-bg;
+}
+
+.pendingAttachmentThumb {
+    display: block;
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+}
+
+.pendingAttachmentFile {
+    display: inline-block;
+    padding: 8px 28px 8px 10px;
+    font-size: 13px;
+    color: @input-text;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pendingAttachmentRemove {
+    position: absolute;
+    right: 2px;
+    top: 2px;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    &:hover {
+        background: rgba(0, 0, 0, 0.7);
+    }
 }
 
 .switch {
@@ -51,25 +200,43 @@
 
 .input {
     flex: 1;
-    padding: 10px 90px 10px 14px;
-    height: 50px;
+    padding: 14px 20px;
+    min-height: 52px;
+    max-height: 280px;
     width: 100%;
-    border-radius: 10px;
-    line-height: normal;
+    border-radius: @input-radius;
+    line-height: 1.5;
     outline: none;
-    border: 1px solid rgba(208, 208, 208, 0.5);
-    font-size: 14px;
-    color: #000000;
+    border: 1px solid @input-border;
+    font-size: 15px;
+    color: @input-text;
+    background-color: @input-bg;
     user-select: auto;
     resize: none;
+    caret-color: @input-text;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
 
+    &::-webkit-scrollbar {
+        display: none;
+    }
 
     &::placeholder {
-        color: #999;
+        color: @input-placeholder;
+        font-weight: 400;
+    }
+
+    &:hover {
+        background-color: @input-bg-hover;
+        border-color: darken(@input-border, 3%);
     }
 
     &:focus {
-        border-color: var(--primary-color-8);
+        border-color: @input-border-focus;
+        background-color: @input-bg-hover;
+        box-shadow: @input-shadow-focus;
     }
 }
 
@@ -78,13 +245,25 @@
     right: 10px;
     top: 5px;
     font-size: 22px;
-    color: #aaa;
+    color: #b5a99a;
+}
+
+.addMenuWrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.addMenuBackdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1499;
+    background: transparent;
 }
 
 .iconButton {
     :global {
         .iconfont {
-            color: #aaa;
+            color: #b5a99a;
         }
     }
 
@@ -97,8 +276,13 @@
     }
 }
 
+.expressionIcon :global(.iconfont) { color: @google-yellow; }
+.expressionIcon:hover :global(.iconfont) { color: darken(@google-yellow, 8%); }
+.addIcon :global(.iconfont) { color: @google-blue; }
+.addIcon:hover :global(.iconfont) { color: darken(@google-blue, 8%); }
+
 .guest {
-    color: #333;
+    color: @input-text;
     user-select: none;
     font-size: 14px;
     flex: 1;
@@ -116,8 +300,11 @@
 .expressionDropdown {
     width: 415px;
     height: 240px;
-    background-color: white;
+    background-color: #fffbf9;
     transform: translateY(-8px);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border: 1px solid @input-border;
 
     @media @mobile {
         width: 100%;
@@ -125,50 +312,28 @@
 }
 
 .featureDropdown {
-    background-color: white;
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    margin-bottom: 6px;
+    z-index: 1500;
+    background-color: #fffbf9;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    border: 1px solid @input-border;
 
     :global {
         .rc-menu {
             padding: 6px 0;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            outline: none !important;
         }
         .rc-menu-item {
             padding: 12px 20px !important;
+            border: none !important;
         }
     }
 }
 
-.atPanel {
-    background-color: white;
-    position: absolute;
-    left: 120px;
-    bottom: 60px;
-    padding: 6px 0;
-    border-radius: 3px;
-    max-height: 266px;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-}
-
-.atUserList {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    margin-bottom: 2px;
-    height: 30px;
-    padding: 0 8px;
-    min-width: 120px;
-
-    &:last-child {
-        margin-bottom: 0px;
-    }
-    &:hover {
-        background-color: var(--primary-color-4);
-    }
-}
-
-.atText {
-    font-size: 14px;
-    margin-left: 6px;
-    margin-top: 4px;
-    color: #444;
-}

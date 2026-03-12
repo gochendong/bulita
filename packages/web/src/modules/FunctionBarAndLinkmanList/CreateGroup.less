@@ -1,46 +1,77 @@
+@import '../../styles/variable.less';
+
 .createGroup {
-    
 }
 
 .container {
     display: flex;
     flex-direction: column;
+    padding: 8px 0 4px;
+}
+
+.quotaText {
+    font-size: @font-size-base;
+    font-weight: @font-weight-normal;
+    line-height: 1.5;
+    margin-bottom: 6px;
+    color: @warm-text;
 }
 
 .text {
-    font-size: 14px;
-    font-weight:normal;
-    line-height: 31px;
-    color: #333;
+    font-size: @font-size-base;
+    font-weight: @font-weight-normal;
+    line-height: 1.5;
+    margin-bottom: 10px;
+    color: @warm-text;
 }
 
 .input {
     width: 100%;
-    height: 40px;
-    border-radius: 6px;
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    //padding: 0 34px 0 8px;
-    font-size: 14px;
-    color: #333;
-    box-sizing: border-box;
-    -webkit-user-select: auto;
-    -moz-user-select: auto;
-    -ms-user-select: auto;
-    user-select: auto;
+    height: 44px;
+    margin-bottom: 4px;
+    :global {
+        input {
+            border-radius: @input-radius-sm;
+            border: 1px solid @input-border;
+            background-color: @input-bg;
+            color: @input-text;
+            font-size: @font-size-base;
+            &::placeholder {
+                color: @input-placeholder;
+            }
+            &:focus {
+                border-color: @input-border-focus;
+                box-shadow: @input-shadow-focus;
+            }
+            &:hover {
+                background-color: @input-bg-hover;
+            }
+        }
+    }
 }
 
 .button {
-    width: 66px;
-    height: 36px;
-    border-radius: 6px;
-    margin-top: 12px;
-    background-color: var(--primary-color-10);
-    color: var(--primary-text-color-10);
-    align-self: flex-end;
-    font-size: 14px;
+    width: 100%;
+    height: 44px;
+    border-radius: @input-radius-sm;
+    margin-top: 20px;
+    background: linear-gradient(135deg, @google-green 0%, darken(@google-green, 6%) 100%);
+    color: #fff;
+    font-size: @font-size-base;
+    font-weight: @font-weight-semibold;
     border: none;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease, transform 0.1s ease, opacity 0.2s ease;
+    box-shadow: 0 2px 8px rgba(52, 168, 83, 0.35);
 
-    &:hover {
-        background-color: var(--primary-color-8);
+    &:hover:not(:disabled) {
+        box-shadow: 0 4px 12px rgba(52, 168, 83, 0.45);
+    }
+    &:active:not(:disabled) {
+        transform: scale(0.98);
+    }
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
     }
 }

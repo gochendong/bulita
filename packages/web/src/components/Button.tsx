@@ -8,11 +8,24 @@ const button = css`
     color: var(--primary-text-color-10);
     border-radius: 4px;
     font-size: 14px;
-    transition: background-color 0.4s;
+    transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
     user-select: none !important;
 
     &:hover {
         background-color: var(--primary-color-10);
+    }
+`;
+
+// 更柔和的危险按钮样式，用于 type="danger"
+const dangerButton = css`
+    background-color: #ffe2e2;
+    color: #7a1720;
+    box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.15);
+
+    &:hover {
+        background-color: #ffefef;
+        color: #991b1b;
+        box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.25);
     }
 `;
 
@@ -34,7 +47,7 @@ function Button({
 }: Props) {
     return (
         <button
-            className={`${button} ${type} ${className}`}
+            className={`${button} ${type === 'danger' ? dangerButton : ''} ${className}`}
             type="button"
             onClick={onClick}
         >

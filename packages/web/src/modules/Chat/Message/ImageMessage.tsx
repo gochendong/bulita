@@ -29,8 +29,8 @@ function ImageMessage(props: ImageMessageProps) {
     const containerWidth = isMobile ? window.innerWidth - 25 - 50 : 450;
     const maxWidth = containerWidth - 100 > 500 ? 500 : containerWidth - 100;
     const maxHeight = 250;
-    let width = 250;
-    let height = 250;
+    let width = 200;
+    let height = 200;
     const parseResult = /width=([0-9]+)&height=([0-9]+)/.exec(imageSrc);
     if (parseResult) {
         const natureWidth = +parseResult[1];
@@ -40,7 +40,7 @@ function ImageMessage(props: ImageMessageProps) {
             scale = maxWidth / natureWidth;
         }
         if (naturehHeight * scale > maxHeight) {
-            scale = maxHeight / naturehHeight;
+            scale = Math.min(scale, maxHeight / naturehHeight);
         }
         width = natureWidth * scale;
         height = naturehHeight * scale;
@@ -52,6 +52,10 @@ function ImageMessage(props: ImageMessageProps) {
                       height,
                   )}/quality,q_90`,
               );
+    } else {
+        // 如果没有尺寸信息，使用默认尺寸但不超过最大限制
+        width = Math.min(width, maxWidth);
+        height = Math.min(height, maxHeight);
     }
 
     let className = Style.imageMessage;
@@ -76,8 +80,12 @@ function ImageMessage(props: ImageMessageProps) {
                     className={Style.image}
                     src={imageSrc}
                     alt="消息图片"
-                    width={width}
-                    height={height}
+                    style={{
+                        maxWidth: `${Math.min(width, maxWidth)}px`,
+                        maxHeight: `${Math.min(height, maxHeight)}px`,
+                        width: width <= maxWidth ? `${width}px` : 'auto',
+                        height: height <= maxHeight ? `${height}px` : 'auto',
+                    }}
                     onClick={() => toggleViewer(true)}
                 />
                 <CircleProgress
