@@ -32,7 +32,7 @@ function Expression(props: ExpressionProps) {
                 if (result.length !== 0) {
                     setSearchResults(result);
                 } else {
-                    Message.info('没有相关表情, 重试下吧');
+                    Message.info('没有相关表情');
                 }
             }
             toggleSearchLoading(false);
@@ -80,7 +80,7 @@ function Expression(props: ExpressionProps) {
                     value={keywords}
                     onChange={setKeywords}
                     onEnter={handleSearchExpression}
-                    placeholder="多搜索几次试试"
+                    placeholder="搜索表情包"
                 />
                 <Button
                     className={Style.searchExpressionButton}

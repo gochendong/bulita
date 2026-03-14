@@ -74,7 +74,7 @@ function randomString(len: number) {
 }
 
 async function addDefaultLinkmans(user: UserDocument) {
-    // 登录时自动加群和加联系人
+    // 登录时自动加默认群
     const defaultGroup = await Group.findOne({ isDefault: true });
     if (!defaultGroup) {
         console.log(chalk.red('Default group does not exist'));
@@ -90,33 +90,6 @@ async function addDefaultLinkmans(user: UserDocument) {
         defaultGroup.members.push(user._id);
     }
     await defaultGroup.save();
-
-    const defaultLinkmans = await getConfigWithDefault('DEFAULT_LINKMANS');
-
-    if (defaultLinkmans) {
-        const defaultLinkmansArray = defaultLinkmans.split(',');
-        await Promise.all(
-            defaultLinkmansArray.map(async (defaultLinkman: UserDocument) => {
-                const linkman = await User.findOne({
-                    username: defaultLinkman,
-                });
-                if (!linkman) {
-                    console.log(chalk.red(`User [${linkman}] does not exist`));
-                } else {
-                    const friend = await Friend.find({
-                        from: user,
-                        to: linkman._id,
-                    });
-                    if (friend.length === 0) {
-                        Friend.create({
-                            from: user._id,
-                            to: linkman._id,
-                        } as FriendDocument);
-                    }
-                }
-            }),
-        );
-    }
 }
 
 function getGoogleOnlyMessage() {
@@ -126,6 +99,13 @@ function getGoogleOnlyMessage() {
 function isConfiguredAdmin(user: Pick<UserDocument, 'username' | 'email'>) {
     const adminEmails = config.adminEmails.map((email) => email.trim()).filter(Boolean);
     return !!user.email && adminEmails.includes(user.email);
+}
+
+async function getPrimaryBotName() {
+    return (await getConfigWithDefault('BOTS'))
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)[0] || '';
 }
 
 async function resolveUserTag(username: string, ip: string) {
@@ -210,7 +190,7 @@ async function getLoginPayload(
     }
 
     let bot = null;
-    const defaultBotName = await getConfigWithDefault('DEFAULT_BOT_NAME');
+    const defaultBotName = await getPrimaryBotName();
     if (defaultBotName) {
         bot = await User.findOne(
             { username: defaultBotName },

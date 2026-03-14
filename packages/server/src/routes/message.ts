@@ -127,6 +127,13 @@ function normalizeAssistantReply(content: unknown) {
     return '';
 }
 
+async function getPrimaryBotName() {
+    return (await getConfigWithDefault('BOTS'))
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)[0] || '';
+}
+
 async function buildConversationMessages(
     userId: string,
     botId: string,
@@ -862,8 +869,8 @@ export async function sendGroupBotMessage(ctx: Context<SendMessageData>) {
         });
     }
 
-    const botName = await getConfigWithDefault('DEFAULT_BOT_NAME');
-    assert(botName, '未配置群聊机器人，请在管理台设置 DEFAULT_BOT_NAME');
+    const botName = await getPrimaryBotName();
+    assert(botName, '未配置机器人，请先设置 BOTS');
     const bot = await User.findOne({ username: botName });
     if (!bot) {
         throw new AssertionError({ message: `${botName}不存在` });

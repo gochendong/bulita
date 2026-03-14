@@ -45,9 +45,12 @@
     flex: 1;
     min-height: 0;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 .defaultExpression {
+    flex: 1;
     width: 100%;
     display: flex;
     flex-wrap: wrap;
@@ -58,7 +61,10 @@
     box-sizing: border-box;
     min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
 }
 
 .defaultExpressionBlock {
@@ -90,6 +96,7 @@
 }
 
 .searchExpression {
+    flex: 1;
     width: 100%;
     display: flex;
     flex-direction: column;
@@ -144,7 +151,9 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     padding: 12px 0 0;
     display: flex;
     flex-wrap: wrap;

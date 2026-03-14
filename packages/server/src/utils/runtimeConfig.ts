@@ -4,8 +4,6 @@ import { getAdminConfigKey, Redis } from '@bulita/database/redis/initRedis';
 export const ADMIN_CONFIG_KEYS = [
     'ONLY_SEARCH_DEFAULT_GROUP',
     'DEFAULT_TITLE',
-    'DEFAULT_BOT_NAME',
-    'DEFAULT_LINKMANS',
     'OPENAI_BASE_URL',
     'OPENAI_API_KEY',
     'OPENAI_MODEL',
@@ -24,8 +22,6 @@ export const RESTART_REQUIRED_KEYS: readonly string[] = [];
 export const ADMIN_CONFIG_LABELS: Record<string, string> = {
     ONLY_SEARCH_DEFAULT_GROUP: '仅搜索默认群组',
     DEFAULT_TITLE: '网站标题',
-    DEFAULT_BOT_NAME: '默认群组中自动回复的机器人名',
-    DEFAULT_LINKMANS: '默认自动添加的联系人(逗号分隔)',
     OPENAI_BASE_URL: '默认 AI Base URL',
     OPENAI_API_KEY: '默认 AI API Key',
     OPENAI_MODEL: '默认 AI Model',
@@ -43,8 +39,6 @@ export const DEFAULT_ADMIN_CONFIG: Record<string, string> = {
     ONLY_SEARCH_DEFAULT_GROUP: 'true',
     DEFAULT_TITLE: 'AI聊天室',
     DEFAULT_GROUP_NAME: 'AI聊天室',
-    DEFAULT_BOT_NAME: '',
-    DEFAULT_LINKMANS: '',
     OPENAI_BASE_URL: 'https://api.openai.com/v1',
     OPENAI_API_KEY: '',
     OPENAI_MODEL: 'gpt-4o-mini',

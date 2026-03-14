@@ -419,7 +419,7 @@ class Message extends Component<MessageProps, MessageState> {
                                         placement={isSelf ? 'bottomRight' : 'bottomLeft'}
                                         getPopupContainer={() => document.body}
                                     >
-                                        <div title="更多">
+                                        <div aria-label="更多">
                                             <IconButton
                                                 className={Style.button}
                                                 icon="omit"

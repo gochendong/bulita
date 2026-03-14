@@ -214,7 +214,7 @@ function Chat() {
                     })
                 }
             />
-            <ChatInput />
+            {isLogin && <ChatInput />}
 
             {linkman.type === 'group' && (
                 <GroupManagePanel
