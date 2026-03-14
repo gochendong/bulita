@@ -1,52 +1,77 @@
 <div align="center">
-<h1> Bulita </h1>
-
-English / [简体中文](./README_ZH.md)
-
-Bulita is an interesting open source chatroom. It is developed based on [node.js](https://nodejs.org/), [react](https://reactjs.org/) and [socket.io](https://socket.io/) technologies
-
-Online Example: [https://chat.bulita.net/](https://chat.bulita.net)
-
-Github: [https://github.com/gochendong/bulita](https://github.com/gochendong/bulita)
+  <h1>Bulita</h1>
+  <p>English / <a href="./README_ZH.md">简体中文</a></p>
+  <p>An open source chatroom built with Node.js, React, Socket.IO, MongoDB, and Redis.</p>
+  <p>
+    <a href="https://chat.bulita.net/">Online Demo</a> ·
+    <a href="https://github.com/gochendong/bulita">GitHub</a>
+  </p>
 </div>
 
-## Features
+## Highlights
 
-1. 100% fully open source frontend and backend, allowing for rapid construction based on the source code.
-2. Set up automatic replies for robots, set up separate APIs for each robot, and use Markdown to render the content of robot replies.
-3. One-click initialization of groups, contacts, bots, etc. through configuration files.
-4. You can find developers on the official website who can answer your questions in a timely manner.
+- Fully open source frontend and backend.
+- Bot auto-replies with per-bot API configuration.
+- Markdown rendering for bot messages.
+- One-step initialization of default groups, contacts, and bots from config.
 
-## Install
+## Quick Start
 
-1. Switch to the code folder
-    ```
-    git clone https://github.com/gochendong/bulita && cd bulita
-    ```
-2. copy the .env.example to .env and edit it
-3. Start the Redis service. If it is already running, skip this step
-    ```
-    docker-compose -f docker-compose-redis.yaml up --build -d
-    ```
-4. Start the MongoDB service. If it is already running, skip this step
-    ```
-    docker-compose -f docker-compose-mongo.yaml up --build -d
-    ```
-5. Start the chatroom service
-    ```
-    docker-compose -f docker-compose.yaml up --build -d
-    ```
-6. Now you can access the chatroom through http://localhost:9200
+1. Clone the repository:
 
+   ```bash
+   git clone https://github.com/gochendong/bulita.git
+   cd bulita
+   ```
 
-## Referenced project
+2. Create your local env file:
 
-[https://github.com/yinxin630/fiora](https://github.com/yinxin630/fiora)
+   ```bash
+   cp .env.example .env
+   ```
+
+3. Update the required values in `.env`.
+
+   Required service credentials:
+
+   - `MONGODB_USERNAME`
+   - `MONGODB_PASSWORD`
+   - `REDIS_PASSWORD`
+   - `JWT_SECRET`
+   - `GOOGLE_CLIENT_ID`
+
+4. Start all services:
+
+   ```bash
+   docker compose up --build -d
+   ```
+
+5. Open the app:
+
+   - Web: [http://localhost:9200](http://localhost:9200)
+
+## Default Service Ports
+
+- Bulita web/server: `9200`
+- MongoDB host port: `27018`
+- Redis host port: `6380`
+
+The application container connects to MongoDB and Redis through Docker service names, so the internal ports remain `27017` and `6379`.
+
+## Notes
+
+- MongoDB and Redis are password-protected by default.
+- Default admin/bot bootstrap still depends on `ADMINS`, `BOTS`, and related env values.
+- Google login requires a valid `GOOGLE_CLIENT_ID` and the correct authorized JavaScript origins in Google Cloud Console.
+
+## Reference
+
+- Based on ideas from [fiora](https://github.com/yinxin630/fiora)
 
 ## License
 
-bulita is [MIT licensed](./LICENSE)
+[MIT](./LICENSE)
 
-## Sponsor this project
+## Sponsor
 
 ![](https://docs.bulita.net/media/202412/usdt_1733018911.png)

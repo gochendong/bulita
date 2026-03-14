@@ -4,6 +4,16 @@ services:
   bulita:
     build: .
     restart: always
+    depends_on:
+      - bulita-mongodb
+      - bulita-redis
+    env_file:
+      - .env
+    environment:
+      MONGODB_HOST: bulita-mongodb
+      MONGODB_PORT: 27017
+      REDIS_HOST: bulita-redis
+      REDIS_PORT: 6379
     ports:
       - "9200:9200"
     volumes:
@@ -11,6 +21,21 @@ services:
       - ./data/FileMessage:/usr/app/bulita/packages/server/public/FileMessage
       - ./data/GroupAvatar:/usr/app/bulita/packages/server/public/GroupAvatar
       - ./data/Avatar:/usr/app/bulita/packages/server/public/Avatar
-
-
-
+  bulita-mongodb:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME:-bulita}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-bulita123456}
+    ports:
+      - "${MONGODB_PORT:-27018}:27017"
+    volumes:
+      - ./data/mongodb:/data/db
+  bulita-redis:
+    image: redis
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-bulita123456}
+    ports:
+      - "${REDIS_PORT:-6380}:6379"
+    volumes:
+      - ./data/redis:/data

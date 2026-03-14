@@ -17,7 +17,6 @@ import convertMessage from '@bulita/utils/convertMessage';
 import { ActionTypes } from '../../state/action';
 
 import Admin from './Admin';
-import About from './About';
 
 import Style from './Sidebar.less';
 import useAero from '../../hooks/useAero';
@@ -54,7 +53,6 @@ function Sidebar() {
     const [downloadDialogVisible, toggleDownloadDialogVisible] =
         useState(false);
     const [rewardDialogVisible, toggleRewardDialogVisible] = useState(false);
-    const [aboutDialogVisible, toggleAboutDialogVisible] = useState(false);
     const [settingDialogVisible, toggleSettingDialogVisible] = useState(false);
     const aero = useAero();
 
@@ -141,18 +139,6 @@ function Sidebar() {
                                 />
                             </div>,
                         )}
-                    {renderTooltip(
-                        '关于',
-                        <div className={Style.iconWrapBlue}>
-                            <IconButton
-                                width={40}
-                                height={40}
-                                icon="about"
-                                iconSize={26}
-                                onClick={() => toggleAboutDialogVisible(true)}
-                            />
-                        </div>,
-                    )}
                     {isLogin &&
                         renderTooltip(
                             '设置',
@@ -174,7 +160,8 @@ function Sidebar() {
                                     width={40}
                                     height={40}
                                     icon="logout"
-                                    iconSize={26}
+                                    iconSize={24}
+                                    className={Style.logoutButton}
                                     onClick={logout}
                                 />
                             </div>,
@@ -194,10 +181,6 @@ function Sidebar() {
                         onClose={() => toggleAdminDialogVisible(false)}
                     />
                 )}
-                <About
-                    visible={aboutDialogVisible}
-                    onClose={() => toggleAboutDialogVisible(false)}
-                />
                 {isLogin && settingDialogVisible && (
                     <SettingAsync
                         visible={settingDialogVisible}

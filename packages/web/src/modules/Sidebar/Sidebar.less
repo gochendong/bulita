@@ -5,6 +5,28 @@
 .iconWrapTeal:hover :global(.iconfont) { color: @google-teal !important; }
 .iconWrapPurple:hover :global(.iconfont) { color: @google-purple !important; }
 
+.logoutButton {
+    border-radius: 999px;
+    background: fade(@google-red, 10%);
+    border: 1px solid fade(@google-red, 16%);
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+
+    :global(.iconfont) {
+        color: @google-red !important;
+        transition: color 0.2s ease, transform 0.15s ease;
+    }
+
+    &:hover {
+        background: fade(@google-red, 16%);
+        border-color: fade(@google-red, 28%);
+        transform: translateX(1px);
+
+        :global(.iconfont) {
+            transform: translateX(1px);
+        }
+    }
+}
+
 .sidebar {
     width: 60px;
     min-width: min-content;

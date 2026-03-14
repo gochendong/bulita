@@ -2,6 +2,23 @@ import ip from 'ip';
 
 const { env } = process;
 
+function buildMongoDatabaseUrl() {
+    const host = env.MONGODB_HOST || ip.address();
+    const port = env.MONGODB_PORT || '27018';
+    const database = env.MONGODB_DATABASE || 'bulita';
+    const username = env.MONGODB_USERNAME || '';
+    const password = env.MONGODB_PASSWORD || '';
+    const authSource = env.MONGODB_AUTH_SOURCE || 'admin';
+
+    if (!username || !password) {
+        return `mongodb://${host}:${port}/${database}`;
+    }
+
+    return `mongodb://${encodeURIComponent(username)}:${encodeURIComponent(
+        password,
+    )}@${host}:${port}/${database}?authSource=${encodeURIComponent(authSource)}`;
+}
+
 export default {
     /** 服务端host, 默认为本机ip地址(可能会是局域网地址) */
     host: env.HOST || ip.address(),
@@ -10,11 +27,12 @@ export default {
     port: env.PORT ? parseInt(env.Port, 10) : 9200,
 
     // mongodb address
-    database: `mongodb://${env.MONGODB_HOST}:${env.MONGODB_PORT}/bulita`,
+    database: buildMongoDatabaseUrl(),
 
     redis: {
         host: env.REDIS_HOST || ip.address(),
-        port: env.REDIS_PORT ? parseInt(env.REDIS_PORT, 10) : 6379,
+        port: env.REDIS_PORT ? parseInt(env.REDIS_PORT, 10) : 6380,
+        password: env.REDIS_PASSWORD || '',
     },
 
     // jwt encryption secret
