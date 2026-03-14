@@ -1,4 +1,4 @@
-import WuZeiNiangImage from '@bulita/assets/images/wuzeiniang.gif';
+import DefaultImage from '@bulita/assets/images/default.png';
 
 // function convertRobot10Message(message) {
 //     if (message.from._id === '5adad39555703565e7903f79') {
@@ -20,7 +20,7 @@ function convertSystemMessage(message: any) {
         message.from._id = 'system';
         message.from.originUsername = message.from.username;
         message.from.username = '系统';
-        message.from.avatar = WuZeiNiangImage;
+        message.from.avatar = DefaultImage;
         message.from.tag = 'system';
 
         // 尝试解析 JSON，如果不是 JSON 格式则保持原内容
@@ -52,7 +52,7 @@ function convertSystemMessage(message: any) {
         message.from._id = 'system';
         message.from.originUsername = message.from.username;
         message.from.username = '系统';
-        message.from.avatar = WuZeiNiangImage;
+        message.from.avatar = DefaultImage;
         message.from.tag = 'system';
         message.content = `撤回了消息`;
     }

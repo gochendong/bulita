@@ -138,10 +138,9 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         if (disableNoRegisterUserSendMessage === 'true') {
             const user = await User.findById(ctx.socket.user);
             const isRegisterUser = user && user.email;
-            const defaultUsername = await getConfigWithDefault('DEFAULT_USERNAME');
             assert(
                 ctx.socket.isAdmin || isRegisterUser,
-                `${defaultUsername}禁言中`,
+                '游客禁言中',
             );
         }
     }
@@ -208,8 +207,6 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
     }
 
     const banedIPLocs = await getConfigWithDefault('BANED_IP_LOCS');
-    const defaultUsername = await getConfigWithDefault('DEFAULT_USERNAME');
-
     if (banedIPLocs) {
         const banedIPLocsArray = banedIPLocs.split(',');
         if (
@@ -218,7 +215,7 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
             banedIPLocsArray.includes(user.tag)
         ) {
             throw new AssertionError({
-                message: `${user.tag}的${defaultUsername}不能在群组中发言`,
+                message: `${user.tag}地区的游客不能在群组中发言`,
             });
         }
     }

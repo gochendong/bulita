@@ -92,20 +92,27 @@ function App() {
         window.innerHeight,
     );
     useEffect(() => {
+        if (!backgroundImage) {
+            setBackgroundWidth(window.innerWidth);
+            setBackgroundHeight(window.innerHeight);
+            return undefined;
+        }
         const img = new Image();
         img.onload = () => {
             setBackgroundWidth(Math.max(img.width, window.innerWidth));
             setBackgroundHeight(Math.max(img.height, window.innerHeight));
         };
         img.src = backgroundImage;
+        return undefined;
     }, [backgroundImage]);
 
     // 主体样式
     const style = useMemo(
         () => ({
-            backgroundImage: `url(${backgroundImage})`,
+            background: backgroundImage
+                ? `url(${backgroundImage}) no-repeat`
+                : 'linear-gradient(180deg, #fbfcfd 0%, #f3f5f7 100%)',
             backgroundSize: `${backgroundWidth}px ${backgroundHeight}px`,
-            backgroundRepeat: 'no-repeat',
         }),
         [backgroundImage, backgroundWidth, backgroundHeight],
     );

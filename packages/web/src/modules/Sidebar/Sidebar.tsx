@@ -135,6 +135,7 @@ function Sidebar() {
                                     height={40}
                                     icon="administrator"
                                     iconSize={28}
+                                    className={Style.adminButton}
                                     onClick={() => toggleAdminDialogVisible(true)}
                                 />
                             </div>,
@@ -148,6 +149,7 @@ function Sidebar() {
                                     height={40}
                                     icon="setting"
                                     iconSize={26}
+                                    className={Style.settingButton}
                                     onClick={() => toggleSettingDialogVisible(true)}
                                 />
                             </div>,

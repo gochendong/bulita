@@ -303,9 +303,8 @@ function normalizeUsernameCandidate(value: string) {
 }
 
 async function generateUniqueUsername(baseName: string) {
-    const defaultUsername = await getConfigWithDefault('DEFAULT_USERNAME');
     const normalizedBase =
-        normalizeUsernameCandidate(baseName) || defaultUsername || 'Google用户';
+        normalizeUsernameCandidate(baseName) || 'Google用户';
 
     let username = normalizedBase;
     for (let i = 0; i < 10; i += 1) {
@@ -317,7 +316,7 @@ async function generateUniqueUsername(baseName: string) {
         username = `${normalizedBase.slice(0, 20 - suffix.length)}${suffix}`;
     }
 
-    return `${(defaultUsername || 'Google用户').slice(0, 16)}${randomString(4)}`;
+    return `${'Google用户'.slice(0, 16)}${randomString(4)}`;
 }
 
 function getGoogleDisplayName(tokenInfo: GoogleTokenInfo) {
