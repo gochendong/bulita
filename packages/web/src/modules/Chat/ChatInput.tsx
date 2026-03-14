@@ -22,7 +22,7 @@ import useIsLogin from '../../hooks/useIsLogin';
 import useAction from '../../hooks/useAction';
 import Dropdown from '../../components/Dropdown';
 import IconButton from '../../components/IconButton';
-import Avatar, { avatarFailback } from '../../components/Avatar';
+import Avatar, { aiAvatar, avatarFailback } from '../../components/Avatar';
 import Message from '../../components/Message';
 import { Menu, MenuItem } from '../../components/Menu';
 import { State } from '../../state/reducer';
@@ -35,6 +35,7 @@ import {
 import Tooltip from '../../components/Tooltip';
 import useAero from '../../hooks/useAero';
 import { ensureSocketConnected } from '../../socket';
+import GoogleLogin from '../LoginAndRegister/GoogleLogin';
 
 interface InputAreaProps {
     readonly busy: boolean;
@@ -212,17 +213,14 @@ function ChatInput(props: InputAreaProps) {
     if (!isLogin) {
         return (
             <div className={Style.chatInput}>
-                <p className={Style.guest}>
-                    <b
-                        className={Style.guestLogin}
-                        onClick={() =>
-                            action.setStatus('loginRegisterDialogVisible', true)
-                        }
-                        role="button"
-                    >
-                        使用 Google 登录
-                    </b>
-                </p>
+                <div className={Style.guestGoogleLogin}>
+                    <GoogleLogin
+                        className={Style.guestGoogleButton}
+                        maxWidth={560}
+                        minWidth={420}
+                        compact
+                    />
+                </div>
             </div>
         );
     }
@@ -906,7 +904,7 @@ function ChatInput(props: InputAreaProps) {
         if (groupAISwitch && botName && !hasBot && regex.test(botName)) {
             return [
                 {
-                    user: { _id: `bot-${botName}`, username: botName, avatar: avatarFailback },
+                    user: { _id: `bot-${botName}`, username: botName, avatar: aiAvatar },
                     os: '',
                     browser: '',
                     environment: '',

@@ -10,6 +10,7 @@ import { State } from '../state/reducer';
 import Button from '../components/Button';
 import { joinGroup, getLinkmanHistoryMessages } from '../service';
 import useAction from '../hooks/useAction';
+import GoogleLogin from './LoginAndRegister/GoogleLogin';
 
 type GroupBasicInfo = {
     name: string;
@@ -110,16 +111,14 @@ function InviteInfo() {
                                 </Button>
                             )
                         ) : (
-                            <Button
-                                onClick={() =>
-                                    action.setStatus(
-                                        'loginRegisterDialogVisible',
-                                        true,
-                                    )
-                                }
-                            >
-                                使用 Google 登录
-                            </Button>
+                            <div className={Style.googleLoginInline}>
+                                <GoogleLogin
+                                    className={Style.inviteGoogleButton}
+                                    maxWidth={420}
+                                    minWidth={320}
+                                    compact
+                                />
+                            </div>
                         )}
                     </div>
                 </div>

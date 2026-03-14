@@ -1,11 +1,9 @@
 import * as OSS from 'ali-oss';
 import fetch from './fetch';
-
-/** 本地头像目录（packages/assets/images/avatar/），由 webpack context 引入 */
-const avatarContext = require.context('@bulita/assets/images/avatar', false, /\.(png|jpg|jpeg|gif)$/);
+import aiAvatarImg from '@bulita/assets/images/avatar/ai.png';
 
 /**
- * 解析头像地址：优先使用本地图片（assets/avatar/），否则走 OSS/CDN
+ * 解析头像地址：仅保留 ai.png 本地头像，其余走站点资源或 OSS/CDN
  */
 export function getAvatarUrl(url = '', process = '') {
     if (!url || typeof url !== 'string') return '';
@@ -16,19 +14,13 @@ export function getAvatarUrl(url = '', process = '') {
 }
 
 /**
- * 本地头像文件名（如 zoe.png）转为打包后的 URL，无则返回空
+ * 本地头像文件名仅支持 ai.png，无则返回空
  */
 export function getLocalAvatarUrl(filename: string): string {
     const name = filename.split('?')[0].replace(/^.*\//, '');
     if (!name) return '';
-    try {
-        const key = './' + name;
-        if (avatarContext.keys().indexOf(key) !== -1) {
-            const m = avatarContext(key);
-            return (typeof m === 'string' ? m : (m as { default?: string })?.default) || '';
-        }
-    } catch {
-        // ignore
+    if (name === 'ai.png') {
+        return aiAvatarImg;
     }
     return '';
 }

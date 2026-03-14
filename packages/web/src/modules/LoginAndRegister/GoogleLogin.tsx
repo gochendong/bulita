@@ -14,6 +14,13 @@ import Style from './LoginRegister.less';
 const GOOGLE_SCRIPT_ID = 'google-identity-services';
 const GOOGLE_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
 
+type GoogleLoginProps = {
+    className?: string;
+    maxWidth?: number;
+    minWidth?: number;
+    compact?: boolean;
+};
+
 function loadGoogleScript() {
     return new Promise<void>((resolve, reject) => {
         const existing = document.getElementById(
@@ -44,7 +51,12 @@ function loadGoogleScript() {
     });
 }
 
-function GoogleLogin() {
+function GoogleLogin({
+    className = '',
+    maxWidth = 560,
+    minWidth = 420,
+    compact = false,
+}: GoogleLoginProps) {
     const dispatch = useDispatch();
     const buttonRef = useRef<HTMLDivElement>(null);
     const buttonWrapRef = useRef<HTMLDivElement>(null);
@@ -60,8 +72,11 @@ function GoogleLogin() {
             }
 
             const width = Math.min(
-                420,
-                Math.max(300, Math.floor(buttonWrapRef.current.clientWidth)),
+                maxWidth,
+                Math.max(
+                    Math.min(minWidth, maxWidth),
+                    Math.floor(buttonWrapRef.current.clientWidth),
+                ),
             );
 
             buttonRef.current.innerHTML = '';
@@ -178,11 +193,18 @@ function GoogleLogin() {
             disposed = true;
             window.removeEventListener('resize', handleResize);
         };
-    }, [dispatch]);
+    }, [dispatch, maxWidth, minWidth]);
 
     return (
-        <div className={Style.googleLogin}>
-            <div className={Style.googleButtonWrap} ref={buttonWrapRef}>
+        <div
+            className={`${Style.googleLogin} ${className}`}
+            style={compact ? { width: '100%', minHeight: 'auto', padding: 0 } : undefined}
+        >
+            <div
+                className={Style.googleButtonWrap}
+                ref={buttonWrapRef}
+                style={{ maxWidth }}
+            >
                 <div ref={buttonRef} />
             </div>
             {loadError && <p className={Style.googleError}>{loadError}</p>}
