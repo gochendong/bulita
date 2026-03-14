@@ -118,6 +118,24 @@ export async function changePushToken(pushToken: string) {
     return !error;
 }
 
+export async function changeAIConfig(
+    aiApiKey: string,
+    aiBaseUrl: string,
+    aiModel: string,
+    aiContextCount: number,
+) {
+    const [error, data] = await fetch('changeAIConfig', {
+        aiApiKey,
+        aiBaseUrl,
+        aiModel,
+        aiContextCount,
+    });
+    if (error) {
+        return null;
+    }
+    return data;
+}
+
 /**
  * 修改群组名
  * @param groupId 目标群组

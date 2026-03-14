@@ -235,6 +235,10 @@ async function getLoginPayload(
         level: user.level,
         signature: user.signature,
         pushToken: user.pushToken,
+        aiApiKey: user.aiApiKey || '',
+        aiBaseUrl: user.aiBaseUrl || '',
+        aiModel: user.aiModel || '',
+        aiContextCount: user.aiContextCount || 0,
         tag: user.tag,
         createTime: user.createTime,
         groups: groups.map((g: GroupDocument) => ({
@@ -414,6 +418,10 @@ export async function loginByToken(
             level: 1,
             signature: 1,
             pushToken: 1,
+            aiApiKey: 1,
+            aiBaseUrl: 1,
+            aiModel: 1,
+            aiContextCount: 1,
             tag: 1,
             createTime: 1,
         },
@@ -605,6 +613,61 @@ export async function changePushToken(ctx: Context<{ pushToken: string }>) {
 
     return {
         msg: 'ok',
+    };
+}
+
+/**
+ * 修改 AI 对话配置
+ * @param ctx Context
+ */
+export async function changeAIConfig(
+    ctx: Context<{
+        aiApiKey?: string;
+        aiBaseUrl?: string;
+        aiModel?: string;
+        aiContextCount?: string | number;
+    }>,
+) {
+    const self = await User.findOne({ _id: ctx.socket.user });
+    if (!self) {
+        throw new AssertionError({ message: '用户不存在' });
+    }
+
+    const aiApiKey = `${ctx.data.aiApiKey || ''}`.trim();
+    const aiBaseUrl = `${ctx.data.aiBaseUrl || ''}`.trim();
+    const aiModel = `${ctx.data.aiModel || ''}`.trim();
+    const rawContextCount = `${ctx.data.aiContextCount ?? ''}`.trim();
+
+    if (aiBaseUrl) {
+        assert(
+            /^https?:\/\//i.test(aiBaseUrl),
+            'Base URL 必须以 http:// 或 https:// 开头',
+        );
+    }
+
+    let aiContextCount: number | undefined;
+    if (rawContextCount !== '') {
+        aiContextCount = parseInt(rawContextCount, 10);
+        assert(
+            Number.isFinite(aiContextCount) &&
+                aiContextCount >= 0 &&
+                aiContextCount <= 50,
+            '上下文数量必须是 0-50 的整数',
+        );
+    }
+
+    self.aiApiKey = aiApiKey;
+    self.aiBaseUrl = aiBaseUrl;
+    self.aiModel = aiModel;
+    self.aiContextCount = aiContextCount;
+    await self.save();
+
+    return {
+        msg: 'ok',
+        aiApiKey,
+        aiBaseUrl,
+        aiModel,
+        aiContextCount: aiContextCount || 0,
     };
 }
 

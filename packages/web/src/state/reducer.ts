@@ -99,6 +99,10 @@ export interface User {
     email: string;
     signature: string;
     pushToken: string;
+    aiApiKey: string;
+    aiBaseUrl: string;
+    aiModel: string;
+    aiContextCount: number;
     tag: string;
 }
 
@@ -115,6 +119,10 @@ export interface State {
         email: string;
         signature: string;
         pushToken: string;
+        aiApiKey: string;
+        aiBaseUrl: string;
+        aiModel: string;
+        aiContextCount: number;
     } | null;
     linkmans: LinkmansMap;
     /** 聚焦的联系人 */
@@ -364,6 +372,11 @@ function reducer(state: State = initialState, action: Action): State {
                     email: '',
                     level: 0,
                     signature: '',
+                    pushToken: '',
+                    aiApiKey: '',
+                    aiBaseUrl: '',
+                    aiModel: '',
+                    aiContextCount: 0,
                 },
                 linkmans: {
                     [group._id]: group,
@@ -382,6 +395,10 @@ function reducer(state: State = initialState, action: Action): State {
                 level,
                 signature,
                 pushToken,
+                aiApiKey,
+                aiBaseUrl,
+                aiModel,
+                aiContextCount,
                 groups,
                 friends,
                 isAdmin,
@@ -418,6 +435,10 @@ function reducer(state: State = initialState, action: Action): State {
                     level,
                     signature,
                     pushToken,
+                    aiApiKey,
+                    aiBaseUrl,
+                    aiModel,
+                    aiContextCount,
                     tag,
                     isAdmin,
                 },

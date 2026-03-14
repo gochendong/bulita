@@ -53,6 +53,15 @@ export default {
 
     adminEmails: env.ADMIN_EMAILS ? env.ADMIN_EMAILS.split(',') : [],
 
+    openai: {
+        apiKey: env.OPENAI_API_KEY || '',
+        baseUrl: env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
+        model: env.OPENAI_MODEL || 'gpt-4o-mini',
+        contextCount: env.OPENAI_CONTEXT_COUNT
+            ? parseInt(env.OPENAI_CONTEXT_COUNT, 10)
+            : 10,
+    },
+
     /** 禁用注册功能 */
     disableRegister: false,
 

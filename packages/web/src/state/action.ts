@@ -51,6 +51,10 @@ export type SetUserPayload = {
     level: number;
     signature: string;
     pushToken: string;
+    aiApiKey: string;
+    aiBaseUrl: string;
+    aiModel: string;
+    aiContextCount: number;
     groups: Group[];
     friends: Friend[];
     isAdmin: boolean;

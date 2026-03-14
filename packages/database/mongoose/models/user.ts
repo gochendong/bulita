@@ -28,6 +28,10 @@ const UserSchema = new Schema({
     level: Number,
     signature: String,
     pushToken: String,
+    aiApiKey: String,
+    aiBaseUrl: String,
+    aiModel: String,
+    aiContextCount: Number,
     avatar: String,
     tag: {
         type: String,
@@ -58,6 +62,14 @@ export interface UserDocument extends Document {
     signature: string;
     /** 推送token */
     pushToken: string;
+    /** AI API Key */
+    aiApiKey: string;
+    /** AI Base URL */
+    aiBaseUrl: string;
+    /** AI Model */
+    aiModel: string;
+    /** AI Context Count */
+    aiContextCount: number;
     /** 头像 */
     avatar: string;
     /** 用户标签 */

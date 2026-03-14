@@ -1,5 +1,6 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
+import axios from 'axios';
 import assert, { AssertionError } from 'assert';
 import { Types } from '@bulita/database/mongoose';
 import { Expo, ExpoPushErrorTicket } from 'expo-server-sdk';
@@ -46,6 +47,150 @@ const OneYear = 365 * 24 * 3600 * 1000;
 const RPS = ['石头', '剪刀', '布'];
 
 const { XMLHttpRequest } = require('xmlhttprequest');
+
+type OpenAIChatMessage = {
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+};
+
+function normalizeContextCount(value: unknown, fallback = 10) {
+    const parsed = parseInt(`${value ?? ''}`, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+        return fallback;
+    }
+    return Math.min(parsed, 50);
+}
+
+function resolveAIConfig(user: Pick<UserDocument, 'aiApiKey' | 'aiBaseUrl' | 'aiModel' | 'aiContextCount'>) {
+    const apiKey = (user.aiApiKey || config.openai.apiKey || '').trim();
+    const baseUrl = (user.aiBaseUrl || config.openai.baseUrl || '').trim();
+    const model = (user.aiModel || config.openai.model || '').trim();
+    const contextCount = normalizeContextCount(
+        user.aiContextCount,
+        normalizeContextCount(config.openai.contextCount, 10),
+    );
+
+    assert(apiKey, '未配置 AI API Key');
+    assert(baseUrl, '未配置 AI Base URL');
+    assert(model, '未配置 AI Model');
+
+    return {
+        apiKey,
+        baseUrl,
+        model,
+        contextCount,
+    };
+}
+
+function resolveChatCompletionsUrl(baseUrl: string) {
+    const normalized = baseUrl.trim().replace(/\/+$/, '');
+    if (/\/chat\/completions$/i.test(normalized)) {
+        return normalized;
+    }
+    return `${normalized}/chat/completions`;
+}
+
+function normalizeAssistantReply(content: unknown) {
+    if (typeof content === 'string') {
+        return content.trim();
+    }
+    if (Array.isArray(content)) {
+        return content
+            .map((item) => {
+                if (typeof item === 'string') {
+                    return item;
+                }
+                if (item && typeof item === 'object' && 'text' in item) {
+                    return `${(item as { text?: string }).text || ''}`;
+                }
+                return '';
+            })
+            .join('\n')
+            .trim();
+    }
+    return '';
+}
+
+async function buildConversationMessages(
+    conversationId: string,
+    botId: string,
+    contextCount: number,
+    isGroup: boolean,
+) {
+    const messages = await Message.find(
+        { to: conversationId, type: 'text', deleted: { $ne: true } },
+        {
+            from: 1,
+            content: 1,
+            createTime: 1,
+        },
+        {
+            sort: { createTime: -1 },
+            limit: Math.max(contextCount + 1, 1),
+        },
+    ).populate('from', { username: 1 });
+
+    return messages
+        .reverse()
+        .map((message) => {
+            const from = message.from as unknown as { _id?: { toString: () => string }; username?: string };
+            const fromId = from?._id?.toString?.() || `${message.from}`;
+            const isAssistant = fromId === botId;
+            const role: OpenAIChatMessage['role'] = isAssistant ? 'assistant' : 'user';
+            const prefix = isGroup && !isAssistant ? `${from?.username || '用户'}: ` : '';
+            return {
+                role,
+                content: `${prefix}${message.content}`.trim(),
+            };
+        })
+        .filter((message) => message.content);
+}
+
+async function requestAIReply(
+    aiUser: Pick<UserDocument, 'aiApiKey' | 'aiBaseUrl' | 'aiModel' | 'aiContextCount'>,
+    botName: string,
+    conversationId: string,
+    botId: string,
+    isGroup: boolean,
+) {
+    const { apiKey, baseUrl, model, contextCount } = resolveAIConfig(aiUser);
+    const historyMessages = await buildConversationMessages(
+        conversationId,
+        botId,
+        contextCount,
+        isGroup,
+    );
+    const messages: OpenAIChatMessage[] = [
+        {
+            role: 'system',
+            content: isGroup
+                ? `你是群聊机器人 ${botName}。请结合最近聊天上下文自然回复，保持简洁，优先使用中文。`
+                : `你是私聊机器人 ${botName}。请结合上下文自然回复，保持简洁，优先使用中文。`,
+        },
+        ...historyMessages,
+    ];
+
+    const response = await axios.post(
+        resolveChatCompletionsUrl(baseUrl),
+        {
+            model,
+            messages,
+            stream: false,
+        },
+        {
+            timeout: 30000,
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+        },
+    );
+
+    const reply = normalizeAssistantReply(
+        response.data?.choices?.[0]?.message?.content,
+    );
+    return reply || `🔴 ${botName}暂不可用, 请稍后再试`;
+}
 
 async function pushNotification(
     notificationTokens: string[],
@@ -331,29 +476,39 @@ export async function sendBotMessage(ctx: Context<SendMessageData>) {
     const toUser = await User.findOne({ _id: userId });
     assert(toUser, '用户不存在');
     const botName = toUser.username;
-    const botAPIName = botName + '_API';
-    const botAPI = process.env[botAPIName];
     const user = await User.findOne(
         { _id: ctx.socket.user },
-        { username: 1, avatar: 1, tag: 1, id: 1, level: 1, email: 1 },
+        {
+            username: 1,
+            avatar: 1,
+            tag: 1,
+            id: 1,
+            level: 1,
+            email: 1,
+            aiApiKey: 1,
+            aiBaseUrl: 1,
+            aiModel: 1,
+            aiContextCount: 1,
+        },
     );
     if (!user) {
         throw new AssertionError({ message: '用户不存在' });
     }
     let reply = `🔴 ${botName}暂不可用, 请稍后再试`;
-    let data = {
-        prompt: content,
-        group: ctx.socket.user.toString(),
-        uid: user.id.toString(),
-    };
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', botAPI);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.timeout = 10000;
-    xhr.send(JSON.stringify(data));
-    await new Promise((resolve) => (xhr.onload = resolve)); // 使用 await 等待请求完成
-    if (xhr.status === 200) {
-        reply = xhr.responseText;
+    if (type === 'text') {
+        try {
+            reply = await requestAIReply(
+                user,
+                botName,
+                to,
+                toUser._id.toString(),
+                false,
+            );
+        } catch (error) {
+            logger.error('[sendBotMessage]', (error as Error).message);
+        }
+    } else {
+        reply = `🔴 ${botName}当前仅支持文本对话`;
     }
     const bot = toUser;
     // 从bot发送到客户端 user是bot toUser是用户
@@ -458,19 +613,8 @@ export async function sendGroupBotMessage(ctx: Context<SendMessageData>) {
         });
     }
 
-    const user = await User.findOne(
-        { _id: ctx.socket.user },
-        { username: 1, avatar: 1, tag: 1, id: 1 },
-    );
-    if (!user) {
-        throw new AssertionError({ message: '用户不存在' });
-    }
-
     const botName = await getConfigWithDefault('DEFAULT_BOT_NAME');
     assert(botName, '未配置群聊机器人，请在管理台设置 DEFAULT_BOT_NAME');
-    const botAPIName = botName + '_API';
-    const botAPI = process.env[botAPIName];
-
     const bot = await User.findOne({ username: botName });
     if (!bot) {
         throw new AssertionError({ message: `${botName}不存在` });
@@ -483,20 +627,29 @@ export async function sendGroupBotMessage(ctx: Context<SendMessageData>) {
 
     let reply = `🔴${botName}暂不可用, 请稍后再试`;
 
-    if (botAPI && type === 'text') {
-        const data = {
-            prompt: content,
-            group: toGroup._id.toString(),
-            uid: user.id.toString(),
-        };
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', botAPI);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.timeout = 10000;
-        xhr.send(JSON.stringify(data));
-        await new Promise((resolve) => (xhr.onload = resolve));
-        if (xhr.status === 200) {
-            reply = xhr.responseText;
+    if (type === 'text') {
+        const aiUser = await User.findOne(
+            { _id: ctx.socket.user },
+            {
+                aiApiKey: 1,
+                aiBaseUrl: 1,
+                aiModel: 1,
+                aiContextCount: 1,
+            },
+        );
+        if (!aiUser) {
+            throw new AssertionError({ message: '用户不存在' });
+        }
+        try {
+            reply = await requestAIReply(
+                aiUser,
+                botName,
+                to,
+                bot._id.toString(),
+                true,
+            );
+        } catch (error) {
+            logger.error('[sendGroupBotMessage]', (error as Error).message);
         }
     }
 
