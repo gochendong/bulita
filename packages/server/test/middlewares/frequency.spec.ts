@@ -1,9 +1,6 @@
-import { mocked } from 'ts-jest/utils';
-import { Redis } from '@bulita/database/redis/initRedis';
 import { Socket } from 'socket.io';
 import frequency, {
     CALL_SERVICE_FREQUENTLY,
-    NEW_USER_CALL_SERVICE_FREQUENTLY,
 } from '../../src/middlewares/frequency';
 import { getMiddlewareParams } from '../helpers/middleware';
 
@@ -44,26 +41,6 @@ describe('server/middlewares/frequency', () => {
         await middleware(args, next);
         await middleware(args, next);
         expect(next).toBeCalledTimes(2);
-    });
-
-    it('should stricter for new user', async () => {
-        const socket = {
-            id: 'id',
-            data: {
-                user: '1',
-            },
-        } as Socket;
-        const middleware = frequency(socket, {
-            maxCallPerMinutes: 3,
-            newUserMaxCallPerMinutes: 1,
-        });
-
-        const { args, cb, next } = getMiddlewareParams('sendMessage');
-
-        mocked(Redis.has).mockReturnValue(Promise.resolve(true));
-        await middleware(args, next);
-        await middleware(args, next);
-        expect(cb).toBeCalledWith(NEW_USER_CALL_SERVICE_FREQUENTLY);
     });
 
     it('should clear count data regularly ', async () => {

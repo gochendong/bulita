@@ -54,15 +54,6 @@
     height: 36px;
 }
 
-.tagUsernameInput {
-    flex: 3;
-}
-
-.tagInput {
-    flex: 2;
-    margin-left: 6px;
-}
-
 .buttonWrap {
     display: flex;
     flex-wrap: wrap;
@@ -115,10 +106,24 @@
     min-height: 22px;
 }
 
+.sealUserItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
 .sealUsername {
-    margin-right: 10px;
     line-height: 22px;
     font-size: 14px;
+    word-break: break-all;
+}
+
+.unsealButton {
+    flex-shrink: 0;
+    min-width: 88px;
+    height: 30px;
 }
 
 .configTip {

@@ -8,14 +8,14 @@ export const YOU_ARE_NOT_ADMINISTRATOR = '你不是管理员';
 export default function isAdmin(socket: Socket) {
     const requireAdminEvent = new Set([
         'sealUser',
+        'unsealUser',
         'getSealList',
-        'setUserTag',
         'toggleSendMessage',
-        'toggleNewUserSendMessage',
         'toggleGroupAI',
         'getSystemConfig',
         'setSystemConfig',
-        'getAdminUserByUsername',
+        'getAdminUserByEmail',
+        'getAdminUserInfo',
         'deleteUser',
     ]);
     return async ([event, , cb]: MiddlewareArgs, next: MiddlewareNext) => {

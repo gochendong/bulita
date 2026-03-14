@@ -16,6 +16,7 @@ import {
     deleteFriend,
     sealUser,
     getUserOnlineStatus,
+    getAdminUserInfo,
 } from '../service';
 
 interface UserInfoProps {
@@ -56,21 +57,36 @@ function UserInfo(props: UserInfoProps) {
     );
     const [largerAvatar, toggleLargetAvatar] = useState(false);
 
-    /** 管理员查看时拉取的在线/最后在线（即使用户不是好友也能看到） */
-    const [adminOnlineStatus, setAdminOnlineStatus] = useState<{ isOnline: boolean; lastLoginTime: string | null } | null>(null);
+    /** 管理员查看时拉取的补充信息 */
+    const [adminDetails, setAdminDetails] = useState<{
+        email: string;
+        isOnline: boolean;
+        lastLoginTime: string | null;
+    } | null>(null);
 
     useEffect(() => {
         if (!visible || !user || !isAdmin) {
-            setAdminOnlineStatus(null);
+            setAdminDetails(null);
             return;
         }
         const rawUserId = user._id.replace(selfId, '');
         if (!rawUserId) return;
-        getUserOnlineStatus(rawUserId).then((status) => {
-            if (status) {
-                setAdminOnlineStatus({
-                    isOnline: status.isOnline,
-                    lastLoginTime: status.lastLoginTime ?? null,
+        getAdminUserInfo(rawUserId).then((info) => {
+            if (info) {
+                setAdminDetails({
+                    email: info.email || '',
+                    isOnline: info.isOnline,
+                    lastLoginTime: info.lastLoginTime ?? null,
+                });
+            } else {
+                getUserOnlineStatus(rawUserId).then((status) => {
+                    if (status) {
+                        setAdminDetails({
+                            email: user.email || '',
+                            isOnline: status.isOnline,
+                            lastLoginTime: status.lastLoginTime ?? null,
+                        });
+                    }
                 });
             }
         });
@@ -131,8 +147,17 @@ function UserInfo(props: UserInfoProps) {
     }
 
     async function handleSeal() {
+        const email = (adminDetails?.email || user.email || '').trim();
+        if (!email) {
+            Message.warning('该用户没有可用邮箱');
+            return;
+        }
+        // eslint-disable-next-line no-restricted-globals
+        if (!confirm(`确定要封禁 ${email} 吗？`)) {
+            return;
+        }
         // @ts-ignore
-        const isSuccess = await sealUser(user.name || user.username);
+        const isSuccess = await sealUser(email);
         if (isSuccess) {
             Message.success('封禁用户成功');
         }
@@ -183,8 +208,8 @@ function UserInfo(props: UserInfoProps) {
                             />
                             <p>{user.username}</p>
                             {(() => {
-                                const isOnline = adminOnlineStatus?.isOnline ?? user.isOnline;
-                                const lastLoginTime = adminOnlineStatus?.lastLoginTime ?? user.lastLoginTime;
+                                const isOnline = adminDetails?.isOnline ?? user.isOnline;
+                                const lastLoginTime = adminDetails?.lastLoginTime ?? user.lastLoginTime;
                                 if (user.tag === 'bot' || isOnline === true) {
                                     return <p className={Style.onlineStatus}>当前在线</p>;
                                 }
@@ -197,6 +222,11 @@ function UserInfo(props: UserInfoProps) {
                                 }
                                 return null;
                             })()}
+                            {isAdmin && (adminDetails?.email || user.email) ? (
+                                <p className={Style.metaLine}>
+                                    邮箱：{adminDetails?.email || user.email}
+                                </p>
+                            ) : null}
                         </div>
                         <div className={Style.info}>
                             {isFriend ? (

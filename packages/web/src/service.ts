@@ -394,10 +394,15 @@ export async function getGroupAllMembers(
 
 /**
  * 封禁用户
- * @param username 目标用户名
+ * @param email 目标邮箱
  */
-export async function sealUser(username: string) {
-    const [err] = await fetch('sealUser', { username });
+export async function sealUser(email: string) {
+    const [err] = await fetch('sealUser', { email });
+    return !err;
+}
+
+export async function unsealUser(email: string) {
+    const [err] = await fetch('unsealUser', { email });
     return !err;
 }
 
@@ -435,16 +440,6 @@ export async function setSystemConfig(key: string, value: string) {
     return !!result;
 }
 
-/**
- * 更新指定用户的标签
- * @param username 目标用户名
- * @param tag 标签
- */
-export async function setUserTag(username: string, tag: string) {
-    const [err] = await fetch('setUserTag', { username, tag });
-    return !err;
-}
-
 export async function getUserOnlineStatus(userId: string): Promise<{ isOnline: boolean; lastLoginTime?: string | null } | null> {
     const [, res] = await fetch('getUserOnlineStatus', { userId });
     return res ? { isOnline: res.isOnline, lastLoginTime: res.lastLoginTime } : null;
@@ -460,30 +455,37 @@ export async function toggleSendMessage(enable: boolean) {
     return !!result;
 }
 
-export async function toggleNewUserSendMessage(enable: boolean) {
-    const [, result] = await fetch('toggleNewUserSendMessage', { enable });
-    return !!result;
-}
-
 /**
- * 管理员按用户名查找用户（用于删除前校验）
- * @param username 目标用户名
+ * 管理员按邮箱查找用户（用于删除/封禁前校验）
+ * @param email 目标邮箱
  */
-export async function getAdminUserByUsername(
-    username: string,
-): Promise<{ exists: boolean; username?: string; _id?: string } | null> {
-    const [err, res] = await fetch('getAdminUserByUsername', {
-        username: username.trim(),
+export async function getAdminUserByEmail(
+    email: string,
+): Promise<{ exists: boolean; username?: string; email?: string; _id?: string } | null> {
+    const [err, res] = await fetch('getAdminUserByEmail', {
+        email: email.trim(),
     });
     if (err) return null;
     return res;
 }
 
 /**
- * 删除用户
- * @param username 目标用户名
+ * 管理员查看用户资料
+ * @param userId 用户ID
  */
-export async function deleteUser(username: string) {
-    const [err] = await fetch('deleteUser', { username });
+export async function getAdminUserInfo(
+    userId: string,
+): Promise<{ email: string; isOnline: boolean; lastLoginTime?: string | null } | null> {
+    const [err, res] = await fetch('getAdminUserInfo', { userId });
+    if (err) return null;
+    return res;
+}
+
+/**
+ * 删除用户
+ * @param email 目标邮箱
+ */
+export async function deleteUser(email: string) {
+    const [err] = await fetch('deleteUser', { email });
     return !err;
 }

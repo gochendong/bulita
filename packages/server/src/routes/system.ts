@@ -16,7 +16,6 @@ import {
     getAllSealUser,
     getSealUserKey,
     DisableSendMessageKey,
-    DisableNewUserSendMessageKey,
     GroupAISwitchKey,
     Redis,
 } from '@bulita/database/redis/initRedis';
@@ -168,11 +167,11 @@ export async function getBaiduToken() {
  * 封禁用户, 需要管理员权限
  * @param ctx Context
  */
-export async function sealUser(ctx: Context<{ username: string }>) {
-    const { username } = ctx.data;
-    assert(username !== '', 'username不能为空');
+export async function sealUser(ctx: Context<{ email: string }>) {
+    const { email } = ctx.data;
+    assert(email !== '', '邮箱不能为空');
 
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ email });
     if (!user) {
         throw new AssertionError({ message: '用户不存在' });
     }
@@ -194,14 +193,38 @@ export async function sealUser(ctx: Context<{ username: string }>) {
 }
 
 /**
- * 获取封禁列表, 包含用户封禁和ip封禁, 需要管理员权限
+ * 解除封禁用户, 需要管理员权限
+ * @param ctx Context
+ */
+export async function unsealUser(ctx: Context<{ email: string }>) {
+    const { email } = ctx.data;
+    assert(email !== '', '邮箱不能为空');
+
+    const user = await User.findOne({ email });
+    if (!user) {
+        throw new AssertionError({ message: '用户不存在' });
+    }
+
+    const userId = user._id.toString();
+    const isSealUser = await Redis.has(getSealUserKey(userId));
+    assert(isSealUser, '用户不在封禁名单');
+
+    await Redis.del(getSealUserKey(userId));
+
+    return {
+        msg: 'ok',
+    };
+}
+
+/**
+ * 获取封禁用户列表, 需要管理员权限
  */
 export async function getSealList() {
     const sealUserList = await getAllSealUser();
     const users = await User.find({ _id: { $in: sealUserList } });
 
     const result = {
-        users: users.map((user) => user.username),
+        users: users.map((user) => user.email || user.username),
     };
     return result;
 }
@@ -305,24 +328,12 @@ export async function toggleSendMessage(ctx: Context<{ enable: boolean }>) {
     };
 }
 
-export async function toggleNewUserSendMessage(
-    ctx: Context<{ enable: boolean }>,
-) {
-    const { enable } = ctx.data;
-    await Redis.set(DisableNewUserSendMessageKey, (!enable).toString());
-    return {
-        msg: 'ok',
-    };
-}
-
 export async function getSystemConfig() {
     const groupAISwitch =
         (await Redis.get(GroupAISwitchKey)) ?? 'false';
     const adminConfig = await getAllAdminConfig();
     return {
         disableSendMessage: (await Redis.get(DisableSendMessageKey)) === 'true',
-        disableNewUserSendMessage:
-            (await Redis.get(DisableNewUserSendMessageKey)) === 'true',
         groupAISwitch: groupAISwitch === 'true',
         adminConfig,
         adminConfigLabels: ADMIN_CONFIG_LABELS,

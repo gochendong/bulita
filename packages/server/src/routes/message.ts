@@ -21,7 +21,6 @@ import Socket from '@bulita/database/mongoose/models/socket';
 
 import {
     DisableSendMessageKey,
-    DisableNewUserSendMessageKey,
     GroupAISwitchKey,
     Redis,
     DisableRegisterUserSendMessageKey,
@@ -42,7 +41,6 @@ const FirstTimeMessagesCount = 60;
 const EachFetchMessagesCount = 30;
 
 const OneYear = 365 * 24 * 3600 * 1000;
-const ThreeDay = 3 * 24 * 3600 * 1000;
 
 /** 石头剪刀布, 用于随机生成结果 */
 const RPS = ['石头', '剪刀', '布'];
@@ -110,7 +108,7 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         assert(toUser, '用户不存在');
     }
 
-    // 根据 Redis 中的禁言开关（全员禁言 / 新用户禁言 / 未注册用户禁言）限制发言
+    // 根据 Redis 中的禁言开关（全员禁言 / 未注册用户禁言）限制发言
     if (
         toGroup ||
         (toUser &&
@@ -122,16 +120,6 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
             disableSendMessage !== 'true' || ctx.socket.isAdmin,
             '全员禁言中',
         );
-
-        const disableNewUserSendMessage = await Redis.get(
-            DisableNewUserSendMessageKey,
-        );
-        if (disableNewUserSendMessage === 'true') {
-            const user = await User.findById(ctx.socket.user);
-            const isNewUser =
-                user && user.createTime.getTime() > Date.now() - ThreeDay;
-            assert(ctx.socket.isAdmin || !isNewUser, '新用户禁言中');
-        }
         const disableNoRegisterUserSendMessage = await Redis.get(
             DisableRegisterUserSendMessageKey,
         );

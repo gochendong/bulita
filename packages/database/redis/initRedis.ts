@@ -36,14 +36,11 @@ export async function set(key: string, value: string, expireTime = Infinity) {
 }
 
 export const keys = promisify(client.keys).bind(client);
+export const del = promisify(client.del).bind(client);
 
 export async function has(key: string) {
     const v = await get(key);
     return v !== null;
-}
-
-export function getNewUserKey(userId: string) {
-    return `${Prefix}:NewUser:${userId}`;
 }
 
 export function getSealUserKey(user: string) {
@@ -65,6 +62,7 @@ export const Redis = {
     has,
     expire,
     keys,
+    del,
     Minute,
     Hour,
     Day,
@@ -73,7 +71,6 @@ export const Redis = {
 };
 
 export const DisableSendMessageKey = `${Prefix}:DisableSendMessage`;
-export const DisableNewUserSendMessageKey = `${Prefix}:DisableNewUserSendMessageKey`;
 export const DisableRegisterUserSendMessageKey = `${Prefix}:DisableNoRegisterUserSendMessageKey`;
 export const DisableRegisterUserKey = `${Prefix}:DisableRegisterUserKey`;
 /** 群聊 AI 开关，存在且为 'true' 时开启 */

@@ -14,10 +14,6 @@ import Message, {
     handleInviteV2Messages,
 } from '@bulita/database/mongoose/models/message';
 import Notification from '@bulita/database/mongoose/models/notification';
-import {
-    getNewUserKey,
-    Redis,
-} from '@bulita/database/redis/initRedis';
 import { getConfigWithDefault } from '../utils/runtimeConfig';
 import chalk from 'chalk';
 
@@ -25,9 +21,6 @@ const { XMLHttpRequest } = require('xmlhttprequest');
 const {IP_LOCATION_API} = process.env;
 
 const { isValid } = Types.ObjectId;
-
-/** 一天时间 */
-const OneDay = 1000 * 60 * 60 * 24;
 
 interface Environment {
     /** 客户端系统 */
@@ -63,19 +56,6 @@ function generateToken(user: string, uid: string, environment: string) {
         },
         config.jwtSecret,
     );
-}
-
-/**
- * 处理注册时间不满24小时的用户
- * @param user 用户
- * @param ip
- */
-async function handleNewUser(user: UserDocument, ip = '') {
-    // 将用户添加到新用户列表, 24小时后删除
-    if (Date.now() - user.createTime.getTime() < OneDay) {
-        const userId = user._id.toString();
-        await Redis.set(getNewUserKey(userId), userId, Redis.Day);
-    }
 }
 
 async function getUserNotificationTokens(user: UserDocument) {
@@ -182,8 +162,6 @@ async function getLoginPayload(
     const { os, browser, environment } = ctx.data;
 
     await addDefaultLinkmans(user);
-    await handleNewUser(user);
-
     user.lastLoginTime = new Date();
     user.lastLoginIp = ctx.socket.ip;
     user.tag = await resolveUserTag(user.username, ctx.socket.ip);
@@ -407,7 +385,6 @@ export async function googleLogin(
             googleId: tokenInfo.sub,
             lastLoginIp: ctx.socket.ip,
         } as UserDocument);
-        await handleNewUser(user, ctx.socket.ip);
         await addDefaultLinkmans(user);
     } else {
         await syncGoogleProfile(user, tokenInfo);
@@ -645,40 +622,6 @@ export async function changePushToken(ctx: Context<{ pushToken: string }>) {
     };
 }
 
-/**
- * 更新用户标签, 需要管理员权限
- * @param ctx Context
- */
-export async function setUserTag(
-    ctx: Context<{ username: string; tag: string }>,
-) {
-    const { username, tag } = ctx.data;
-    assert(username !== '', 'username不能为空');
-    // assert(tag !== '', 'tag不能为空');
-    // assert(
-    //     /^([0-9a-zA-Z]{1,2}|[\u4e00-\u9eff]){1,5}$/.test(tag),
-    //     '标签不符合要求, 允许5个汉字或者10个字母',
-    // );
-
-    const user = await User.findOne({ username });
-    if (!user) {
-        throw new AssertionError({ message: '用户不存在' });
-    }
-
-    user.tag = tag;
-    await user.save();
-
-    const sockets = await Socket.find({ user: user._id });
-    const socketIdList = sockets.map((socket) => socket.id);
-    if (socketIdList.length) {
-        ctx.socket.emit(socketIdList, 'changeTag', user.tag);
-    }
-
-    return {
-        msg: 'ok',
-    };
-}
-
 const UserOnlineStatusCacheExpireTime = 1000 * 60;
 function getUserOnlineStatusWrapper() {
     const cache: Record<
@@ -732,21 +675,29 @@ function getUserOnlineStatusWrapper() {
 export const getUserOnlineStatus = getUserOnlineStatusWrapper();
 
 /**
- * 管理员按用户名查找用户（用于删除前校验）, 需要管理员权限
+ * 管理员按邮箱查找用户（用于删除/封禁前校验）, 需要管理员权限
  * @param ctx Context
  */
-export async function getAdminUserByUsername(
-    ctx: Context<{ username: string }>,
+export async function getAdminUserByEmail(
+    ctx: Context<{ email: string }>,
 ) {
-    const { username } = ctx.data;
-    assert(username, '用户名不能为空');
-    const name = (username as string).trim();
-    if (!name) {
+    const { email } = ctx.data;
+    assert(email, '邮箱不能为空');
+    const normalizedEmail = (email as string).trim();
+    if (!normalizedEmail) {
         return { exists: false };
     }
-    const user = await User.findOne({ username: name });
+    const user = await User.findOne(
+        { email: normalizedEmail },
+        { username: 1, email: 1 },
+    );
     return user
-        ? { exists: true, username: user.username, _id: user._id.toString() }
+        ? {
+              exists: true,
+              username: user.username,
+              email: user.email || '',
+              _id: user._id.toString(),
+          }
         : { exists: false };
 }
 
@@ -754,11 +705,11 @@ export async function getAdminUserByUsername(
  * 删除用户, 需要管理员权限
  * @param ctx Context
  */
-export async function deleteUser(ctx: Context<{ username: string }>) {
-    const { username } = ctx.data;
-    assert(username, '用户名不能为空');
+export async function deleteUser(ctx: Context<{ email: string }>) {
+    const { email } = ctx.data;
+    assert(email, '邮箱不能为空');
 
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ email });
     if (!user) {
         throw new AssertionError({ message: '用户不存在' });
     }
@@ -805,5 +756,34 @@ export async function deleteUser(ctx: Context<{ username: string }>) {
 
     return {
         msg: 'ok',
+    };
+}
+
+/**
+ * 管理员查看指定用户资料, 需要管理员权限
+ * @param ctx Context
+ */
+export async function getAdminUserInfo(
+    ctx: Context<{ userId: string }>,
+) {
+    const { userId } = ctx.data;
+    assert(userId, 'userId不能为空');
+    assert(isValid(userId), '不合法的userId');
+
+    const user = await User.findOne(
+        { _id: userId },
+        { email: 1, lastLoginTime: 1 },
+    );
+    if (!user) {
+        throw new AssertionError({ message: '用户不存在' });
+    }
+
+    const sockets = await Socket.find({ user: userId }, { _id: 1 });
+    return {
+        email: user.email || '',
+        isOnline: sockets.length > 0,
+        lastLoginTime: user.lastLoginTime
+            ? (user.lastLoginTime as Date).toISOString()
+            : null,
     };
 }
