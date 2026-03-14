@@ -128,10 +128,10 @@ function HeaderBar(props: Props) {
                         }
                     >
                         <svg
-                            width="22"
-                            height="22"
-                            viewBox="0 0 24 24"
-                            fill="none"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
                             xmlns="http://www.w3.org/2000/svg"
                             className={
                                 functionBarAndLinkmanListVisible
@@ -139,20 +139,7 @@ function HeaderBar(props: Props) {
                                     : Style.friendsToggleIconCollapsed
                             }
                         >
-                            <path
-                                d="M15 6L9 12L15 18"
-                                stroke="currentColor"
-                                strokeWidth="1.8"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
-                            <path
-                                d="M20 6L14 12L20 18"
-                                stroke="currentColor"
-                                strokeWidth="1.8"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
+                            <path d="M13.5 3.5L5.5 10L13.5 16.5V3.5Z" />
                         </svg>
                     </button>
                 )}
