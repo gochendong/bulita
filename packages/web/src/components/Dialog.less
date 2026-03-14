@@ -38,18 +38,27 @@
     }
     
     @media @mobile {
+        .rc-dialog-wrap {
+            padding: 12px 0 20px;
+            overscroll-behavior: contain;
+            touch-action: pan-y;
+        }
         .rc-dialog {
-            width: 94% !important;
-            margin: 0 auto;
-            top: 16px !important;
+            width: 94vw !important;
+            max-width: 94vw !important;
+            margin: 0 auto !important;
+            position: relative !important;
+            top: auto !important;
             transform: none !important;
         }
         .rc-dialog-body {
             padding: 10px 10px;
-            max-height: calc(100vh - 96px);
+            max-height: none;
+            overflow: visible;
         }
         .rc-dialog-content {
-            max-height: calc(100vh - 32px);
+            max-height: none;
+            overflow: visible;
         }
     }
 }
