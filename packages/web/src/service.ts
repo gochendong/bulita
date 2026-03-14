@@ -402,24 +402,6 @@ export async function sealUser(username: string) {
 }
 
 /**
- * 封禁ip
- * @param ip ip地址
- */
-export async function sealIp(ip: string) {
-    const [err] = await fetch('sealIp', { ip });
-    return !err;
-}
-
-/**
- * 封禁用户所有在线ip
- * @param userId 用户id
- */
-export async function sealUserOnlineIp(userId: string) {
-    const [err] = await fetch('sealUserOnlineIp', { userId });
-    return !err;
-}
-
-/**
  * 获取封禁用户列表
  */
 export async function getSealList() {
@@ -461,15 +443,6 @@ export async function setSystemConfig(key: string, value: string) {
 export async function setUserTag(username: string, tag: string) {
     const [err] = await fetch('setUserTag', { username, tag });
     return !err;
-}
-
-/**
- * 获取在线用户 ip
- * @param userId 用户id
- */
-export async function getUserIps(userId: string) {
-    const [, res] = await fetch('getUserIps', { userId });
-    return res;
 }
 
 export async function getUserOnlineStatus(userId: string): Promise<{ isOnline: boolean; lastLoginTime?: string | null } | null> {

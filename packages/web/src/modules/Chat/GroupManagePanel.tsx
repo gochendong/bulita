@@ -6,7 +6,6 @@ import uploadFile, { getAvatarUrl } from '../../utils/uploadFile';
 import Style from './GroupManagePanel.less';
 import useIsLogin from '../../hooks/useIsLogin';
 import { State, GroupMember } from '../../state/reducer';
-import Input from '../../components/Input';
 import Button from '../../components/Button';
 import Message from '../../components/Message';
 import Avatar from '../../components/Avatar';
@@ -247,12 +246,13 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                     {isLogin && selfId === creator ? (
                         <div className={Style.block}>
                             <p className={Style.blockTitle}>群公告</p>
-                            <Input
-                                className={Style.inputWrap}
+                            <textarea
+                                className={Style.announcementInput}
                                 value={groupAnnouncement}
-                                onChange={setGroupAnnouncement}
+                                onChange={(event) => setGroupAnnouncement(event.target.value)}
                                 onBlur={handleChangeGroupAnnouncement}
                                 placeholder="设置群公告，成员将在聊天顶部看到"
+                                rows={4}
                             />
                         </div>
                     ) : announcement ? (

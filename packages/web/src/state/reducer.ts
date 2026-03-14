@@ -1,7 +1,7 @@
 import { isMobile } from '@bulita/utils/ua';
 import getFriendId from '@bulita/utils/getFriendId';
 import convertMessage from '@bulita/utils/convertMessage';
-import getData from '../localStorage';
+import getData, { LocalStorageKey } from '../localStorage';
 import {
     Action,
     ActionTypes,
@@ -275,11 +275,31 @@ function transformTemporary(temporary: Linkman): Linkman {
     return temporary;
 }
 
+function syncFocusStorage(focus: string) {
+    try {
+        if (focus) {
+            window.localStorage.setItem(LocalStorageKey.Focus, focus);
+        } else {
+            window.localStorage.removeItem(LocalStorageKey.Focus);
+        }
+    } catch (_) {
+        // ignore localStorage errors
+    }
+}
+
+function getStoredFocus() {
+    try {
+        return window.localStorage.getItem(LocalStorageKey.Focus) || '';
+    } catch (_) {
+        return '';
+    }
+}
+
 const localStorage = getData();
 export const initialState: State = {
     user: null,
     linkmans: {},
-    focus: '',
+    focus: localStorage.focus || '',
     connect: false,
     status: {
         ready: false,
@@ -375,13 +395,19 @@ function reducer(state: State = initialState, action: Action): State {
             ];
 
             const defaultGroup = groups.find((group) => group.isDefault);
-            let { focus } = state;
-            const hasFocusedLinkman = !!linkmans.find((linkman) => linkman._id === focus);
-            if (defaultGroup) {
+            const persistedFocus = getStoredFocus() || state.focus;
+            let focus = persistedFocus;
+            const hasFocusedLinkman = !!linkmans.find(
+                (linkman) => linkman._id === persistedFocus,
+            );
+            if (hasFocusedLinkman) {
+                focus = persistedFocus;
+            } else if (defaultGroup) {
                 focus = defaultGroup._id;
-            } else if (!hasFocusedLinkman && linkmans.length > 0) {
+            } else if (linkmans.length > 0) {
                 focus = linkmans[0]._id;
             }
+            syncFocusStorage(focus);
             return {
                 ...state,
                 user: {
@@ -457,6 +483,7 @@ function reducer(state: State = initialState, action: Action): State {
                     messageKeys.slice(0, messageKeys.length - 50),
                 );
             }
+            syncFocusStorage(focus);
 
             return {
                 ...state,
@@ -496,6 +523,7 @@ function reducer(state: State = initialState, action: Action): State {
                     return state;
                 }
             }
+            syncFocusStorage(focus);
 
             return {
                 ...state,
@@ -514,6 +542,7 @@ function reducer(state: State = initialState, action: Action): State {
             );
             const linkmanIds = Object.keys(linkmans);
             const focus = linkmanIds.length > 0 ? linkmanIds[0] : '';
+            syncFocusStorage(focus);
             return {
                 ...state,
                 linkmans: {

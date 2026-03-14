@@ -77,10 +77,6 @@ const ExpressionAsync = loadable(
         // @ts-ignore
         import(/* webpackChunkName: "expression" */ './Expression'),
 );
-const CodeEditorAsync = loadable(
-    // @ts-ignore
-    () => import(/* webpackChunkName: "code-editor" */ './CodeEditor'),
-);
 
 let searchExpressionTimer: number = 0;
 
@@ -119,7 +115,6 @@ function ChatInput(props: InputAreaProps) {
           }
         | null;
     const [expressionDialog, toggleExpressionDialog] = useState(false);
-    const [codeEditorDialog, toggleCodeEditorDialog] = useState(false);
     const [addMenuOpen, setAddMenuOpen] = useState(false);
     const addTriggerRef = useRef<HTMLDivElement>(null);
     const [inputFocus, toggleInputFocus] = useState(false);
@@ -527,14 +522,6 @@ function ChatInput(props: InputAreaProps) {
                 handleSendImage();
                 break;
             }
-            // case 'huaji': {
-            //     sendHuaji();
-            //     break;
-            // }
-            case 'code': {
-                toggleCodeEditorDialog(true);
-                break;
-            }
             case 'file': {
                 handleSendFile();
                 break;
@@ -918,22 +905,6 @@ function ChatInput(props: InputAreaProps) {
         $input.current.focus();
     }
 
-    function handleSendCode(language: string, rawCode: string) {
-        if (!connect) {
-            return Message.error('发送消息失败, 您当前处于离线状态');
-        }
-
-        if (rawCode === '') {
-            return Message.warning('请输入内容');
-        }
-
-        const code = `@language=${language}@${rawCode}`;
-        const id = addSelfMessage('code', code);
-        handleSendMessage(id, 'code', code);
-        toggleCodeEditorDialog(false);
-        return null;
-    }
-
     function handleClickExpressionImage(
         image: string,
         width: number,
@@ -995,7 +966,6 @@ function ChatInput(props: InputAreaProps) {
                         />
                         <div className={Style.featureDropdown}>
                             <Menu onClick={handleFeatureMenuClick}>
-                                <MenuItem key="code">发送代码</MenuItem>
                                 <MenuItem key="image">发送图片</MenuItem>
                                 <MenuItem key="file">发送文件</MenuItem>
                             </Menu>
@@ -1120,14 +1090,6 @@ function ChatInput(props: InputAreaProps) {
                 />
                 {/* 清除按钮已移除，保持输入区域干净简洁 */}
             </form>
-            {codeEditorDialog && (
-                <CodeEditorAsync
-                    visible={codeEditorDialog}
-                    onClose={() => toggleCodeEditorDialog(false)}
-                    onSend={handleSendCode}
-                />
-            )}
-
             {expressions.length > 0 && (
                 <div className={expressionList}>
                     {expressions.map(({ image, width, height }) => (

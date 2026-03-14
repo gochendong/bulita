@@ -419,21 +419,15 @@ class Message extends Component<MessageProps, MessageState> {
                                         placement={isSelf ? 'bottomRight' : 'bottomLeft'}
                                         getPopupContainer={() => document.body}
                                     >
-                                        <Tooltip
-                                            placement={isSelf ? 'left' : 'right'}
-                                            mouseEnterDelay={0.3}
-                                            overlay={<span>更多</span>}
-                                        >
-                                            <div>
-                                                <IconButton
-                                                    className={Style.button}
-                                                    icon="omit"
-                                                    iconSize={12}
-                                                    width={15}
-                                                    height={15}
-                                                />
-                                            </div>
-                                        </Tooltip>
+                                        <div title="更多">
+                                            <IconButton
+                                                className={Style.button}
+                                                icon="omit"
+                                                iconSize={12}
+                                                width={15}
+                                                height={15}
+                                            />
+                                        </div>
                                     </Dropdown>
                                 )}
                             </div>

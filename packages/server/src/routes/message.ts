@@ -206,20 +206,6 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         });
     }
 
-    const banedIPLocs = await getConfigWithDefault('BANED_IP_LOCS');
-    if (banedIPLocs) {
-        const banedIPLocsArray = banedIPLocs.split(',');
-        if (
-            toGroup &&
-            toGroup.isDefault &&
-            banedIPLocsArray.includes(user.tag)
-        ) {
-            throw new AssertionError({
-                message: `${user.tag}地区的游客不能在群组中发言`,
-            });
-        }
-    }
-
     const lastMessageKey = `chat:lastMessage:${user._id}`;
     const lastMessage = await Redis.get(lastMessageKey);
     if (lastMessage && lastMessage === messageContent) {

@@ -15,7 +15,6 @@ import Message, {
 } from '@bulita/database/mongoose/models/message';
 import Notification from '@bulita/database/mongoose/models/notification';
 import {
-    getNewRegisteredUserIpKey,
     getNewUserKey,
     Redis,
 } from '@bulita/database/redis/initRedis';
@@ -76,18 +75,6 @@ async function handleNewUser(user: UserDocument, ip = '') {
     if (Date.now() - user.createTime.getTime() < OneDay) {
         const userId = user._id.toString();
         await Redis.set(getNewUserKey(userId), userId, Redis.Day);
-
-        if (ip) {
-            const registerIpInterval = await getConfigWithDefault('REGISTER_IP_INTERVAL');
-            const registeredCount = await Redis.get(
-                getNewRegisteredUserIpKey(ip),
-            );
-            await Redis.set(
-                getNewRegisteredUserIpKey(ip),
-                (parseInt(registeredCount || '0', 10) + 1).toString(),
-                registerIpInterval,
-            );
-        }
     }
 }
 
@@ -408,14 +395,6 @@ export async function googleLogin(
     }
 
     if (!user) {
-        const registeredCountWithin24Hours = await Redis.get(
-            getNewRegisteredUserIpKey(ctx.socket.ip),
-        );
-        assert(
-            parseInt(registeredCountWithin24Hours || '0', 10) < 1,
-            '您的IP受限, 暂时无法登录',
-        );
-
         const username = await generateUniqueUsername(
             tokenInfo.name || tokenInfo.email || '',
         );
@@ -698,21 +677,6 @@ export async function setUserTag(
     return {
         msg: 'ok',
     };
-}
-
-/**
- * 获取指定在线用户 ip
- */
-export async function getUserIps(
-    ctx: Context<{ userId: string }>,
-): Promise<string[]> {
-    const { userId } = ctx.data;
-    assert(userId, 'userId不能为空');
-    assert(isValid(userId), '不合法的userId');
-
-    const sockets = await Socket.find({ user: userId });
-    const ipList = sockets.map((socket) => socket.ip) || [];
-    return Array.from(new Set(ipList));
 }
 
 const UserOnlineStatusCacheExpireTime = 1000 * 60;

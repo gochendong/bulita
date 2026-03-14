@@ -14,7 +14,6 @@ import {
     getSealList,
     sealUser,
     setUserTag,
-    sealIp,
     toggleSendMessage,
     toggleNewUserSendMessage,
     toggleGroupAI,
@@ -57,8 +56,7 @@ function Admin(props: AdminProps) {
     const [deleteUsername, setDeleteUsername] = useState('');
     const deleteUsernameRef = useRef(deleteUsername);
     deleteUsernameRef.current = deleteUsername;
-    const [sealList, setSealList] = useState({ users: [], ips: [] });
-    const [sealIpAddress, setSealIpAddress] = useState('');
+    const [sealList, setSealList] = useState({ users: [] });
     const [systemConfig, setSystemConfig] = useState<SystemConfig>();
     const [adminConfigValues, setAdminConfigValues] = useState<Record<string, string>>({});
     const adminConfigValuesRef = useRef<Record<string, string>>({});
@@ -106,15 +104,6 @@ function Admin(props: AdminProps) {
         if (isSuccess) {
             Message.success('封禁用户成功');
             setSealUsername('');
-            handleGetSealList();
-        }
-    }
-
-    async function handleSealIp() {
-        const isSuccess = await sealIp(sealIpAddress);
-        if (isSuccess) {
-            Message.success('封禁ip成功');
-            setSealIpAddress('');
             handleGetSealList();
         }
     }
@@ -410,28 +399,6 @@ function Admin(props: AdminProps) {
                                 {sealList.users.map((username) => (
                                     <span className={Style.sealUsername} key={username}>
                                         {username}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                        <div className={Common.block}>
-                            <p className={Common.title}>封禁ip</p>
-                            <div className={Style.inputBlock}>
-                                <Input
-                                    className={Style.input}
-                                    value={sealIpAddress}
-                                    onChange={setSealIpAddress}
-                                    onBlur={() => sealIpAddress.trim() && handleSealIp()}
-                                    placeholder="要封禁的ip"
-                                />
-                            </div>
-                        </div>
-                        <div className={Common.block}>
-                            <p className={Common.title}>封禁ip列表</p>
-                            <div className={Style.sealList}>
-                                {sealList.ips.map((ip) => (
-                                    <span className={Style.sealUsername} key={ip}>
-                                        {ip}
                                     </span>
                                 ))}
                             </div>

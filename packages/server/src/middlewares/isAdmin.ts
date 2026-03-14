@@ -1,4 +1,3 @@
-import config from '@bulita/config/server';
 import { Socket } from 'socket.io';
 
 export const YOU_ARE_NOT_ADMINISTRATOR = '你不是管理员';
@@ -11,9 +10,6 @@ export default function isAdmin(socket: Socket) {
         'sealUser',
         'getSealList',
         'setUserTag',
-        'getUserIps',
-        'sealIp',
-        'getSealIpList',
         'toggleSendMessage',
         'toggleNewUserSendMessage',
         'toggleGroupAI',

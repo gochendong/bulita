@@ -3,6 +3,7 @@ import themes from './themes';
 
 /** LocalStorage存储的键值 */
 export enum LocalStorageKey {
+    Focus = 'focus',
     Theme = 'theme',
     PrimaryColor = 'primaryColor',
     PrimaryTextColor = 'primaryTextColor',
@@ -35,6 +36,21 @@ function getTextValue(key: string, defaultValue: string) {
 function getSwitchValue(key: string, defaultValue: boolean = true) {
     const value = window.localStorage.getItem(key);
     return value ? value === 'true' : defaultValue;
+}
+
+function getSoundValue() {
+    const supportedSounds = new Set([
+        'default',
+        'apple',
+        'pcqq',
+        'mobileqq',
+        'huaji',
+    ]);
+    const defaultSound = supportedSounds.has(config.sound)
+        ? config.sound
+        : 'apple';
+    const value = getTextValue(LocalStorageKey.Sound, defaultSound);
+    return supportedSounds.has(value) ? value : defaultSound;
 }
 
 /**
@@ -70,9 +86,10 @@ export default function getData() {
         };
     }
     return {
+        focus: getTextValue(LocalStorageKey.Focus, ''),
         theme,
         ...themeConfig,
-        sound: getTextValue(LocalStorageKey.Sound, config.sound),
+        sound: getSoundValue(),
         soundSwitch: getSwitchValue(LocalStorageKey.SoundSwitch),
         notificationSwitch: getSwitchValue(LocalStorageKey.NotificationSwitch),
         voiceSwitch: getSwitchValue(LocalStorageKey.VoiceSwitch),

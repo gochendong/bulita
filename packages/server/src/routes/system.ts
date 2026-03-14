@@ -13,9 +13,7 @@ import Group from '@bulita/database/mongoose/models/group';
 
 import Socket from '@bulita/database/mongoose/models/socket';
 import {
-    getAllSealIp,
     getAllSealUser,
-    getSealIpKey,
     getSealUserKey,
     DisableSendMessageKey,
     DisableNewUserSendMessageKey,
@@ -200,74 +198,12 @@ export async function sealUser(ctx: Context<{ username: string }>) {
  */
 export async function getSealList() {
     const sealUserList = await getAllSealUser();
-    const sealIpList = await getAllSealIp();
     const users = await User.find({ _id: { $in: sealUserList } });
 
     const result = {
         users: users.map((user) => user.username),
-        ips: sealIpList,
     };
     return result;
-}
-
-const CantSealLocalIp = '不能封禁内网ip';
-const CantSealSelf = '闲的没事封自己干啥';
-const IpInSealList = 'ip已在封禁名单';
-
-/**
- * 封禁 ip 地址, 需要管理员权限
- */
-export async function sealIp(ctx: Context<{ ip: string }>) {
-    const { ip } = ctx.data;
-    assert(ip !== '::1' && ip !== '127.0.0.1', CantSealLocalIp);
-    assert(ip !== ctx.socket.ip, CantSealSelf);
-
-    const isSealIp = await Redis.has(getSealIpKey(ip));
-    assert(!isSealIp, IpInSealList);
-
-    await Redis.set(getSealIpKey(ip), ip);
-
-    return {
-        msg: 'ok',
-    };
-}
-
-/**
- * 封禁指定用户的所有在线 ip 地址, 需要管理员权限
- */
-export async function sealUserOnlineIp(ctx: Context<{ userId: string }>) {
-    const { userId } = ctx.data;
-
-    const user = await User.findOne({ _id: userId });
-    assert(user, '用户不存在');
-    const sockets = await Socket.find({ user: userId });
-    const ipList = [
-        ...sockets.map((socket) => socket.ip),
-        user.lastLoginIp,
-    ].filter(
-        (ip) =>
-            ip !== '' &&
-            ip !== '::1' &&
-            ip !== '127.0.0.1' &&
-            ip !== ctx.socket.ip,
-    );
-
-    // 如果全部 ip 都已经封禁过了, 则直接提示
-    const isSealIpList = await Promise.all(
-        ipList.map((ip) => Redis.has(getSealIpKey(ip))),
-    );
-    assert(!isSealIpList.every((isSealIp) => isSealIp), IpInSealList);
-
-    await Promise.all(
-        ipList.map(async (ip) => {
-            const duration = await getConfigWithDefault('SEAL_IP_DURATION');
-    await Redis.set(getSealIpKey(ip), ip, duration);
-        }),
-    );
-
-    return {
-        msg: 'ok',
-    };
 }
 
 type STSResult = {

@@ -15,8 +15,6 @@ import {
     getLinkmanHistoryMessages,
     deleteFriend,
     sealUser,
-    getUserIps,
-    sealUserOnlineIp,
     getUserOnlineStatus,
 } from '../service';
 
@@ -26,7 +24,6 @@ interface UserInfoProps {
         _id: string;
         username: string;
         avatar: string;
-        ip: string;
         isOnline?: boolean;
         lastLoginTime?: string | null;
         email: string;
@@ -59,18 +56,8 @@ function UserInfo(props: UserInfoProps) {
     );
     const [largerAvatar, toggleLargetAvatar] = useState(false);
 
-    const [userIps, setUserIps] = useState([]);
     /** 管理员查看时拉取的在线/最后在线（即使用户不是好友也能看到） */
     const [adminOnlineStatus, setAdminOnlineStatus] = useState<{ isOnline: boolean; lastLoginTime: string | null } | null>(null);
-
-    useEffect(() => {
-        if (isAdmin && user && user._id) {
-            (async () => {
-                const ips = await getUserIps(user._id.replace(selfId, ''));
-                setUserIps(ips);
-            })();
-        }
-    }, [isAdmin, selfId, user]);
 
     useEffect(() => {
         if (!visible || !user || !isAdmin) {
@@ -151,14 +138,6 @@ function UserInfo(props: UserInfoProps) {
         }
     }
 
-    async function handleSealIp() {
-        // @ts-ignore
-        const isSuccess = await sealUserOnlineIp(originUserId);
-        if (isSuccess) {
-            Message.success('封禁ip成功');
-        }
-    }
-
     function formatLastOnline(dateStr: string | null): string {
         if (!dateStr) return '从未登录';
         const date = new Date(dateStr);
@@ -172,10 +151,6 @@ function UserInfo(props: UserInfoProps) {
         if (diffH < 24) return `${diffH} 小时前`;
         if (diffD < 30) return `${diffD} 天前`;
         return date.toLocaleDateString();
-    }
-
-    function searchIp(ip: string) {
-        window.open(`https://www.baidu.com/s?wd=${ip}`);
     }
 
     function handleClose() {
@@ -222,17 +197,6 @@ function UserInfo(props: UserInfoProps) {
                                 }
                                 return null;
                             })()}
-                            <p className={Style.ip}>
-                                {userIps.map((ip) => (
-                                    <span
-                                        key={ip}
-                                        onClick={() => searchIp(ip)}
-                                        role="button"
-                                    >
-                                        {ip}
-                                    </span>
-                                ))}
-                            </p>
                         </div>
                         <div className={Style.info}>
                             {isFriend ? (
@@ -255,11 +219,6 @@ function UserInfo(props: UserInfoProps) {
                             {isAdmin ? (
                                 <Button type="danger" onClick={handleSeal}>
                                     封禁用户
-                                </Button>
-                            ) : null}
-                            {isAdmin ? (
-                                <Button type="danger" onClick={handleSealIp}>
-                                    封禁ip
                                 </Button>
                             ) : null}
                         </div>

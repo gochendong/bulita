@@ -5,12 +5,6 @@ import expressions from '@bulita/utils/expressions';
 import { addParam } from '@bulita/utils/url';
 import BaiduImage from '@bulita/assets/images/baidu.png';
 import Style from './Expression.less';
-import {
-    Tabs,
-    TabPane,
-    TabContent,
-    ScrollableInkTabBar,
-} from '../../components/Tabs';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 import { searchExpression } from '../../service';
@@ -24,6 +18,7 @@ interface ExpressionProps {
 function Expression(props: ExpressionProps) {
     const { onSelectText, onSelectImage } = props;
 
+    const [activeTab, setActiveTab] = useState<'default' | 'search'>('default');
     const [keywords, setKeywords] = useState('');
     const [searchLoading, toggleSearchLoading] = useState(false);
     const [searchResults, setSearchResults] = useState([]);
@@ -123,18 +118,31 @@ function Expression(props: ExpressionProps) {
 
     return (
         <div className={Style.expression}>
-            <Tabs
-                defaultActiveKey="default"
-                renderTabBar={() => <ScrollableInkTabBar />}
-                renderTabContent={() => <TabContent />}
-            >
-                <TabPane tab="默认表情" key="default">
-                    {renderDefaultExpression}
-                </TabPane>
-                <TabPane tab="搜索表情包" key="search">
-                    {renderSearchExpression}
-                </TabPane>
-            </Tabs>
+            <div className={Style.tabHeader}>
+                <button
+                    type="button"
+                    className={`${Style.tabButton} ${
+                        activeTab === 'default' ? Style.tabButtonActive : ''
+                    }`}
+                    onClick={() => setActiveTab('default')}
+                >
+                    默认表情
+                </button>
+                <button
+                    type="button"
+                    className={`${Style.tabButton} ${
+                        activeTab === 'search' ? Style.tabButtonActive : ''
+                    }`}
+                    onClick={() => setActiveTab('search')}
+                >
+                    搜索表情包
+                </button>
+            </div>
+            <div className={Style.tabPanel}>
+                {activeTab === 'default'
+                    ? renderDefaultExpression
+                    : renderSearchExpression}
+            </div>
         </div>
     );
 }
