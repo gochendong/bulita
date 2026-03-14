@@ -66,6 +66,8 @@ function MessageList(props: MessageListProps) {
     );
 
     const $list = useRef<HTMLDivElement>(null);
+    const shouldStickToBottomRef = useRef(true);
+    const lastRenderKeyRef = useRef('');
     // 群成员信息缓存（用于获取createTime显示UserBadge）
     const [groupMembersMap, setGroupMembersMap] = useState<Map<string, string | null>>(new Map());
     // 群成员在线状态（用于点击头像时显示在线/离线）
@@ -110,6 +112,49 @@ function MessageList(props: MessageListProps) {
         }
     }, [focus, isGroup, isLogin]);
 
+    useEffect(() => {
+        shouldStickToBottomRef.current = true;
+    }, [focus]);
+
+    useEffect(() => {
+        const list = $list.current;
+        if (!list) {
+            return;
+        }
+
+        const messageList = Object.values(messages);
+        const lastMessage =
+            messageList.length > 0 ? messageList[messageList.length - 1] : null;
+        const renderKey = lastMessage
+            ? [
+                  lastMessage._id,
+                  lastMessage.content || '',
+                  lastMessage.loading ? '1' : '0',
+              ].join(':')
+            : '';
+
+        if (renderKey === lastRenderKeyRef.current) {
+            return;
+        }
+        lastRenderKeyRef.current = renderKey;
+
+        const shouldForceScroll =
+            !!lastMessage &&
+            (lastMessage.loading || lastMessage.from._id === selfId);
+
+        if (!shouldStickToBottomRef.current && !shouldForceScroll) {
+            return;
+        }
+
+        requestAnimationFrame(() => {
+            if (!$list.current) {
+                return;
+            }
+            $list.current.scrollTop = $list.current.scrollHeight;
+            shouldStickToBottomRef.current = true;
+        });
+    }, [messages, focus, selfId]);
+
     function clearUnread() {
         action.setLinkmanProperty(focus, 'unread', 0);
         const messageKeys = Object.keys(messages);
@@ -132,6 +177,8 @@ function MessageList(props: MessageListProps) {
         }
 
         const $div = e.target as HTMLDivElement;
+        shouldStickToBottomRef.current =
+            $div.scrollHeight - $div.clientHeight - $div.scrollTop < 80;
 
         if (
             unread &&

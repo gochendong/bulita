@@ -77,14 +77,30 @@ function normalizeContextCount(value: unknown, fallback = 10) {
     return Math.min(parsed, 50);
 }
 
-function resolveAIConfig(user: Pick<UserDocument, 'aiApiKey' | 'aiBaseUrl' | 'aiModel' | 'aiContextCount'>) {
-    const apiKey = (user.aiApiKey || config.openai.apiKey || '').trim();
-    const baseUrl = (user.aiBaseUrl || config.openai.baseUrl || '').trim();
-    const model = (user.aiModel || config.openai.model || '').trim();
-    const contextCount = normalizeContextCount(
-        user.aiContextCount,
+async function resolveAIConfig(
+    user: Pick<UserDocument, 'aiApiKey' | 'aiBaseUrl' | 'aiModel' | 'aiContextCount'>,
+) {
+    const defaultApiKey = (await getConfigWithDefault('OPENAI_API_KEY')).trim()
+        || config.openai.apiKey
+        || '';
+    const defaultBaseUrl = (await getConfigWithDefault('OPENAI_BASE_URL')).trim()
+        || config.openai.baseUrl
+        || '';
+    const defaultModel = (await getConfigWithDefault('OPENAI_MODEL')).trim()
+        || config.openai.model
+        || '';
+    const defaultContextCount = normalizeContextCount(
+        await getConfigWithDefault('OPENAI_CONTEXT_COUNT'),
         normalizeContextCount(config.openai.contextCount, 10),
     );
+
+    const apiKey = `${user.aiApiKey ?? ''}`.trim() || defaultApiKey.trim();
+    const baseUrl = `${user.aiBaseUrl ?? ''}`.trim() || defaultBaseUrl.trim();
+    const model = `${user.aiModel ?? ''}`.trim() || defaultModel.trim();
+    const contextCount =
+        user.aiContextCount === undefined || user.aiContextCount === null || user.aiContextCount === ''
+            ? defaultContextCount
+            : normalizeContextCount(user.aiContextCount, defaultContextCount);
 
     assert(apiKey, '未配置 AI API Key');
     assert(baseUrl, '未配置 AI Base URL');
@@ -182,7 +198,9 @@ async function streamAIReply(
     isGroup: boolean,
     onProgress?: (reply: string) => Promise<void> | void,
 ) {
-    const { apiKey, baseUrl, model, contextCount } = resolveAIConfig(aiUser);
+    const { apiKey, baseUrl, model, contextCount } = await resolveAIConfig(
+        aiUser,
+    );
     const historyMessages = await buildConversationMessages(
         requesterId,
         botId,
