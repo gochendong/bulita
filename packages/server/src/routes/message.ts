@@ -128,13 +128,18 @@ function normalizeAssistantReply(content: unknown) {
 }
 
 async function buildConversationMessages(
-    conversationId: string,
+    userId: string,
     botId: string,
     contextCount: number,
     isGroup: boolean,
 ) {
     const messages = await Message.find(
-        { to: conversationId, type: 'text', deleted: { $ne: true } },
+        {
+            aiContextOwner: userId,
+            aiContextBot: botId,
+            type: 'text',
+            deleted: { $ne: true },
+        },
         {
             from: 1,
             content: 1,
@@ -165,14 +170,14 @@ async function buildConversationMessages(
 async function streamAIReply(
     aiUser: Pick<UserDocument, 'aiApiKey' | 'aiBaseUrl' | 'aiModel' | 'aiContextCount'>,
     botName: string,
-    conversationId: string,
+    requesterId: string,
     botId: string,
     isGroup: boolean,
     onProgress?: (reply: string) => Promise<void> | void,
 ) {
     const { apiKey, baseUrl, model, contextCount } = resolveAIConfig(aiUser);
     const historyMessages = await buildConversationMessages(
-        conversationId,
+        requesterId,
         botId,
         contextCount,
         isGroup,
@@ -282,6 +287,33 @@ function buildAIStreamMessage(
         content,
         loading,
     };
+}
+
+async function tagAIContextMessage(
+    requesterId: string,
+    conversationId: string,
+    botId: string,
+    content: string,
+) {
+    if (!content) {
+        return;
+    }
+    await Message.findOneAndUpdate(
+        {
+            from: requesterId,
+            to: conversationId,
+            type: 'text',
+            content,
+            createTime: { $gte: new Date(Date.now() - 5 * 60 * 1000) },
+        },
+        {
+            aiContextOwner: requesterId,
+            aiContextBot: botId,
+        },
+        {
+            sort: { createTime: -1 },
+        },
+    );
 }
 
 function getCurrentSocket(ctx: Context<any>) {
@@ -647,6 +679,16 @@ export async function sendBotMessage(ctx: Context<SendMessageData>) {
     const bot = toUser;
     // 从bot发送到客户端 user是bot toUser是用户
     const to2 = user._id > bot._id ? bot._id + user._id : user._id + bot._id;
+
+    if (type === 'text') {
+        await tagAIContextMessage(
+            ctx.socket.user.toString(),
+            to2,
+            bot._id.toString(),
+            xss(content),
+        );
+    }
+
     const message = await Message.create({
         from: bot._id,
         to: to2,
@@ -656,7 +698,7 @@ export async function sendBotMessage(ctx: Context<SendMessageData>) {
 
     const thinkingContent =
         type === 'text'
-            ? `${botName}正在思考中...`
+            ? ''
             : `🔴 ${botName}当前仅支持文本对话`;
     const initialMessage = buildAIStreamMessage(
         message._id.toString(),
@@ -693,7 +735,7 @@ export async function sendBotMessage(ctx: Context<SendMessageData>) {
                 reply = await streamAIReply(
                     user,
                     botName,
-                    to,
+                    ctx.socket.user.toString(),
                     toUser._id.toString(),
                     false,
                     async (contentSoFar) => {
@@ -722,6 +764,8 @@ export async function sendBotMessage(ctx: Context<SendMessageData>) {
             }
 
             message.content = reply;
+            message.aiContextOwner = ctx.socket.user.toString();
+            message.aiContextBot = bot._id.toString();
             await message.save();
 
             const donePayload: AIStreamEventPayload = {
@@ -830,6 +874,15 @@ export async function sendGroupBotMessage(ctx: Context<SendMessageData>) {
         await toGroup.save();
     }
 
+    if (type === 'text') {
+        await tagAIContextMessage(
+            ctx.socket.user.toString(),
+            to,
+            bot._id.toString(),
+            messageContent,
+        );
+    }
+
     const message = await Message.create({
         from: bot._id,
         to,
@@ -839,7 +892,7 @@ export async function sendGroupBotMessage(ctx: Context<SendMessageData>) {
 
     const thinkingContent =
         type === 'text'
-            ? `${botName}正在回复...`
+            ? ''
             : `🔴 ${botName}当前仅支持文本对话`;
     const initialMessage = buildAIStreamMessage(
         message._id.toString(),
@@ -883,7 +936,7 @@ export async function sendGroupBotMessage(ctx: Context<SendMessageData>) {
                 reply = await streamAIReply(
                     aiUser,
                     botName,
-                    to,
+                    ctx.socket.user.toString(),
                     bot._id.toString(),
                     true,
                     async (contentSoFar) => {
@@ -912,6 +965,8 @@ export async function sendGroupBotMessage(ctx: Context<SendMessageData>) {
             }
 
             message.content = reply;
+            message.aiContextOwner = ctx.socket.user.toString();
+            message.aiContextBot = bot._id.toString();
             await message.save();
 
             const donePayload: AIStreamEventPayload = {

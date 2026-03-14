@@ -362,7 +362,7 @@ function ChatInput(props: InputAreaProps) {
         if (linkman.type !== 'group' && linkman.tag === 'bot') {
             const botMessageId = addBotMessage(
                 'text',
-                `${linkman.name}正在思考中...`,
+                '',
             );
             const [botErr, botMsg] = await sendBotMessage(
                 linkmanId,
@@ -379,7 +379,7 @@ function ChatInput(props: InputAreaProps) {
             if (groupAISwitch) {
                 const botMessageId = addGroupBotMessage(
                     'text',
-                    `${botNameForGroup}正在回复${username}...`,
+                    '',
                 );
                 const [groupBotErr, groupBotMsg] = await sendGroupBotMessage(
                     linkmanId,

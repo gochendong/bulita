@@ -22,6 +22,16 @@ const MessageSchema = new Schema({
         type: String,
         default: '',
     },
+    aiContextOwner: {
+        type: String,
+        index: true,
+        default: '',
+    },
+    aiContextBot: {
+        type: String,
+        index: true,
+        default: '',
+    },
     deleted: {
         type: Boolean,
         default: false,
@@ -37,6 +47,10 @@ export interface MessageDocument extends Document {
     type: string;
     /** 内容, 某些消息类型会存成JSON */
     content: string;
+    /** AI 上下文归属用户 */
+    aiContextOwner?: string;
+    /** AI 上下文归属机器人 */
+    aiContextBot?: string;
     /** 创建时间 */
     createTime: Date;
     /** Has it been deleted */
