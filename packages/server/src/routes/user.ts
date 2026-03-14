@@ -284,22 +284,8 @@ async function generateUniqueUsername(baseName: string) {
     return `${'Google用户'.slice(0, 16)}${randomString(4)}`;
 }
 
-function getGoogleDisplayName(tokenInfo: GoogleTokenInfo) {
-    const emailPrefix = tokenInfo.email?.split('@')[0] || '';
-    return normalizeUsernameCandidate(tokenInfo.name || emailPrefix);
-}
-
 async function syncGoogleProfile(user: UserDocument, tokenInfo: GoogleTokenInfo) {
-    const displayName = getGoogleDisplayName(tokenInfo);
-    if (displayName && displayName !== user.username) {
-        const sameNameUser = await User.findOne({ username: displayName });
-        if (!sameNameUser || sameNameUser._id.toString() === user._id.toString()) {
-            user.username = displayName;
-        }
-    }
-
     user.email = tokenInfo.email || user.email;
-    user.avatar = tokenInfo.picture || '';
     if (!user.googleId) {
         user.googleId = tokenInfo.sub;
     }

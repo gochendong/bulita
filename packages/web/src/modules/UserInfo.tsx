@@ -224,7 +224,7 @@ function UserInfo(props: UserInfoProps) {
                             })()}
                             {isAdmin && (adminDetails?.email || user.email) ? (
                                 <p className={Style.metaLine}>
-                                    邮箱：{adminDetails?.email || user.email}
+                                    {adminDetails?.email || user.email}
                                 </p>
                             ) : null}
                         </div>
