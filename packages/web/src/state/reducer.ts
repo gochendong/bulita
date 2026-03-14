@@ -60,6 +60,7 @@ export interface Group {
     announcement?: string;
     createTime: string;
     creator: string;
+    isDefault?: boolean;
     membersCount?: number;
     onlineMembers: GroupMember[];
 }
@@ -373,10 +374,12 @@ function reducer(state: State = initialState, action: Action): State {
                 ...friends.map(transformFriend),
             ];
 
-            // 如果没登录过, 则将聚焦联系人设置为第一个联系人
+            const defaultGroup = groups.find((group) => group.isDefault);
             let { focus } = state;
-            /* istanbul ignore next */
-            if (!state.user && linkmans.length > 0) {
+            const hasFocusedLinkman = !!linkmans.find((linkman) => linkman._id === focus);
+            if (defaultGroup) {
+                focus = defaultGroup._id;
+            } else if (!hasFocusedLinkman && linkmans.length > 0) {
                 focus = linkmans[0]._id;
             }
             return {
