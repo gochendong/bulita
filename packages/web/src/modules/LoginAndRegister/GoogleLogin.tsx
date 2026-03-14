@@ -71,12 +71,10 @@ function GoogleLogin({
                 return;
             }
 
+            const containerWidth = Math.floor(buttonWrapRef.current.clientWidth);
             const width = Math.min(
                 maxWidth,
-                Math.max(
-                    Math.min(minWidth, maxWidth),
-                    Math.floor(buttonWrapRef.current.clientWidth),
-                ),
+                Math.max(containerWidth || minWidth, 280),
             );
 
             buttonRef.current.innerHTML = '';

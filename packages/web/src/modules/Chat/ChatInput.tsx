@@ -35,7 +35,6 @@ import {
 import Tooltip from '../../components/Tooltip';
 import useAero from '../../hooks/useAero';
 import { ensureSocketConnected } from '../../socket';
-import GoogleLogin from '../LoginAndRegister/GoogleLogin';
 
 interface InputAreaProps {
     readonly busy: boolean;
@@ -213,14 +212,7 @@ function ChatInput(props: InputAreaProps) {
     if (!isLogin) {
         return (
             <div className={Style.chatInput}>
-                <div className={Style.guestGoogleLogin}>
-                    <GoogleLogin
-                        className={Style.guestGoogleButton}
-                        maxWidth={560}
-                        minWidth={420}
-                        compact
-                    />
-                </div>
+                <p className={Style.guestNotice}>登录后可发送消息、上传图片和文件</p>
             </div>
         );
     }

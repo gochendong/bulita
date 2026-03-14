@@ -6,6 +6,7 @@ import HeaderBar from './HeaderBar';
 import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import GroupManagePanel from './GroupManagePanel';
+import GoogleLogin from '../LoginAndRegister/GoogleLogin';
 import { State, GroupMember } from '../../state/reducer';
 import { ShowUserOrGroupInfoContext } from '../../context';
 import useIsLogin from '../../hooks/useIsLogin';
@@ -186,6 +187,25 @@ function Chat() {
                     </span>
                 </div>
             ) : null}
+            {!isLogin && (
+                <div className={Style.guestLoginShell}>
+                    <div className={Style.guestLoginCard}>
+                        <div className={Style.guestLoginHeader}>
+                            <div className={Style.guestLoginEyebrow}>Bulita</div>
+                            <h2 className={Style.guestLoginTitle}>登录后继续聊天</h2>
+                            <p className={Style.guestLoginDesc}>
+                                使用 Google 登录后，你将获得更完整的 AI 回复体验，并可上传图片、文件和管理个人信息。
+                            </p>
+                        </div>
+                        <GoogleLogin
+                            className={Style.guestLoginButton}
+                            maxWidth={560}
+                            minWidth={460}
+                            compact
+                        />
+                    </div>
+                </div>
+            )}
             <MessageList
                 onRetry={(linkmanId, messageId) =>
                     action.setStatus('pendingRetryMessage', {

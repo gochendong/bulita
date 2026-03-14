@@ -75,3 +75,87 @@
     white-space: nowrap;
     flex: 1;
 }
+
+.guestLoginShell {
+    position: absolute;
+    inset: 96px 24px 112px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 3;
+
+    @media @mobile {
+        inset: 88px 14px 102px;
+    }
+}
+
+.guestLoginCard {
+    width: min(760px, 100%);
+    padding: 44px 48px;
+    border-radius: 32px;
+    border: 1px solid rgba(60, 64, 67, 0.14);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(251, 252, 255, 0.94) 100%);
+    box-shadow:
+        0 20px 60px rgba(60, 64, 67, 0.12),
+        0 4px 18px rgba(60, 64, 67, 0.08);
+    backdrop-filter: blur(14px);
+    pointer-events: auto;
+
+    @media @mobile {
+        padding: 30px 18px 24px;
+        border-radius: 24px;
+    }
+}
+
+.guestLoginHeader {
+    text-align: center;
+    margin-bottom: 28px;
+}
+
+.guestLoginEyebrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 92px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: rgba(52, 168, 83, 0.12);
+    color: @google-green;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.guestLoginTitle {
+    margin: 18px 0 14px;
+    color: #202124;
+    font-size: 52px;
+    line-height: 1.08;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+
+    @media @mobile {
+        font-size: 34px;
+    }
+}
+
+.guestLoginDesc {
+    max-width: 560px;
+    margin: 0 auto;
+    color: #5f6368;
+    font-size: 22px;
+    line-height: 1.6;
+
+    @media @mobile {
+        font-size: 16px;
+    }
+}
+
+.guestLoginButton {
+    width: 100%;
+    min-height: auto;
+    padding: 0;
+}
