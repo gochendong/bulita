@@ -20,6 +20,9 @@ export default {
     // jwt encryption secret
     jwtSecret: env.JWT_SECRET,
 
+    // Google OAuth / GIS client id
+    googleClientId: env.GOOGLE_CLIENT_ID || '',
+
     // Maximize the number of groups
     maxGroupsCount: env.MAX_GROUP_NUM ? parseInt(env.MAX_GROUP_NUM, 10) : 0,
 
@@ -31,6 +34,7 @@ export default {
         : 7 * 1000 * 60 * 60 * 24,
 
     administrators: env.ADMINS ? env.ADMINS?.split(',') : [],
+    adminEmails: env.ADMIN_EMAILS ? env.ADMIN_EMAILS.split(',') : [],
 
     /** 禁用注册功能 */
     disableRegister: false,

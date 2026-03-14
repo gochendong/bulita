@@ -26,7 +26,10 @@ export default function isAdmin(socket: Socket) {
     return async ([event, , cb]: MiddlewareArgs, next: MiddlewareNext) => {
         socket.data.isAdmin =
             !!socket.data.user &&
-            process.env.ADMINS_ARRAY.split(',').includes(socket.data.user);
+            (
+                socket.data.isAdmin ||
+                process.env.ADMINS_ARRAY.split(',').includes(socket.data.user)
+            );
         const isAdminEvent = requireAdminEvent.has(event);
         if (!socket.data.isAdmin && isAdminEvent) {
             cb(YOU_ARE_NOT_ADMINISTRATOR);

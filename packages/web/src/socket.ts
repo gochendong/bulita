@@ -17,7 +17,6 @@ import {
     DeleteMessagePayload,
 } from './state/action';
 import {
-    guest,
     loginByToken,
     getLinkmanHistoryMessages,
     getLinkmansLastMessagesV2,
@@ -104,27 +103,15 @@ socket.io?.engine?.on('upgrade', () => {
 });
 
 async function loginFailback() {
-    const defaultGroup = await guest(
-        platform.os?.family,
-        platform.name,
-        platform.description,
-    );
-    if (defaultGroup) {
-        const { messages } = defaultGroup;
-        dispatch({
-            type: ActionTypes.SetGuest,
-            payload: defaultGroup,
-        });
-
-        messages.forEach(convertMessage);
-        dispatch({
-            type: ActionTypes.AddLinkmanHistoryMessages,
-            payload: {
-                linkmanId: defaultGroup._id,
-                messages,
-            },
-        });
-    }
+    window.localStorage.removeItem('token');
+    dispatch({ type: ActionTypes.Logout, payload: '' as any });
+    dispatch({
+        type: ActionTypes.SetStatus,
+        payload: {
+            key: 'loginRegisterDialogVisible',
+            value: true,
+        },
+    });
 }
 
 socket.on('connect', async () => {

@@ -118,7 +118,7 @@ function InviteInfo() {
                                     )
                                 }
                             >
-                                注册 / 登录
+                                使用 Google 登录
                             </Button>
                         )}
                     </div>

@@ -209,7 +209,7 @@ function ChatInput(props: InputAreaProps) {
                         }
                         role="button"
                     >
-                        注册 / 登录
+                        使用 Google 登录
                     </b>
                 </p>
             </div>

@@ -65,6 +65,32 @@ export async function login(
 }
 
 /**
+ * 使用 Google ID Token 登录
+ * @param credential Google credential
+ * @param os 系统
+ * @param browser 浏览器
+ * @param environment 环境信息
+ */
+export async function loginWithGoogle(
+    credential: string,
+    os = '',
+    browser = '',
+    environment = '',
+) {
+    const [err, user] = await fetch('googleLogin', {
+        credential,
+        os,
+        browser,
+        environment,
+    });
+
+    if (err) {
+        return null;
+    }
+    return user;
+}
+
+/**
  * 使用token登录
  * @param token 登录token
  * @param os 系统

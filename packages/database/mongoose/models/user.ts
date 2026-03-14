@@ -20,6 +20,12 @@ const UserSchema = new Schema({
     email: {
         type: String,
     },
+    googleId: {
+        type: String,
+        index: true,
+        unique: true,
+        sparse: true,
+    },
     level: Number,
     signature: String,
     pushToken: String,
@@ -49,6 +55,8 @@ export interface UserDocument extends Document {
     username: string;
     /** 邮箱 */
     email: string;
+    /** Google 用户唯一标识 */
+    googleId: string;
     /** 等级 */
     level: Number;
     /** 签名 */
