@@ -34,6 +34,7 @@ import {
 } from '../../service';
 import Tooltip from '../../components/Tooltip';
 import useAero from '../../hooks/useAero';
+import { ensureSocketConnected } from '../../socket';
 
 interface InputAreaProps {
     readonly busy: boolean;
@@ -184,17 +185,27 @@ function ChatInput(props: InputAreaProps) {
             sendFailed: false,
         });
         action.setStatus('pendingRetryMessage', null);
-        sendMessage(focus, msg.type, msg.content).then(([err, result]) => {
-            if (err) {
+        ensureSocketConnected().then((connected) => {
+            if (!connected) {
                 action.updateMessage(focus, pending.messageId, {
                     loading: false,
                     sendFailed: true,
                 });
-            } else {
-                result.loading = false;
-                result.sendFailed = false;
-                action.updateMessage(focus, pending.messageId, result);
+                Message.error('网络未恢复，正在尝试重连，请稍后再试');
+                return;
             }
+            sendMessage(focus, msg.type, msg.content).then(([err, result]) => {
+                if (err) {
+                    action.updateMessage(focus, pending.messageId, {
+                        loading: false,
+                        sendFailed: true,
+                    });
+                } else {
+                    result.loading = false;
+                    result.sendFailed = false;
+                    action.updateMessage(focus, pending.messageId, result);
+                }
+            });
         });
     }, [status.pendingRetryMessage, focus, action, isLogin]);
 
@@ -333,6 +344,16 @@ function ChatInput(props: InputAreaProps) {
         linkmanId = focus,
     ) {
         sendingLockRef.current = true;
+        const connected = await ensureSocketConnected();
+        if (!connected) {
+            sendingLockRef.current = false;
+            action.updateMessage(focus, localId, {
+                loading: false,
+                sendFailed: true,
+            });
+            Message.error('当前离线，正在尝试重连，请稍后点击重试');
+            return;
+        }
         const [error, message] = await sendMessage(
             linkmanId,
             type,

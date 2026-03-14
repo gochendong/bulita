@@ -12,7 +12,9 @@ import Friend, {
     FriendDocument,
 } from '@bulita/database/mongoose/models/friend';
 import Socket from '@bulita/database/mongoose/models/socket';
-import Message from '@bulita/database/mongoose/models/message';
+import Message, {
+    handleInviteV2Messages,
+} from '@bulita/database/mongoose/models/message';
 import Notification from '@bulita/database/mongoose/models/notification';
 import {
     getNewRegisteredUserIpKey,
@@ -486,7 +488,49 @@ export async function loginByToken(
  * @param ctx Context
  */
 export async function guest(_ctx: Context<Environment>) {
-    throw new AssertionError({ message: getGoogleOnlyMessage() });
+    const { os, browser, environment } = _ctx.data;
+
+    await Socket.updateOne(
+        { id: _ctx.socket.id },
+        {
+            os,
+            browser,
+            environment,
+        },
+    );
+
+    const group = await Group.findOne(
+        { isDefault: true },
+        {
+            _id: 1,
+            name: 1,
+            avatar: 1,
+            announcement: 1,
+            createTime: 1,
+            creator: 1,
+            members: 1,
+        },
+    );
+    if (!group) {
+        throw new AssertionError({ message: '默认群组不存在' });
+    }
+    _ctx.socket.join(group._id.toString());
+
+    const messages = await Message.find(
+        { to: group._id },
+        {
+            type: 1,
+            content: 1,
+            from: 1,
+            createTime: 1,
+            deleted: 1,
+        },
+        { sort: { createTime: -1 }, limit: 15 },
+    ).populate('from', { username: 1, avatar: 1, tag: 1 });
+    await handleInviteV2Messages(messages);
+    messages.reverse();
+
+    return { messages, ...group.toObject(), membersCount: group.members.length };
 }
 
 /**

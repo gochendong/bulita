@@ -19,7 +19,6 @@ function LoginAndRegister() {
             closable={false}
             onClose={() => action.toggleLoginRegisterDialog(false)}
         >
-            <div className={Style.dialogHeader}>欢迎使用</div>
             <div className={Style.login}>
                 <GoogleLogin />
             </div>

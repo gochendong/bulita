@@ -17,6 +17,7 @@ import {
     DeleteMessagePayload,
 } from './state/action';
 import {
+    guest,
     loginByToken,
     getLinkmanHistoryMessages,
     getLinkmansLastMessagesV2,
@@ -62,10 +63,10 @@ socket.on('connect_error', (error: any) => {
         lastErrorTime = now;
     }
     reconnectCount++;
-    // 如果连接失败次数过多，停止自动重连
+    // 避免错误计数无限增长，但不要彻底停掉后续手动/自动重连
     if (reconnectCount > 20) {
-        console.error('Socket连接失败次数过多，停止自动重连');
-        socket.disconnect();
+        console.warn('Socket连接错误次数较多，稍后继续尝试重连');
+        reconnectCount = 10;
     }
 });
 
@@ -104,14 +105,27 @@ socket.io?.engine?.on('upgrade', () => {
 
 async function loginFailback() {
     window.localStorage.removeItem('token');
-    dispatch({ type: ActionTypes.Logout, payload: '' as any });
-    dispatch({
-        type: ActionTypes.SetStatus,
-        payload: {
-            key: 'loginRegisterDialogVisible',
-            value: true,
-        },
-    });
+    const defaultGroup = await guest(
+        platform.os?.family,
+        platform.name,
+        platform.description,
+    );
+    if (defaultGroup) {
+        const { messages } = defaultGroup;
+        dispatch({
+            type: ActionTypes.SetGuest,
+            payload: defaultGroup,
+        });
+
+        messages.forEach(convertMessage);
+        dispatch({
+            type: ActionTypes.AddLinkmanHistoryMessages,
+            payload: {
+                linkmanId: defaultGroup._id,
+                messages,
+            },
+        });
+    }
 }
 
 socket.on('connect', async () => {
@@ -200,6 +214,58 @@ socket.on('disconnect', () => {
     // @ts-ignore
     dispatch({ type: ActionTypes.Disconnect, payload: null });
 });
+
+export async function ensureSocketConnected(timeoutMs = 8000) {
+    if (socket.connected) {
+        return true;
+    }
+
+    reconnectCount = 0;
+
+    return new Promise<boolean>((resolve) => {
+        let settled = false;
+        let timer: number | null = null;
+
+        function cleanup() {
+            socket.off('connect', handleConnect);
+            socket.off('connect_error', handleError);
+            if (timer !== null) {
+                window.clearTimeout(timer);
+            }
+        }
+
+        function finish(result: boolean) {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            cleanup();
+            resolve(result);
+        }
+
+        function handleConnect() {
+            finish(true);
+        }
+
+        function handleError() {
+            // 继续等待直到超时，给 socket.io 自动重连留时间
+        }
+
+        socket.on('connect', handleConnect);
+        socket.on('connect_error', handleError);
+
+        try {
+            socket.connect();
+        } catch (_) {
+            finish(false);
+            return;
+        }
+
+        timer = window.setTimeout(() => {
+            finish(socket.connected);
+        }, timeoutMs);
+    });
+}
 
 let intervalIDs = [];
 let windowStatus = 'focus';

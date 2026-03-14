@@ -47,12 +47,33 @@ function loadGoogleScript() {
 function GoogleLogin() {
     const dispatch = useDispatch();
     const buttonRef = useRef<HTMLDivElement>(null);
+    const buttonWrapRef = useRef<HTMLDivElement>(null);
     const loadingRef = useRef(false);
-    const [loading, setLoading] = useState(false);
     const [loadError, setLoadError] = useState('');
 
     useEffect(() => {
         let disposed = false;
+
+        function renderGoogleButton(google: any) {
+            if (!buttonRef.current || !buttonWrapRef.current) {
+                return;
+            }
+
+            const width = Math.min(
+                420,
+                Math.max(300, Math.floor(buttonWrapRef.current.clientWidth)),
+            );
+
+            buttonRef.current.innerHTML = '';
+            google.accounts.id.renderButton(buttonRef.current, {
+                theme: 'outline',
+                size: 'large',
+                shape: 'pill',
+                text: 'signin_with',
+                width,
+                logo_alignment: 'left',
+            });
+        }
 
         async function initGoogleButton() {
             if (!config.googleClientId) {
@@ -80,7 +101,6 @@ function GoogleLogin() {
                         }
 
                         loadingRef.current = true;
-                        setLoading(true);
                         try {
                             const user = await loginWithGoogle(
                                 response.credential,
@@ -131,20 +151,11 @@ function GoogleLogin() {
                             }
                         } finally {
                             loadingRef.current = false;
-                            setLoading(false);
                         }
                     },
                 });
 
-                buttonRef.current.innerHTML = '';
-                google.accounts.id.renderButton(buttonRef.current, {
-                    theme: 'outline',
-                    size: 'large',
-                    shape: 'pill',
-                    text: 'signin_with',
-                    width: 320,
-                    logo_alignment: 'left',
-                });
+                renderGoogleButton(google);
             } catch (error) {
                 if (!disposed) {
                     setLoadError('Google 登录脚本加载失败');
@@ -154,20 +165,26 @@ function GoogleLogin() {
 
         initGoogleButton();
 
+        const handleResize = () => {
+            const google = (window as any).google;
+            if (disposed || !google?.accounts?.id) {
+                return;
+            }
+            renderGoogleButton(google);
+        };
+        window.addEventListener('resize', handleResize);
+
         return () => {
             disposed = true;
+            window.removeEventListener('resize', handleResize);
         };
     }, [dispatch]);
 
     return (
         <div className={Style.googleLogin}>
-            <p className={Style.googleDescription}>
-                当前仅支持 Google 账号登录
-            </p>
-            <div className={Style.googleButtonWrap}>
+            <div className={Style.googleButtonWrap} ref={buttonWrapRef}>
                 <div ref={buttonRef} />
             </div>
-            {loading && <p className={Style.googleHint}>正在验证 Google 登录...</p>}
             {loadError && <p className={Style.googleError}>{loadError}</p>}
         </div>
     );
