@@ -14,10 +14,7 @@ export default function fetch<T = any>(
                 return;
             }
             settled = true;
-            if (toast) {
-                Message.info('请求超时，请检查网络后重试');
-            }
-            resolve(['请求超时，请检查网络后重试', null]);
+            resolve(['请求超时', null]);
         }, 15000);
 
         socket.emit(event, data, (res: any) => {
@@ -28,9 +25,7 @@ export default function fetch<T = any>(
             window.clearTimeout(timer);
             if (typeof res === 'string') {
                 if (toast) {
-                    if (res !== '已过滤重复的消息') {
-                        Message.info(res);
-                    }
+                    Message.info(res);
                 }
                 resolve([res, null]);
             } else {

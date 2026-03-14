@@ -528,27 +528,6 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         });
     }
 
-    const lastMessageKey = `chat:lastMessage:${user._id}`;
-    const lastMessage = await Redis.get(lastMessageKey);
-    if (lastMessage && lastMessage === messageContent) {
-        throw new AssertionError({ message: '已过滤重复的消息' });
-    }
-    await Redis.set(lastMessageKey, messageContent, 5);
-
-    const lastDBMessage = await Message.findOne(
-        {
-            from: ctx.socket.user,
-            to: to,
-            createTime: { $gte: new Date(Date.now() - 5000) } // 查询createTime在5秒内的消息
-        },
-        { content: 1 },
-        { sort: { createTime: -1 }, limit: 1 }
-    );
-
-    if (lastDBMessage && lastDBMessage.content === messageContent) {
-        throw new AssertionError({ message: '已过滤重复的消息' });
-    }
-
     if (toUser) {
         const friend = await Friend.find({ from: toUser._id, to: user });
         if (friend.length === 0) {
