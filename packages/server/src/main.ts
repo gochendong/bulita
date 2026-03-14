@@ -6,8 +6,6 @@ import initMongoDB from '@bulita/database/mongoose/initMongoDB';
 import Socket from '@bulita/database/mongoose/models/socket';
 import Group, { GroupDocument } from '@bulita/database/mongoose/models/group';
 import User, { UserDocument } from '@bulita/database/mongoose/models/user';
-import bcrypt from 'bcryptjs';
-import { SALT_ROUNDS } from '@bulita/utils/const';
 import Snowflake from '@bulita/utils/snowflake';
 import { getConfigWithDefault } from './utils/runtimeConfig';
 import app from './app';
@@ -39,12 +37,9 @@ import app from './app';
         return `管理员${Math.random().toString(36).slice(2, 6)}`;
     }
 
-    // 预创建管理员邮箱账号（ADMIN_EMAILS/DEFAULT_PASSWORD 仅启动时读取，改后需重启）
+    // 预创建管理员邮箱账号
     const snowflake = new Snowflake(1n, 1n, 0n);
     let defaultGroupCreator: UserDocument | null = null;
-    const salt = await bcrypt.genSalt(SALT_ROUNDS);
-    const defaultPassword = await getConfigWithDefault('DEFAULT_PASSWORD');
-    const hash = await bcrypt.hash(defaultPassword, salt);
     const adminEmails = config.adminEmails.map((email) => email.trim()).filter(Boolean);
     if (adminEmails.length === 0) {
         logger.error('[admin]', 'ADMIN_EMAILS is required');
@@ -60,8 +55,6 @@ import app from './app';
                 email: adminEmail,
                 id: snowflake.nextId().toString(),
                 avatar: '',
-                salt,
-                password: hash,
             } as UserDocument);
         }
         if (!admin) {
@@ -105,8 +98,6 @@ import app from './app';
                         username: defaultBot,
                         id: snowflake.nextId().toString(),
                         avatar: getRandomAvatar(),
-                        salt,
-                        password: hash,
                         tag: 'bot',
                     } as UserDocument)
                     if (!bot) {

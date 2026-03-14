@@ -12,7 +12,6 @@ import store from '../../state/store';
 import { ActionTypes } from '../../state/action';
 import {
     getSealList,
-    resetUserPassword,
     sealUser,
     setUserTag,
     sealIp,
@@ -54,7 +53,6 @@ function Admin(props: AdminProps) {
 
     const [tagUsername, setTagUsername] = useState('');
     const [tag, setTag] = useState('');
-    const [resetPasswordUsername, setResetPasswordUsername] = useState('');
     const [sealUsername, setSealUsername] = useState('');
     const [deleteUsername, setDeleteUsername] = useState('');
     const deleteUsernameRef = useRef(deleteUsername);
@@ -100,16 +98,6 @@ function Admin(props: AdminProps) {
         }
     }
 
-    /**
-     * 处理重置用户密码操作
-     */
-    async function handleResetPassword() {
-        const res = await resetUserPassword(resetPasswordUsername);
-        if (res) {
-            Message.success(`已将该用户的密码重置为 ${res.newPassword}`);
-            setResetPasswordUsername('');
-        }
-    }
     /**
      * 处理封禁用户操作
      */
@@ -366,18 +354,6 @@ function Admin(props: AdminProps) {
                 </div>
                 <div className={Style.adminCol}>
                     <div className={Common.container}>
-                        <div className={Common.block}>
-                            <p className={Common.title}>重置用户密码</p>
-                            <div className={Style.inputBlock}>
-                                <Input
-                                    className={Style.input}
-                                    value={resetPasswordUsername}
-                                    onChange={setResetPasswordUsername}
-                                    onBlur={() => resetPasswordUsername.trim() && handleResetPassword()}
-                                    placeholder="要重置密码的用户名"
-                                />
-                            </div>
-                        </div>
                         <div className={Common.block}>
                             <p className={Common.title}>更新用户标签</p>
                             <div className={Style.inputBlock}>

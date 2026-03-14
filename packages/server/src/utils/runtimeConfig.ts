@@ -2,7 +2,6 @@ import { getAdminConfigKey, Redis } from '@bulita/database/redis/initRedis';
 
 /** 管理员可在控制台修改的配置键，未在此列表的键不允许通过控制台写入 */
 export const ADMIN_CONFIG_KEYS = [
-    'DEFAULT_PASSWORD',
     'ENABLE_REGISTER_USER',
     'ONLY_SEARCH_DEFAULT_GROUP',
     'DEFAULT_TITLE',
@@ -16,20 +15,15 @@ export const ADMIN_CONFIG_KEYS = [
     'SEAL_IP_DURATION',
     'SEAL_USER_DURATION',
     'REGISTER_IP_INTERVAL',
-    'PASSWORD_REGEX',
-    'PASSWORD_TIPS',
     'MAX_GROUP_NUM',
     'PRIVATE_MSG_CALLBACK_DOMAIN',
 ] as const;
 
 /** 仅在启动时读取的配置，修改后需重启服务才能生效 */
-export const RESTART_REQUIRED_KEYS: readonly string[] = [
-    'DEFAULT_PASSWORD',
-];
+export const RESTART_REQUIRED_KEYS: readonly string[] = [];
 
 /** 配置项中文说明（供管理台展示） */
 export const ADMIN_CONFIG_LABELS: Record<string, string> = {
-    DEFAULT_PASSWORD: '默认密码/重置密码(敏感)',
     ENABLE_REGISTER_USER: '允许新用户注册',
     ONLY_SEARCH_DEFAULT_GROUP: '仅搜索默认群组',
     DEFAULT_TITLE: '网站标题',
@@ -43,15 +37,12 @@ export const ADMIN_CONFIG_LABELS: Record<string, string> = {
     SEAL_IP_DURATION: '封禁IP时长(秒)',
     SEAL_USER_DURATION: '封禁用户时长(秒)',
     REGISTER_IP_INTERVAL: '同一IP注册间隔(秒)',
-    PASSWORD_REGEX: '密码正则',
-    PASSWORD_TIPS: '密码规则提示',
     MAX_GROUP_NUM: '用户最大建群数(0=不允许建群，管理员不限)',
     PRIVATE_MSG_CALLBACK_DOMAIN: '私聊消息通知回调域名',
 };
 
 /** 代码内默认值，不依赖 .env */
 export const DEFAULT_ADMIN_CONFIG: Record<string, string> = {
-    DEFAULT_PASSWORD: 'bulita',
     BOTS: '',
     ENABLE_REGISTER_USER: 'true',
     ONLY_SEARCH_DEFAULT_GROUP: 'true',
@@ -67,8 +58,6 @@ export const DEFAULT_ADMIN_CONFIG: Record<string, string> = {
     SEAL_IP_DURATION: '86400',
     SEAL_USER_DURATION: '86400',
     REGISTER_IP_INTERVAL: '60',
-    PASSWORD_REGEX: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[A-Za-z\\d]{8,}$',
-    PASSWORD_TIPS: '需要包含至少一个小写字母、一个大写字母、一个数字，并且长度至少为8个字符',
     MAX_GROUP_NUM: '0',
     PRIVATE_MSG_CALLBACK_DOMAIN: 'https://chat.bulita.net',
     NOTIFY_KEY: '',

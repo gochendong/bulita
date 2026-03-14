@@ -16,7 +16,6 @@ const UserSchema = new Schema({
         match: NAME_REGEXP,
         index: true,
     },
-    salt: String,
     email: {
         type: String,
     },
@@ -29,10 +28,6 @@ const UserSchema = new Schema({
     level: Number,
     signature: String,
     pushToken: String,
-    password: {
-        type: String,
-        trim: true,
-    },
     avatar: String,
     tag: {
         type: String,
@@ -63,10 +58,6 @@ export interface UserDocument extends Document {
     signature: string;
     /** 推送token */
     pushToken: string;
-    /** 密码加密盐 */
-    salt: string;
-    /** 加密的密码 */
-    password: string;
     /** 头像 */
     avatar: string;
     /** 用户标签 */

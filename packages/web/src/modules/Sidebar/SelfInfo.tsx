@@ -14,13 +14,11 @@ import { State } from '../../state/reducer';
 import Message from '../../components/Message';
 import {
     changeAvatar,
-    changePassword,
     changeUsername,
     changeSignature,
     changePushToken
 } from '../../service';
 import useAction from '../../hooks/useAction';
-import socket from '../../socket';
 
 import Style from './SelfInfo.less';
 import Common from './Common.less';
@@ -29,11 +27,6 @@ import store from '../../state/store';
 // import useAction from "./hooks/useAction";
 
 const { dispatch } = store;
-
-
-const PASSWORD_REGEX = process.env.PASSWORD_REGEX || '';
-const PASSWORD_TIPS = process.env.PASSWORD_TIPS || '';
-const pattern = new RegExp(PASSWORD_REGEX);
 
 interface SelfInfoProps {
     visible: boolean;
@@ -118,33 +111,6 @@ function SelfInfo(props: SelfInfoProps) {
         $cropper.current.getCroppedCanvas().toBlob(async (blob: any) => {
             uploadAvatar(blob, cropper.ext);
         });
-    }
-
-    function reLogin(message: string) {
-        action.logout();
-        window.localStorage.removeItem('token');
-        Message.success(message);
-        // 不需要手动断开和重连，socket.io 会自动处理
-        // socket 会在 connect 事件中自动处理登录状态
-    }
-
-    const [oldPassword, setOldPassword] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-
-    async function handleChangePassword() {
-        if (oldPassword !== newPassword) {
-            Message.warning('两次密码输入不一致');
-            return;
-        }
-        if (PASSWORD_REGEX && !pattern.test(newPassword)) {
-            Message.warning(PASSWORD_TIPS);
-            return
-        }
-        const isSuccess = await changePassword(oldPassword, newPassword);
-        if (isSuccess) {
-            onClose();
-            reLogin(`${username} 密码已更新, 请使用新密码重新登录`);
-        }
     }
 
     const [username, setUsername] = useState(currentUsername);
@@ -360,29 +326,6 @@ function SelfInfo(props: SelfInfoProps) {
                             }}
                             type="text"
                             placeholder={pushToken ? '' : '未设置'}
-                        />
-                    </div>
-                </div>
-                <div className={Common.block}>
-                    <p className={Common.title}>密码</p>
-                    <div>
-                        <Input
-                            className={Style.input}
-                            value={oldPassword}
-                            onChange={setOldPassword}
-                            type="password"
-                            placeholder="当前密码"
-                            showClearBtn={false}
-                            autoComplete="new-password"
-                        />
-                        <Input
-                            className={Style.input}
-                            value={newPassword}
-                            onChange={setNewPassword}
-                            onBlur={() => oldPassword && newPassword && handleChangePassword()}
-                            type="password"
-                            placeholder="新密码（填写后点击输入框外即保存）"
-                            showClearBtn={false}
                         />
                     </div>
                 </div>

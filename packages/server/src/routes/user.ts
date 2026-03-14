@@ -1,10 +1,8 @@
-import bcrypt from 'bcryptjs';
 import axios from 'axios';
 import assert, { AssertionError } from 'assert';
 import jwt from 'jwt-simple';
 import { Types } from '@bulita/database/mongoose';
 import config from '@bulita/config/server';
-import { SALT_ROUNDS } from '@bulita/utils/const';
 import Snowflake from '@bulita/utils/snowflake';
 import User, { UserDocument } from '@bulita/database/mongoose/models/user';
 import Group, { GroupDocument } from '@bulita/database/mongoose/models/group';
@@ -380,17 +378,17 @@ async function verifyGoogleCredential(credential: string) {
  * @param ctx Context
  */
 export async function register(
-    _ctx: Context<{ username: string; password: string } & Environment>,
+    _ctx: Context<Environment>,
 ) {
     throw new AssertionError({ message: getGoogleOnlyMessage() });
 }
 
 /**
- * 账密登录
+ * 已停用的旧登录入口
  * @param ctx Context
  */
 export async function login(
-    _ctx: Context<{ username: string; password: string } & Environment>,
+    _ctx: Context<Environment>,
 ) {
     throw new AssertionError({ message: getGoogleOnlyMessage() });
 }
@@ -607,39 +605,6 @@ export async function deleteFriend(ctx: Context<{ userId: string }>) {
 }
 
 /**
- * 修改用户密码
- * @param ctx Context
- */
-export async function changePassword(
-    ctx: Context<{ oldPassword: string; newPassword: string }>,
-) {
-    const { oldPassword, newPassword } = ctx.data;
-    assert(newPassword, '新密码不能为空');
-    assert(oldPassword === newPassword, '两次密码输入不一致');
-    const passwordRegex = await getConfigWithDefault('PASSWORD_REGEX');
-    const passwordTips = await getConfigWithDefault('PASSWORD_TIPS');
-    if (passwordRegex) {
-        const pattern = new RegExp(passwordRegex);
-        assert(pattern.test(newPassword), passwordTips);
-    }
-    const user = await User.findOne({ _id: ctx.socket.user });
-    if (!user) {
-        throw new AssertionError({ message: '用户不存在' });
-    }
-
-    const salt = await bcrypt.genSalt(SALT_ROUNDS);
-    const hash = await bcrypt.hash(newPassword, salt);
-
-    user.salt = salt;
-    user.password = hash;
-    await user.save();
-
-    return {
-        msg: 'ok',
-    };
-}
-
-/**
  * 修改用户名
  * @param ctx Context
  */
@@ -648,9 +613,6 @@ export async function changeUsername(ctx: Context<{ username: string }>) {
     if (!self) {
         throw new AssertionError({ message: '用户不存在' });
     }
-    // if (!self.password) {
-    //     throw new AssertionError({ message:'请先设置密码'});
-    // }
     const { username } = ctx.data;
     assert(username, '新用户名不能为空');
 
@@ -702,33 +664,6 @@ export async function changePushToken(ctx: Context<{ pushToken: string }>) {
 
     return {
         msg: 'ok',
-    };
-}
-
-/**
- * 重置用户密码, 需要管理员权限
- * @param ctx Context
- */
-export async function resetUserPassword(ctx: Context<{ username: string }>) {
-    const { username } = ctx.data;
-    assert(username !== '', 'username不能为空');
-
-    const user = await User.findOne({ username });
-    if (!user) {
-        throw new AssertionError({ message: '用户不存在' });
-    }
-
-    const newPassword = await getConfigWithDefault('DEFAULT_PASSWORD');
-    assert(newPassword, '默认密码未配置，请在管理台设置 DEFAULT_PASSWORD');
-    const salt = await bcrypt.genSalt(SALT_ROUNDS);
-    const hash = await bcrypt.hash(newPassword, salt);
-
-    user.salt = salt;
-    user.password = hash;
-    await user.save();
-
-    return {
-        newPassword,
     };
 }
 

@@ -155,7 +155,6 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
             id: 1,
             level: 1,
             email: 1,
-            password: 1,
         },
     );
     if (!user) {

@@ -10,7 +10,6 @@ export default function isAdmin(socket: Socket) {
     const requireAdminEvent = new Set([
         'sealUser',
         'getSealList',
-        'resetUserPassword',
         'setUserTag',
         'getUserIps',
         'sealIp',

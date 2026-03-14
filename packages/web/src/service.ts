@@ -6,65 +6,6 @@ function saveUsername(username: string) {
 }
 
 /**
- * 注册新用户
- * @param username 用户名
- * @param password 密码
- * @param os 系统
- * @param browser 浏览器
- * @param environment 环境信息
- */
-export async function register(
-    username: string,
-    password: string,
-    os = '',
-    browser = '',
-    environment = '',
-) {
-    const [err, user] = await fetch('register', {
-        username,
-        password,
-        os,
-        browser,
-        environment,
-    });
-
-    if (err) {
-        return null;
-    }
-    // 不再立即刷新页面，让前端处理登录状态后再决定是否刷新
-    return user;
-}
-
-/**
- * 使用账密登录
- * @param username 用户名
- * @param password 密码
- * @param os 系统
- * @param browser 浏览器
- * @param environment 环境信息
- */
-export async function login(
-    username: string,
-    password: string,
-    os = '',
-    browser = '',
-    environment = '',
-) {
-    const [err, user] = await fetch('login', {
-        username,
-        password,
-        os,
-        browser,
-        environment,
-    });
-
-    if (err) {
-        return null;
-    }
-    return user;
-}
-
-/**
  * 使用 Google ID Token 登录
  * @param credential Google credential
  * @param os 系统
@@ -141,19 +82,6 @@ export async function guest(os = '', browser = '', environment = '') {
  */
 export async function changeAvatar(avatar: string) {
     const [error] = await fetch('changeAvatar', { avatar });
-    return !error;
-}
-
-/**
- * 修改用户密码
- * @param oldPassword 旧密码
- * @param newPassword 新密码
- */
-export async function changePassword(oldPassword: string, newPassword: string) {
-    const [error] = await fetch('changePassword', {
-        oldPassword,
-        newPassword,
-    });
     return !error;
 }
 
@@ -523,15 +451,6 @@ export async function toggleGroupAI(enable: boolean) {
 export async function setSystemConfig(key: string, value: string) {
     const [, result] = await fetch('setSystemConfig', { key, value });
     return !!result;
-}
-
-/**
- * 重置指定用户的密码
- * @param username 目标用户名
- */
-export async function resetUserPassword(username: string) {
-    const [, res] = await fetch('resetUserPassword', { username });
-    return res;
 }
 
 /**
