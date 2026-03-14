@@ -7,6 +7,7 @@ import Style from './GroupManagePanel.less';
 import useIsLogin from '../../hooks/useIsLogin';
 import { State, GroupMember } from '../../state/reducer';
 import Button from '../../components/Button';
+import Input from '../../components/Input';
 import Message from '../../components/Message';
 import Avatar from '../../components/Avatar';
 import UserBadge from '../../components/UserBadge';
