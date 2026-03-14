@@ -287,6 +287,36 @@ window.onblur = () => {
 
 let prevFrom: string | null = '';
 let prevName = '';
+
+function upsertAIMessage(payload: any) {
+    const state = store.getState();
+    const { linkmanId, messageId, message } = payload || {};
+    if (!linkmanId || !messageId || !message || !state.linkmans[linkmanId]) {
+        return;
+    }
+
+    const exists = !!state.linkmans[linkmanId]?.messages?.[messageId];
+    if (exists) {
+        dispatch({
+            type: ActionTypes.UpdateMessage,
+            payload: {
+                linkmanId,
+                messageId,
+                value: message,
+            },
+        });
+        return;
+    }
+
+    dispatch({
+        type: ActionTypes.AddLinkmanMessage,
+        payload: {
+            linkmanId,
+            message,
+        } as AddLinkmanMessagePayload,
+    });
+}
+
 socket.on('message', async (message: any) => {
     convertMessage(message);
 
@@ -426,6 +456,18 @@ socket.on('message', async (message: any) => {
             prevFrom = null;
         }
     }
+});
+
+socket.on('aiMessageStart', (payload: any) => {
+    upsertAIMessage(payload);
+});
+
+socket.on('aiMessageChunk', (payload: any) => {
+    upsertAIMessage(payload);
+});
+
+socket.on('aiMessageDone', (payload: any) => {
+    upsertAIMessage(payload);
 });
 
 socket.on(
