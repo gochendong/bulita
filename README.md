@@ -53,15 +53,15 @@
 ## Default Service Ports
 
 - Bulita web/server: `9200`
-- MongoDB host port: `27018`
-- Redis host port: `6380`
+- MongoDB published port: `27018`
+- Redis published port: `6380`
 
 The application container connects to MongoDB and Redis through Docker service names, so the internal ports remain `27017` and `6379`.
 
 ## Notes
 
 - MongoDB and Redis are password-protected by default.
-- Default admin/bot bootstrap still depends on `ADMINS`, `BOTS`, and related env values.
+- Default bot bootstrap still depends on `BOTS` and related env values.
 - Google login requires a valid `GOOGLE_CLIENT_ID` and the correct authorized JavaScript origins in Google Cloud Console.
 
 ## Reference
