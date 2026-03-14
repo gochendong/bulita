@@ -51,7 +51,6 @@ export default {
         ? parseInt(env.TOKEN_EXPIRES_TIME, 10) * 1000
         : 7 * 1000 * 60 * 60 * 24,
 
-    administrators: env.ADMINS ? env.ADMINS?.split(',') : [],
     adminEmails: env.ADMIN_EMAILS ? env.ADMIN_EMAILS.split(',') : [],
 
     /** 禁用注册功能 */

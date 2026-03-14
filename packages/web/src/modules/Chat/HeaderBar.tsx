@@ -127,9 +127,6 @@ function HeaderBar(props: Props) {
                 {tag === 'bot' && (
                     <span className={Style.adminTag}>机器人</span>
                 )}
-                {process.env.ADMINS.split(',').includes(name) && (
-                    <span className={Style.adminTag}>管理员</span>
-                )}
                 {type === 'friend' && (tag === 'bot' || isOnline === true) && (
                     <span className={Style.onlineStatusText}>当前在线</span>
                 )}

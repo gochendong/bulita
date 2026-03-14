@@ -34,6 +34,7 @@ import client from '../../../config/client';
 import config from '@bulita/config/server';
 
 const { isValid } = Types.ObjectId;
+const adminEmails = config.adminEmails.map((email) => email.trim()).filter(Boolean);
 
 /** 初次获取历史消息数 */
 const FirstTimeMessagesCount = 60;
@@ -114,7 +115,7 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         toGroup ||
         (toUser &&
             toUser.tag !== 'bot' &&
-            !config.administrators.includes(toUser.username))
+            !(toUser.email && adminEmails.includes(toUser.email)))
     ) {
         const disableSendMessage = await Redis.get(DisableSendMessageKey);
         assert(

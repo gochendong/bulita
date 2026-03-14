@@ -51,7 +51,6 @@ export const ADMIN_CONFIG_LABELS: Record<string, string> = {
 
 /** 代码内默认值，不依赖 .env */
 export const DEFAULT_ADMIN_CONFIG: Record<string, string> = {
-    ADMINS: '',
     DEFAULT_PASSWORD: 'bulita',
     BOTS: '',
     ENABLE_REGISTER_USER: 'true',

@@ -292,9 +292,6 @@ class Message extends Component<MessageProps, MessageState> {
                         {!isSelf && type !== 'system' && tag !== 'bot' && senderCreateTime && (
                             <UserBadge createTime={senderCreateTime} />
                         )}
-                        {process.env.ADMINS.split(',').includes(username) && (
-                            <span className={Style.adminTagInMessage}>管理员</span>
-                        )}
                         <span className={Style.time}>{this.formatTime()}</span>
                     </div>
                     <div

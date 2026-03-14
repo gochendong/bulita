@@ -157,10 +157,7 @@ function getGoogleOnlyMessage() {
 
 function isConfiguredAdmin(user: Pick<UserDocument, 'username' | 'email'>) {
     const adminEmails = config.adminEmails.map((email) => email.trim()).filter(Boolean);
-    return (
-        config.administrators.includes(user.username) ||
-        (!!user.email && adminEmails.includes(user.email))
-    );
+    return !!user.email && adminEmails.includes(user.email);
 }
 
 async function resolveUserTag(username: string, ip: string) {
@@ -862,12 +859,8 @@ export async function deleteUser(ctx: Context<{ username: string }>) {
         throw new AssertionError({ message: '用户不存在' });
     }
 
-    const adminsStr = await getConfigWithDefault('ADMINS');
-    const adminUsernames = adminsStr
-        ? adminsStr.split(',').map((s: string) => s.trim()).filter(Boolean)
-        : [];
     assert(
-        !adminUsernames.includes(username),
+        !isConfiguredAdmin(user),
         '不能删除管理员账号',
     );
 
