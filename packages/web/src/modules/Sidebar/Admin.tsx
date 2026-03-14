@@ -217,6 +217,8 @@ function Admin(props: AdminProps) {
                                             ['ONLY_SEARCH_DEFAULT_GROUP'].includes(
                                                 key,
                                             );
+                                        const isSecretConfig =
+                                            key === 'OPENAI_API_KEY';
                                         const rawValue =
                                             adminConfigValues[key] ??
                                             systemConfig.adminConfig[key] ??
@@ -273,7 +275,17 @@ function Admin(props: AdminProps) {
                                                                     .current[key] ?? '',
                                                             )
                                                         }
+                                                        type={
+                                                            isSecretConfig
+                                                                ? 'password'
+                                                                : 'text'
+                                                        }
                                                         placeholder="留空表示该项为空"
+                                                        autoComplete={
+                                                            isSecretConfig
+                                                                ? 'new-password'
+                                                                : 'off'
+                                                        }
                                                     />
                                                 )}
                                             </div>
