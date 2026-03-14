@@ -210,11 +210,7 @@ function ChatInput(props: InputAreaProps) {
     }, [status.pendingRetryMessage, focus, action, isLogin]);
 
     if (!isLogin) {
-        return (
-            <div className={Style.chatInput}>
-                <p className={Style.guestNotice}>登录后可发送消息、上传图片和文件</p>
-            </div>
-        );
+        return <div className={Style.chatInput} />;
     }
 
     /**
