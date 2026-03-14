@@ -5,15 +5,19 @@
         width: 450px;
         top: 45% !important;
         transform: translateY(-50%) !important;
+        max-width: calc(100vw - 24px);
     }
     .rc-dialog-content {
         width: 100%;
+        overflow: hidden;
     }
     .rc-dialog-title {
         font-size: 16px !important;
     }
     .rc-dialog-wrap {
-        overflow: hidden !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch;
     }
     .rc-dialog-close {
         top: 0 !important;
@@ -28,21 +32,24 @@
     
     .rc-dialog-body {
         overflow-y: auto;
+        overflow-x: hidden;
         -webkit-overflow-scrolling: touch;
-        //max-height: 60vh;
+        max-height: calc(85vh - 56px);
     }
     
     @media @mobile {
         .rc-dialog {
             width: 94% !important;
             margin: 0 auto;
+            top: 16px !important;
+            transform: none !important;
         }
         .rc-dialog-body {
             padding: 10px 10px;
-            // max-height: 88%;
+            max-height: calc(100vh - 96px);
         }
         .rc-dialog-content {
-            max-height: 80vh;
+            max-height: calc(100vh - 32px);
         }
     }
 }

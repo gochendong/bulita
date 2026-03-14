@@ -3,6 +3,19 @@
 .selfInfo {
     height: initial !important;
     width: 500px;
+
+    :global(.rc-dialog-body) {
+        max-height: calc(85vh - 56px);
+    }
+
+    @media @mobile {
+        width: 94vw !important;
+
+        :global(.rc-dialog-body) {
+            max-height: calc(100vh - 96px);
+            padding-bottom: 18px;
+        }
+    }
 }
 
 .changeAvatar {

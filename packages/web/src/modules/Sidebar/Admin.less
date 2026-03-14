@@ -23,6 +23,15 @@
             background: #a89a8c;
         }
     }
+
+    @media @mobile {
+        width: 94vw !important;
+
+        :global(.rc-dialog-body) {
+            max-height: calc(100vh - 96px);
+            padding-right: 0;
+        }
+    }
 }
 
 .adminColumns {
@@ -43,6 +52,54 @@
 .adminCol:last-child {
     flex: 2;
     max-width: 280px;
+}
+
+@media @mobile {
+    .adminColumns {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .adminCol,
+    .adminCol:first-child,
+    .adminCol:last-child {
+        flex: none;
+        max-width: none;
+        width: 100%;
+    }
+
+    .inputBlock {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .button {
+        width: 100%;
+    }
+
+    .configRow {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+
+    .configLabel {
+        width: auto;
+    }
+
+    .configList {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .sealUserItem {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .unsealButton {
+        width: 100%;
+    }
 }
 
 .inputBlock {
