@@ -1,6 +1,6 @@
 <div align="center">
   <h1>布里塔</h1>
-  <p><a href="./README.md">English</a> / 简体中文</p>
+  <p>简体中文 / <a href="./README_EN.md">English</a></p>
   <p>一个基于 Node.js、React、Socket.IO、MongoDB 和 Redis 的开源聊天室。</p>
   <p>
     <a href="https://chat.bulita.net/">在线演示</a> ·
@@ -39,6 +39,7 @@
    - `REDIS_PASSWORD`
    - `JWT_SECRET`
    - `GOOGLE_CLIENT_ID`
+   - `ADMIN_EMAILS`
 
 4. 启动全部服务：
 
@@ -61,7 +62,8 @@
 ## 说明
 
 - MongoDB 和 Redis 默认启用密码认证。
-- 默认管理员、机器人和初始化群组仍然依赖 `ADMINS`、`BOTS` 等环境变量。
+- `ADMIN_EMAILS` 为必填项，首个邮箱会作为默认群创建者的预创建管理员账号。
+- 默认机器人初始化仍然依赖 `BOTS` 等环境变量。
 - Google 登录需要有效的 `GOOGLE_CLIENT_ID`，并在 Google Cloud Console 中配置正确的 JavaScript 来源。
 
 ## 参考项目
@@ -71,7 +73,3 @@
 ## 开源协议
 
 [MIT](./LICENSE)
-
-## 赞助
-
-![](https://docs.bulita.net/media/202412/usdt_1733018911.png)

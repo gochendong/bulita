@@ -19,14 +19,39 @@ import app from './app';
 
     await initMongoDB();
 
+    function normalizeEmailUsername(email: string) {
+        const prefix = (email.split('@')[0] || '').replace(/[^0-9a-zA-Z\u4e00-\u9eff]/g, '');
+        return (prefix || '管理员').slice(0, 20);
+    }
+
+    async function generateBootstrapUsername(baseName: string) {
+        const normalizedBase = normalizeEmailUsername(baseName) || '管理员';
+        let username = normalizedBase;
+
+        for (let i = 0; i < 10; i += 1) {
+            const existed = await User.findOne({ username });
+            if (!existed) {
+                return username;
+            }
+            username = `${normalizedBase.slice(0, 16)}${Math.random().toString(36).slice(2, 6)}`;
+        }
+
+        return `管理员${Math.random().toString(36).slice(2, 6)}`;
+    }
+
     // 判断管理员是否存在, 不存在就创建（ADMINS/DEFAULT_PASSWORD 仅启动时读取，改后需重启）
     const admins = await getConfigWithDefault('ADMINS');
     const adminsArray = [];
-    let originalAdmin = null;
     const snowflake = new Snowflake(1n, 1n, 0n);
+    let defaultGroupCreator: UserDocument | null = null;
     const salt = await bcrypt.genSalt(SALT_ROUNDS);
     const defaultPassword = await getConfigWithDefault('DEFAULT_PASSWORD');
     const hash = await bcrypt.hash(defaultPassword, salt);
+    const adminEmails = config.adminEmails.map((email) => email.trim()).filter(Boolean);
+    if (adminEmails.length === 0) {
+        logger.error('[admin]', 'ADMIN_EMAILS is required');
+        return process.exit(1);
+    }
     if (admins) {
         const defaultAdminsArray = admins.split(',').map((s) => s.trim()).filter(Boolean);
         for (let i = 0; i < defaultAdminsArray.length; i++) {
@@ -47,9 +72,34 @@ import app from './app';
                     );
                     return process.exit(1);
                 }
-                if (!originalAdmin) {
-                    originalAdmin = admin;
-                }
+            }
+            if (!defaultGroupCreator) {
+                defaultGroupCreator = admin;
+            }
+            adminsArray.push(admin._id);
+        }
+    }
+    if (!defaultGroupCreator && adminEmails.length > 0) {
+        for (let i = 0; i < adminEmails.length; i += 1) {
+            const adminEmail = adminEmails[i];
+            let admin = await User.findOne({ email: adminEmail });
+            if (!admin) {
+                const username = await generateBootstrapUsername(adminEmail);
+                admin = await User.create({
+                    username,
+                    email: adminEmail,
+                    id: snowflake.nextId().toString(),
+                    avatar: '',
+                    salt,
+                    password: hash,
+                } as UserDocument);
+            }
+            if (!admin) {
+                logger.error('[admin]', `create admin email ${adminEmail} fail`);
+                return process.exit(1);
+            }
+            if (!defaultGroupCreator) {
+                defaultGroupCreator = admin;
             }
             adminsArray.push(admin._id);
         }
@@ -60,8 +110,8 @@ import app from './app';
     // 判断默认群是否存在, 不存在就创建
     const group = await Group.findOne({ isDefault: true });
     if (!group) {
-        if (!originalAdmin) {
-            logger.error('[defaultGroup]', 'create admin first');
+        if (!defaultGroupCreator) {
+            logger.error('[defaultGroup]', 'create default group creator fail');
             return process.exit(1);
         }
         const defaultGroupName = await getConfigWithDefault('DEFAULT_GROUP_NAME');
@@ -69,7 +119,7 @@ import app from './app';
             name: defaultGroupName,
             avatar: getRandomAvatar(),
             isDefault: true,
-            creator: originalAdmin._id,
+            creator: defaultGroupCreator._id,
         } as GroupDocument);
         if (!defaultGroup) {
             logger.error('[defaultGroup]', 'create default group fail');
