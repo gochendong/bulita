@@ -6,53 +6,20 @@ function saveUsername(username: string) {
 }
 
 /**
- * 注册新用户
- * @param username 用户名
- * @param password 密码
+ * 使用 Google ID Token 登录
+ * @param credential Google credential
  * @param os 系统
  * @param browser 浏览器
  * @param environment 环境信息
  */
-export async function register(
-    username: string,
-    password: string,
+export async function loginWithGoogle(
+    credential: string,
     os = '',
     browser = '',
     environment = '',
 ) {
-    const [err, user] = await fetch('register', {
-        username,
-        password,
-        os,
-        browser,
-        environment,
-    });
-
-    if (err) {
-        return null;
-    }
-    // 不再立即刷新页面，让前端处理登录状态后再决定是否刷新
-    return user;
-}
-
-/**
- * 使用账密登录
- * @param username 用户名
- * @param password 密码
- * @param os 系统
- * @param browser 浏览器
- * @param environment 环境信息
- */
-export async function login(
-    username: string,
-    password: string,
-    os = '',
-    browser = '',
-    environment = '',
-) {
-    const [err, user] = await fetch('login', {
-        username,
-        password,
+    const [err, user] = await fetch('googleLogin', {
+        credential,
         os,
         browser,
         environment,
@@ -119,19 +86,6 @@ export async function changeAvatar(avatar: string) {
 }
 
 /**
- * 修改用户密码
- * @param oldPassword 旧密码
- * @param newPassword 新密码
- */
-export async function changePassword(oldPassword: string, newPassword: string) {
-    const [error] = await fetch('changePassword', {
-        oldPassword,
-        newPassword,
-    });
-    return !error;
-}
-
-/**
  * 修改用户名
  * @param username 新用户名
  */
@@ -162,6 +116,24 @@ export async function changePushToken(pushToken: string) {
         pushToken,
     });
     return !error;
+}
+
+export async function changeAIConfig(
+    aiApiKey: string,
+    aiBaseUrl: string,
+    aiModel: string,
+    aiContextCount: number,
+) {
+    const [error, data] = await fetch('changeAIConfig', {
+        aiApiKey,
+        aiBaseUrl,
+        aiModel,
+        aiContextCount,
+    });
+    if (error) {
+        return null;
+    }
+    return data;
 }
 
 /**
@@ -440,28 +412,15 @@ export async function getGroupAllMembers(
 
 /**
  * 封禁用户
- * @param username 目标用户名
+ * @param email 目标邮箱
  */
-export async function sealUser(username: string) {
-    const [err] = await fetch('sealUser', { username });
+export async function sealUser(email: string) {
+    const [err] = await fetch('sealUser', { email });
     return !err;
 }
 
-/**
- * 封禁ip
- * @param ip ip地址
- */
-export async function sealIp(ip: string) {
-    const [err] = await fetch('sealIp', { ip });
-    return !err;
-}
-
-/**
- * 封禁用户所有在线ip
- * @param userId 用户id
- */
-export async function sealUserOnlineIp(userId: string) {
-    const [err] = await fetch('sealUserOnlineIp', { userId });
+export async function unsealUser(email: string) {
+    const [err] = await fetch('unsealUser', { email });
     return !err;
 }
 
@@ -499,34 +458,6 @@ export async function setSystemConfig(key: string, value: string) {
     return !!result;
 }
 
-/**
- * 重置指定用户的密码
- * @param username 目标用户名
- */
-export async function resetUserPassword(username: string) {
-    const [, res] = await fetch('resetUserPassword', { username });
-    return res;
-}
-
-/**
- * 更新指定用户的标签
- * @param username 目标用户名
- * @param tag 标签
- */
-export async function setUserTag(username: string, tag: string) {
-    const [err] = await fetch('setUserTag', { username, tag });
-    return !err;
-}
-
-/**
- * 获取在线用户 ip
- * @param userId 用户id
- */
-export async function getUserIps(userId: string) {
-    const [, res] = await fetch('getUserIps', { userId });
-    return res;
-}
-
 export async function getUserOnlineStatus(userId: string): Promise<{ isOnline: boolean; lastLoginTime?: string | null } | null> {
     const [, res] = await fetch('getUserOnlineStatus', { userId });
     return res ? { isOnline: res.isOnline, lastLoginTime: res.lastLoginTime } : null;
@@ -542,30 +473,37 @@ export async function toggleSendMessage(enable: boolean) {
     return !!result;
 }
 
-export async function toggleNewUserSendMessage(enable: boolean) {
-    const [, result] = await fetch('toggleNewUserSendMessage', { enable });
-    return !!result;
-}
-
 /**
- * 管理员按用户名查找用户（用于删除前校验）
- * @param username 目标用户名
+ * 管理员按邮箱查找用户（用于删除/封禁前校验）
+ * @param email 目标邮箱
  */
-export async function getAdminUserByUsername(
-    username: string,
-): Promise<{ exists: boolean; username?: string; _id?: string } | null> {
-    const [err, res] = await fetch('getAdminUserByUsername', {
-        username: username.trim(),
+export async function getAdminUserByEmail(
+    email: string,
+): Promise<{ exists: boolean; username?: string; email?: string; _id?: string } | null> {
+    const [err, res] = await fetch('getAdminUserByEmail', {
+        email: email.trim(),
     });
     if (err) return null;
     return res;
 }
 
 /**
- * 删除用户
- * @param username 目标用户名
+ * 管理员查看用户资料
+ * @param userId 用户ID
  */
-export async function deleteUser(username: string) {
-    const [err] = await fetch('deleteUser', { username });
+export async function getAdminUserInfo(
+    userId: string,
+): Promise<{ email: string; isOnline: boolean; lastLoginTime?: string | null } | null> {
+    const [err, res] = await fetch('getAdminUserInfo', { userId });
+    if (err) return null;
+    return res;
+}
+
+/**
+ * 删除用户
+ * @param email 目标邮箱
+ */
+export async function deleteUser(email: string) {
+    const [err] = await fetch('deleteUser', { email });
     return !err;
 }

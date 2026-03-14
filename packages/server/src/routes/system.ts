@@ -13,12 +13,9 @@ import Group from '@bulita/database/mongoose/models/group';
 
 import Socket from '@bulita/database/mongoose/models/socket';
 import {
-    getAllSealIp,
     getAllSealUser,
-    getSealIpKey,
     getSealUserKey,
     DisableSendMessageKey,
-    DisableNewUserSendMessageKey,
     GroupAISwitchKey,
     Redis,
 } from '@bulita/database/redis/initRedis';
@@ -170,11 +167,11 @@ export async function getBaiduToken() {
  * 封禁用户, 需要管理员权限
  * @param ctx Context
  */
-export async function sealUser(ctx: Context<{ username: string }>) {
-    const { username } = ctx.data;
-    assert(username !== '', 'username不能为空');
+export async function sealUser(ctx: Context<{ email: string }>) {
+    const { email } = ctx.data;
+    assert(email !== '', '邮箱不能为空');
 
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ email });
     if (!user) {
         throw new AssertionError({ message: '用户不存在' });
     }
@@ -196,78 +193,40 @@ export async function sealUser(ctx: Context<{ username: string }>) {
 }
 
 /**
- * 获取封禁列表, 包含用户封禁和ip封禁, 需要管理员权限
+ * 解除封禁用户, 需要管理员权限
+ * @param ctx Context
+ */
+export async function unsealUser(ctx: Context<{ email: string }>) {
+    const { email } = ctx.data;
+    assert(email !== '', '邮箱不能为空');
+
+    const user = await User.findOne({ email });
+    if (!user) {
+        throw new AssertionError({ message: '用户不存在' });
+    }
+
+    const userId = user._id.toString();
+    const isSealUser = await Redis.has(getSealUserKey(userId));
+    assert(isSealUser, '用户不在封禁名单');
+
+    await Redis.del(getSealUserKey(userId));
+
+    return {
+        msg: 'ok',
+    };
+}
+
+/**
+ * 获取封禁用户列表, 需要管理员权限
  */
 export async function getSealList() {
     const sealUserList = await getAllSealUser();
-    const sealIpList = await getAllSealIp();
     const users = await User.find({ _id: { $in: sealUserList } });
 
     const result = {
-        users: users.map((user) => user.username),
-        ips: sealIpList,
+        users: users.map((user) => user.email || user.username),
     };
     return result;
-}
-
-const CantSealLocalIp = '不能封禁内网ip';
-const CantSealSelf = '闲的没事封自己干啥';
-const IpInSealList = 'ip已在封禁名单';
-
-/**
- * 封禁 ip 地址, 需要管理员权限
- */
-export async function sealIp(ctx: Context<{ ip: string }>) {
-    const { ip } = ctx.data;
-    assert(ip !== '::1' && ip !== '127.0.0.1', CantSealLocalIp);
-    assert(ip !== ctx.socket.ip, CantSealSelf);
-
-    const isSealIp = await Redis.has(getSealIpKey(ip));
-    assert(!isSealIp, IpInSealList);
-
-    await Redis.set(getSealIpKey(ip), ip);
-
-    return {
-        msg: 'ok',
-    };
-}
-
-/**
- * 封禁指定用户的所有在线 ip 地址, 需要管理员权限
- */
-export async function sealUserOnlineIp(ctx: Context<{ userId: string }>) {
-    const { userId } = ctx.data;
-
-    const user = await User.findOne({ _id: userId });
-    assert(user, '用户不存在');
-    const sockets = await Socket.find({ user: userId });
-    const ipList = [
-        ...sockets.map((socket) => socket.ip),
-        user.lastLoginIp,
-    ].filter(
-        (ip) =>
-            ip !== '' &&
-            ip !== '::1' &&
-            ip !== '127.0.0.1' &&
-            ip !== ctx.socket.ip,
-    );
-
-    // 如果全部 ip 都已经封禁过了, 则直接提示
-    const isSealIpList = await Promise.all(
-        ipList.map((ip) => Redis.has(getSealIpKey(ip))),
-    );
-    assert(!isSealIpList.every((isSealIp) => isSealIp), IpInSealList);
-
-    await Promise.all(
-        ipList.map(async (ip) => {
-            const duration = await getConfigWithDefault('SEAL_IP_DURATION');
-    await Redis.set(getSealIpKey(ip), ip, duration);
-        }),
-    );
-
-    return {
-        msg: 'ok',
-    };
 }
 
 type STSResult = {
@@ -369,24 +328,12 @@ export async function toggleSendMessage(ctx: Context<{ enable: boolean }>) {
     };
 }
 
-export async function toggleNewUserSendMessage(
-    ctx: Context<{ enable: boolean }>,
-) {
-    const { enable } = ctx.data;
-    await Redis.set(DisableNewUserSendMessageKey, (!enable).toString());
-    return {
-        msg: 'ok',
-    };
-}
-
 export async function getSystemConfig() {
     const groupAISwitch =
         (await Redis.get(GroupAISwitchKey)) ?? 'false';
     const adminConfig = await getAllAdminConfig();
     return {
         disableSendMessage: (await Redis.get(DisableSendMessageKey)) === 'true',
-        disableNewUserSendMessage:
-            (await Redis.get(DisableNewUserSendMessageKey)) === 'true',
         groupAISwitch: groupAISwitch === 'true',
         adminConfig,
         adminConfigLabels: ADMIN_CONFIG_LABELS,
@@ -401,7 +348,10 @@ export async function getPublicSystemConfig() {
     const groupAISwitch =
         (await Redis.get(GroupAISwitchKey)) ?? 'false';
     const defaultTitle = await getConfigWithDefault('DEFAULT_TITLE');
-    const defaultBotName = await getConfigWithDefault('DEFAULT_BOT_NAME');
+    const defaultBotName = (await getConfigWithDefault('BOTS'))
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)[0] || '';
     const maxGroupNumStr = await getConfigWithDefault('MAX_GROUP_NUM');
     const maxGroupNum = parseInt(maxGroupNumStr, 10) || 0;
     return {

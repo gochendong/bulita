@@ -83,6 +83,9 @@ function HeaderBar(props: Props) {
     const sidebarVisible = useSelector(
         (state: State) => state.status.sidebarVisible,
     );
+    const functionBarAndLinkmanListVisible = useSelector(
+        (state: State) => state.status.functionBarAndLinkmanListVisible,
+    );
     const aero = useAero();
 
     function handleShareGroup() {
@@ -91,8 +94,8 @@ function HeaderBar(props: Props) {
 
     return (
         <div className={Style.headerBar} {...aero}>
-            {isMobile && (
-                <div className={Style.buttonContainer}>
+            <div className={Style.buttonContainer}>
+                {isMobile && (
                     <IconButton
                         width={40}
                         height={40}
@@ -102,20 +105,45 @@ function HeaderBar(props: Props) {
                             action.setStatus('sidebarVisible', !sidebarVisible)
                         }
                     />
-                    <IconButton
-                        width={40}
-                        height={40}
-                        icon="friends"
-                        iconSize={24}
+                )}
+                {isLogin && (
+                    <button
+                        type="button"
+                        className={Style.friendsToggleButton}
                         onClick={() =>
                             action.setStatus(
                                 'functionBarAndLinkmanListVisible',
-                                true,
+                                !functionBarAndLinkmanListVisible,
                             )
                         }
-                    />
-                </div>
-            )}
+                        aria-label={
+                            functionBarAndLinkmanListVisible
+                                ? '收起会话列表'
+                                : '展开会话列表'
+                        }
+                        title={
+                            functionBarAndLinkmanListVisible
+                                ? '收起会话列表'
+                                : '展开会话列表'
+                        }
+                    >
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            xmlns="http://www.w3.org/2000/svg"
+                            className={
+                                functionBarAndLinkmanListVisible
+                                    ? Style.friendsToggleIconExpanded
+                                    : Style.friendsToggleIconCollapsed
+                            }
+                        >
+                            <path d="M13.5 3.5L5.5 10L13.5 16.5V3.5Z" />
+                        </svg>
+                    </button>
+                )}
+            </div>
             <h2 className={Style.name}>
                 {name}
                 {type === 'group' && totalMemberCount != null && (
@@ -126,9 +154,6 @@ function HeaderBar(props: Props) {
                 )}
                 {tag === 'bot' && (
                     <span className={Style.adminTag}>机器人</span>
-                )}
-                {process.env.ADMINS.split(',').includes(name) && (
-                    <span className={Style.adminTag}>管理员</span>
                 )}
                 {type === 'friend' && (tag === 'bot' || isOnline === true) && (
                     <span className={Style.onlineStatusText}>当前在线</span>

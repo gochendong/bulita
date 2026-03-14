@@ -2,7 +2,6 @@ import DefaultSound from '@bulita/assets/audios/default.mp3';
 import AppleSound from '@bulita/assets/audios/apple.mp3';
 import PcQQSound from '@bulita/assets/audios/pcqq.mp3';
 import MobileQQSound from '@bulita/assets/audios/mobileqq.mp3';
-import MoMoSound from '@bulita/assets/audios/momo.mp3';
 import HuaJiSound from '@bulita/assets/audios/huaji.mp3';
 
 type Sounds = {
@@ -14,7 +13,6 @@ const sounds: Sounds = {
     apple: AppleSound,
     pcqq: PcQQSound,
     mobileqq: MobileQQSound,
-    momo: MoMoSound,
     huaji: HuaJiSound,
 };
 
@@ -44,6 +42,9 @@ async function play() {
 }
 
 export default function playSound(type = 'default') {
+    if (!sounds[type]) {
+        type = 'apple';
+    }
     if (type !== prevType) {
         $source.setAttribute('src', sounds[type]);
         $audio.load();

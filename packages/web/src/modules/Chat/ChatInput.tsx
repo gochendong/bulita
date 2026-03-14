@@ -22,7 +22,7 @@ import useIsLogin from '../../hooks/useIsLogin';
 import useAction from '../../hooks/useAction';
 import Dropdown from '../../components/Dropdown';
 import IconButton from '../../components/IconButton';
-import Avatar, { avatarFailback } from '../../components/Avatar';
+import Avatar, { aiAvatar, avatarFailback } from '../../components/Avatar';
 import Message from '../../components/Message';
 import { Menu, MenuItem } from '../../components/Menu';
 import { State } from '../../state/reducer';
@@ -34,6 +34,7 @@ import {
 } from '../../service';
 import Tooltip from '../../components/Tooltip';
 import useAero from '../../hooks/useAero';
+import { ensureSocketConnected } from '../../socket';
 
 interface InputAreaProps {
     readonly busy: boolean;
@@ -76,10 +77,6 @@ const ExpressionAsync = loadable(
         // @ts-ignore
         import(/* webpackChunkName: "expression" */ './Expression'),
 );
-const CodeEditorAsync = loadable(
-    // @ts-ignore
-    () => import(/* webpackChunkName: "code-editor" */ './CodeEditor'),
-);
 
 let searchExpressionTimer: number = 0;
 
@@ -118,7 +115,6 @@ function ChatInput(props: InputAreaProps) {
           }
         | null;
     const [expressionDialog, toggleExpressionDialog] = useState(false);
-    const [codeEditorDialog, toggleCodeEditorDialog] = useState(false);
     const [addMenuOpen, setAddMenuOpen] = useState(false);
     const addTriggerRef = useRef<HTMLDivElement>(null);
     const [inputFocus, toggleInputFocus] = useState(false);
@@ -184,36 +180,32 @@ function ChatInput(props: InputAreaProps) {
             sendFailed: false,
         });
         action.setStatus('pendingRetryMessage', null);
-        sendMessage(focus, msg.type, msg.content).then(([err, result]) => {
-            if (err) {
+        ensureSocketConnected().then((connected) => {
+            if (!connected) {
                 action.updateMessage(focus, pending.messageId, {
                     loading: false,
                     sendFailed: true,
                 });
-            } else {
-                result.loading = false;
-                result.sendFailed = false;
-                action.updateMessage(focus, pending.messageId, result);
+                Message.error('网络未恢复，正在尝试重连，请稍后再试');
+                return;
             }
+            sendMessage(focus, msg.type, msg.content).then(([err, result]) => {
+                if (err) {
+                    action.updateMessage(focus, pending.messageId, {
+                        loading: false,
+                        sendFailed: true,
+                    });
+                } else {
+                    result.loading = false;
+                    result.sendFailed = false;
+                    action.updateMessage(focus, pending.messageId, result);
+                }
+            });
         });
     }, [status.pendingRetryMessage, focus, action, isLogin]);
 
     if (!isLogin) {
-        return (
-            <div className={Style.chatInput}>
-                <p className={Style.guest}>
-                    <b
-                        className={Style.guestLogin}
-                        onClick={() =>
-                            action.setStatus('loginRegisterDialogVisible', true)
-                        }
-                        role="button"
-                    >
-                        注册 / 登录
-                    </b>
-                </p>
-            </div>
-        );
+        return <div className={Style.chatInput} />;
     }
 
     /**
@@ -333,6 +325,16 @@ function ChatInput(props: InputAreaProps) {
         linkmanId = focus,
     ) {
         sendingLockRef.current = true;
+        const connected = await ensureSocketConnected();
+        if (!connected) {
+            sendingLockRef.current = false;
+            action.updateMessage(focus, localId, {
+                loading: false,
+                sendFailed: true,
+            });
+            Message.error('当前离线，正在尝试重连，请稍后点击重试');
+            return;
+        }
         const [error, message] = await sendMessage(
             linkmanId,
             type,
@@ -360,7 +362,7 @@ function ChatInput(props: InputAreaProps) {
         if (linkman.type !== 'group' && linkman.tag === 'bot') {
             const botMessageId = addBotMessage(
                 'text',
-                `${linkman.name}正在思考中...`,
+                '',
             );
             const [botErr, botMsg] = await sendBotMessage(
                 linkmanId,
@@ -377,7 +379,7 @@ function ChatInput(props: InputAreaProps) {
             if (groupAISwitch) {
                 const botMessageId = addGroupBotMessage(
                     'text',
-                    `${botNameForGroup}正在回复${username}...`,
+                    '',
                 );
                 const [groupBotErr, groupBotMsg] = await sendGroupBotMessage(
                     linkmanId,
@@ -518,14 +520,6 @@ function ChatInput(props: InputAreaProps) {
         switch (key) {
             case 'image': {
                 handleSendImage();
-                break;
-            }
-            // case 'huaji': {
-            //     sendHuaji();
-            //     break;
-            // }
-            case 'code': {
-                toggleCodeEditorDialog(true);
                 break;
             }
             case 'file': {
@@ -885,7 +879,7 @@ function ChatInput(props: InputAreaProps) {
         if (groupAISwitch && botName && !hasBot && regex.test(botName)) {
             return [
                 {
-                    user: { _id: `bot-${botName}`, username: botName, avatar: avatarFailback },
+                    user: { _id: `bot-${botName}`, username: botName, avatar: aiAvatar },
                     os: '',
                     browser: '',
                     environment: '',
@@ -909,22 +903,6 @@ function ChatInput(props: InputAreaProps) {
         });
         // @ts-ignore
         $input.current.focus();
-    }
-
-    function handleSendCode(language: string, rawCode: string) {
-        if (!connect) {
-            return Message.error('发送消息失败, 您当前处于离线状态');
-        }
-
-        if (rawCode === '') {
-            return Message.warning('请输入内容');
-        }
-
-        const code = `@language=${language}@${rawCode}`;
-        const id = addSelfMessage('code', code);
-        handleSendMessage(id, 'code', code);
-        toggleCodeEditorDialog(false);
-        return null;
     }
 
     function handleClickExpressionImage(
@@ -988,7 +966,6 @@ function ChatInput(props: InputAreaProps) {
                         />
                         <div className={Style.featureDropdown}>
                             <Menu onClick={handleFeatureMenuClick}>
-                                <MenuItem key="code">发送代码</MenuItem>
                                 <MenuItem key="image">发送图片</MenuItem>
                                 <MenuItem key="file">发送文件</MenuItem>
                             </Menu>
@@ -1113,14 +1090,6 @@ function ChatInput(props: InputAreaProps) {
                 />
                 {/* 清除按钮已移除，保持输入区域干净简洁 */}
             </form>
-            {codeEditorDialog && (
-                <CodeEditorAsync
-                    visible={codeEditorDialog}
-                    onClose={() => toggleCodeEditorDialog(false)}
-                    onSend={handleSendCode}
-                />
-            )}
-
             {expressions.length > 0 && (
                 <div className={expressionList}>
                     {expressions.map(({ image, width, height }) => (

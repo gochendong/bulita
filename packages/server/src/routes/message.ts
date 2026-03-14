@@ -1,5 +1,6 @@
 /* eslint-disable no-await-in-loop */
 /* eslint-disable no-restricted-syntax */
+import axios from 'axios';
 import assert, { AssertionError } from 'assert';
 import { Types } from '@bulita/database/mongoose';
 import { Expo, ExpoPushErrorTicket } from 'expo-server-sdk';
@@ -21,7 +22,6 @@ import Socket from '@bulita/database/mongoose/models/socket';
 
 import {
     DisableSendMessageKey,
-    DisableNewUserSendMessageKey,
     GroupAISwitchKey,
     Redis,
     DisableRegisterUserSendMessageKey,
@@ -34,6 +34,7 @@ import client from '../../../config/client';
 import config from '@bulita/config/server';
 
 const { isValid } = Types.ObjectId;
+const adminEmails = config.adminEmails.map((email) => email.trim()).filter(Boolean);
 
 /** 初次获取历史消息数 */
 const FirstTimeMessagesCount = 60;
@@ -41,12 +42,344 @@ const FirstTimeMessagesCount = 60;
 const EachFetchMessagesCount = 30;
 
 const OneYear = 365 * 24 * 3600 * 1000;
-const ThreeDay = 3 * 24 * 3600 * 1000;
 
 /** 石头剪刀布, 用于随机生成结果 */
 const RPS = ['石头', '剪刀', '布'];
 
 const { XMLHttpRequest } = require('xmlhttprequest');
+
+type OpenAIChatMessage = {
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+};
+
+type AIStreamEventMessage = {
+    _id: string;
+    createTime: Date;
+    from: Record<string, any>;
+    to: string;
+    type: 'text';
+    content: string;
+    loading: boolean;
+};
+
+type AIStreamEventPayload = {
+    linkmanId: string;
+    messageId: string;
+    message: AIStreamEventMessage;
+};
+
+function normalizeContextCount(value: unknown, fallback = 10) {
+    const parsed = parseInt(`${value ?? ''}`, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) {
+        return fallback;
+    }
+    return Math.min(parsed, 50);
+}
+
+function resolveAIConfig(user: Pick<UserDocument, 'aiApiKey' | 'aiBaseUrl' | 'aiModel' | 'aiContextCount'>) {
+    const apiKey = (user.aiApiKey || config.openai.apiKey || '').trim();
+    const baseUrl = (user.aiBaseUrl || config.openai.baseUrl || '').trim();
+    const model = (user.aiModel || config.openai.model || '').trim();
+    const contextCount = normalizeContextCount(
+        user.aiContextCount,
+        normalizeContextCount(config.openai.contextCount, 10),
+    );
+
+    assert(apiKey, '未配置 AI API Key');
+    assert(baseUrl, '未配置 AI Base URL');
+    assert(model, '未配置 AI Model');
+
+    return {
+        apiKey,
+        baseUrl,
+        model,
+        contextCount,
+    };
+}
+
+function resolveChatCompletionsUrl(baseUrl: string) {
+    const normalized = baseUrl.trim().replace(/\/+$/, '');
+    if (/\/chat\/completions$/i.test(normalized)) {
+        return normalized;
+    }
+    return `${normalized}/chat/completions`;
+}
+
+function normalizeAssistantReply(content: unknown) {
+    if (typeof content === 'string') {
+        return content.trim();
+    }
+    if (Array.isArray(content)) {
+        return content
+            .map((item) => {
+                if (typeof item === 'string') {
+                    return item;
+                }
+                if (item && typeof item === 'object' && 'text' in item) {
+                    return `${(item as { text?: string }).text || ''}`;
+                }
+                return '';
+            })
+            .join('\n')
+            .trim();
+    }
+    return '';
+}
+
+async function getPrimaryBotName() {
+    return (await getConfigWithDefault('BOTS'))
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)[0] || '';
+}
+
+async function buildConversationMessages(
+    userId: string,
+    botId: string,
+    contextCount: number,
+    isGroup: boolean,
+) {
+    const messages = await Message.find(
+        {
+            aiContextOwner: userId,
+            aiContextBot: botId,
+            type: 'text',
+            deleted: { $ne: true },
+        },
+        {
+            from: 1,
+            content: 1,
+            createTime: 1,
+        },
+        {
+            sort: { createTime: -1 },
+            limit: Math.max(contextCount + 1, 1),
+        },
+    ).populate('from', { username: 1 });
+
+    return messages
+        .reverse()
+        .map((message) => {
+            const from = message.from as unknown as { _id?: { toString: () => string }; username?: string };
+            const fromId = from?._id?.toString?.() || `${message.from}`;
+            const isAssistant = fromId === botId;
+            const role: OpenAIChatMessage['role'] = isAssistant ? 'assistant' : 'user';
+            const prefix = isGroup && !isAssistant ? `${from?.username || '用户'}: ` : '';
+            return {
+                role,
+                content: `${prefix}${message.content}`.trim(),
+            };
+        })
+        .filter((message) => message.content);
+}
+
+async function streamAIReply(
+    aiUser: Pick<UserDocument, 'aiApiKey' | 'aiBaseUrl' | 'aiModel' | 'aiContextCount'>,
+    botName: string,
+    requesterId: string,
+    botId: string,
+    isGroup: boolean,
+    onProgress?: (reply: string) => Promise<void> | void,
+) {
+    const { apiKey, baseUrl, model, contextCount } = resolveAIConfig(aiUser);
+    const historyMessages = await buildConversationMessages(
+        requesterId,
+        botId,
+        contextCount,
+        isGroup,
+    );
+    const messages: OpenAIChatMessage[] = [
+        {
+            role: 'system',
+            content: isGroup
+                ? `你是群聊机器人 ${botName}。请结合最近聊天上下文自然回复，保持简洁，优先使用中文。`
+                : `你是私聊机器人 ${botName}。请结合上下文自然回复，保持简洁，优先使用中文。`,
+        },
+        ...historyMessages,
+    ];
+
+    const response = await axios.post(
+        resolveChatCompletionsUrl(baseUrl),
+        {
+            model,
+            messages,
+            stream: true,
+        },
+        {
+            timeout: 0,
+            responseType: 'stream',
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+        },
+    );
+
+    let buffer = '';
+    let reply = '';
+    let done = false;
+
+    for await (const chunk of response.data as AsyncIterable<Buffer | string>) {
+        buffer += chunk.toString();
+
+        let separatorIndex = buffer.search(/\r?\n\r?\n/);
+        while (separatorIndex !== -1) {
+            const rawEvent = buffer.slice(0, separatorIndex);
+            const separatorLength = buffer[separatorIndex] === '\r' ? 4 : 2;
+            buffer = buffer.slice(separatorIndex + separatorLength);
+
+            const lines = rawEvent.split(/\r?\n/);
+            for (const line of lines) {
+                if (!line.startsWith('data:')) {
+                    continue;
+                }
+                const data = line.slice(5).trim();
+                if (!data) {
+                    continue;
+                }
+                if (data === '[DONE]') {
+                    done = true;
+                    break;
+                }
+
+                try {
+                    const parsed = JSON.parse(data);
+                    const delta = normalizeAssistantReply(
+                        parsed?.choices?.[0]?.delta?.content ??
+                            parsed?.choices?.[0]?.message?.content,
+                    );
+                    if (delta) {
+                        reply += delta;
+                        if (onProgress) {
+                            await onProgress(reply);
+                        }
+                    }
+                } catch (error) {
+                    logger.warn(
+                        '[streamAIReply] Failed to parse chunk:',
+                        (error as Error).message,
+                    );
+                }
+            }
+
+            if (done) {
+                break;
+            }
+            separatorIndex = buffer.search(/\r?\n\r?\n/);
+        }
+
+        if (done) {
+            break;
+        }
+    }
+
+    return reply.trim() || `🔴 ${botName}暂不可用, 请稍后再试`;
+}
+
+function buildAIStreamMessage(
+    messageId: string,
+    from: Record<string, any>,
+    to: string,
+    content: string,
+    createTime = new Date(),
+    loading = true,
+): AIStreamEventMessage {
+    return {
+        _id: messageId,
+        createTime,
+        from,
+        to,
+        type: 'text',
+        content,
+        loading,
+    };
+}
+
+async function tagAIContextMessage(
+    requesterId: string,
+    conversationId: string,
+    botId: string,
+    content: string,
+) {
+    if (!content) {
+        return;
+    }
+    await Message.findOneAndUpdate(
+        {
+            from: requesterId,
+            to: conversationId,
+            type: 'text',
+            content,
+            createTime: { $gte: new Date(Date.now() - 5 * 60 * 1000) },
+        },
+        {
+            aiContextOwner: requesterId,
+            aiContextBot: botId,
+        },
+        {
+            sort: { createTime: -1 },
+        },
+    );
+}
+
+function getCurrentSocket(ctx: Context<any>) {
+    return (ctx.socket as any).__socket;
+}
+
+function emitToCurrentSocket(
+    ctx: Context<any>,
+    event: string,
+    payload: AIStreamEventPayload,
+) {
+    const socket = getCurrentSocket(ctx);
+    if (socket) {
+        socket.emit(event, payload);
+    }
+}
+
+async function emitToUserSockets(
+    ctx: Context<any>,
+    userId: string,
+    event: string,
+    payload: AIStreamEventPayload,
+    excludeSocketId?: string,
+) {
+    const sockets = await Socket.find({ user: userId });
+    const socketIds =
+        sockets
+            ?.map((socket) => socket.id)
+            .filter((socketId) => socketId !== excludeSocketId) || [];
+    if (socketIds.length) {
+        ctx.socket.emit(socketIds, event, payload);
+    }
+}
+
+async function emitPrivateAIEvent(
+    ctx: Context<any>,
+    userId: string,
+    event: string,
+    payload: AIStreamEventPayload,
+    includeCurrent = true,
+) {
+    if (includeCurrent) {
+        emitToCurrentSocket(ctx, event, payload);
+    }
+    await emitToUserSockets(ctx, userId, event, payload, ctx.socket.id);
+}
+
+function emitGroupAIEvent(
+    ctx: Context<any>,
+    groupId: string,
+    event: string,
+    payload: AIStreamEventPayload,
+    includeCurrent = true,
+) {
+    if (includeCurrent) {
+        emitToCurrentSocket(ctx, event, payload);
+    }
+    ctx.socket.emit(groupId, event, payload);
+}
 
 async function pushNotification(
     notificationTokens: string[],
@@ -109,38 +442,27 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         assert(toUser, '用户不存在');
     }
 
-    // 根据 Redis 中的禁言开关（全员禁言 / 新用户禁言 / 未注册用户禁言）限制发言
+    // 根据 Redis 中的禁言开关（全员禁言 / 未注册用户禁言）限制发言
     if (
         toGroup ||
         (toUser &&
             toUser.tag !== 'bot' &&
-            !config.administrators.includes(toUser.username))
+            !(toUser.email && adminEmails.includes(toUser.email)))
     ) {
         const disableSendMessage = await Redis.get(DisableSendMessageKey);
         assert(
             disableSendMessage !== 'true' || ctx.socket.isAdmin,
             '全员禁言中',
         );
-
-        const disableNewUserSendMessage = await Redis.get(
-            DisableNewUserSendMessageKey,
-        );
-        if (disableNewUserSendMessage === 'true') {
-            const user = await User.findById(ctx.socket.user);
-            const isNewUser =
-                user && user.createTime.getTime() > Date.now() - ThreeDay;
-            assert(ctx.socket.isAdmin || !isNewUser, '新用户禁言中');
-        }
         const disableNoRegisterUserSendMessage = await Redis.get(
             DisableRegisterUserSendMessageKey,
         );
         if (disableNoRegisterUserSendMessage === 'true') {
             const user = await User.findById(ctx.socket.user);
             const isRegisterUser = user && user.email;
-            const defaultUsername = await getConfigWithDefault('DEFAULT_USERNAME');
             assert(
                 ctx.socket.isAdmin || isRegisterUser,
-                `${defaultUsername}禁言中`,
+                '游客禁言中',
             );
         }
     }
@@ -154,7 +476,6 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
             id: 1,
             level: 1,
             email: 1,
-            password: 1,
         },
     );
     if (!user) {
@@ -205,22 +526,6 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
             inviter: user._id,
             group: shareTargetGroup._id,
         });
-    }
-
-    const banedIPLocs = await getConfigWithDefault('BANED_IP_LOCS');
-    const defaultUsername = await getConfigWithDefault('DEFAULT_USERNAME');
-
-    if (banedIPLocs) {
-        const banedIPLocsArray = banedIPLocs.split(',');
-        if (
-            toGroup &&
-            toGroup.isDefault &&
-            banedIPLocsArray.includes(user.tag)
-        ) {
-            throw new AssertionError({
-                message: `${user.tag}的${defaultUsername}不能在群组中发言`,
-            });
-        }
     }
 
     const lastMessageKey = `chat:lastMessage:${user._id}`;
@@ -360,61 +665,138 @@ export async function sendBotMessage(ctx: Context<SendMessageData>) {
     const toUser = await User.findOne({ _id: userId });
     assert(toUser, '用户不存在');
     const botName = toUser.username;
-    const botAPIName = botName + '_API';
-    const botAPI = process.env[botAPIName];
     const user = await User.findOne(
         { _id: ctx.socket.user },
-        { username: 1, avatar: 1, tag: 1, id: 1, level: 1, email: 1 },
+        {
+            username: 1,
+            avatar: 1,
+            tag: 1,
+            id: 1,
+            level: 1,
+            email: 1,
+            aiApiKey: 1,
+            aiBaseUrl: 1,
+            aiModel: 1,
+            aiContextCount: 1,
+        },
     );
     if (!user) {
         throw new AssertionError({ message: '用户不存在' });
     }
-    let reply = `🔴 ${botName}暂不可用, 请稍后再试`;
-    let data = {
-        prompt: content,
-        group: ctx.socket.user.toString(),
-        uid: user.id.toString(),
-    };
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', botAPI);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.timeout = 10000;
-    xhr.send(JSON.stringify(data));
-    await new Promise((resolve) => (xhr.onload = resolve)); // 使用 await 等待请求完成
-    if (xhr.status === 200) {
-        reply = xhr.responseText;
-    }
     const bot = toUser;
     // 从bot发送到客户端 user是bot toUser是用户
     const to2 = user._id > bot._id ? bot._id + user._id : user._id + bot._id;
+
+    if (type === 'text') {
+        await tagAIContextMessage(
+            ctx.socket.user.toString(),
+            to2,
+            bot._id.toString(),
+            xss(content),
+        );
+    }
+
     const message = await Message.create({
         from: bot._id,
         to: to2,
         type: 'text',
-        content: reply,
+        content: '',
     } as MessageDocument);
 
-    const messageData = {
-        _id: message._id,
-        createTime: new Date(),
-        from: toUser.toObject(),
-        to: to2,
-        type: 'text',
-        content: reply,
+    const thinkingContent =
+        type === 'text'
+            ? ''
+            : `🔴 ${botName}当前仅支持文本对话`;
+    const initialMessage = buildAIStreamMessage(
+        message._id.toString(),
+        toUser.toObject(),
+        to2,
+        thinkingContent,
+        message.createTime,
+        type === 'text',
+    );
+    const startPayload: AIStreamEventPayload = {
+        linkmanId: to2,
+        messageId: message._id.toString(),
+        message: initialMessage,
     };
-    const targetSockets = await Socket.find({ user: bot?._id });
-    const targetSocketIdList = targetSockets?.map((socket) => socket.id) || [];
-    if (targetSocketIdList.length) {
-        ctx.socket.emit(targetSocketIdList, 'message', messageData);
+
+    await emitToUserSockets(
+        ctx,
+        ctx.socket.user.toString(),
+        'aiMessageStart',
+        startPayload,
+        ctx.socket.id,
+    );
+
+    if (type !== 'text') {
+        message.content = thinkingContent;
+        await message.save();
+        return initialMessage;
     }
 
-    const selfSockets = await Socket.find({ user: ctx.socket.user });
-    const selfSocketIdList = selfSockets?.map((socket) => socket.id) || [];
-    if (selfSocketIdList.length) {
-        ctx.socket.emit(selfSocketIdList, 'message', messageData);
-    }
+    setTimeout(() => {
+        void (async () => {
+            let reply = `🔴 ${botName}暂不可用, 请稍后再试`;
+            try {
+                reply = await streamAIReply(
+                    user,
+                    botName,
+                    ctx.socket.user.toString(),
+                    toUser._id.toString(),
+                    false,
+                    async (contentSoFar) => {
+                        const chunkPayload: AIStreamEventPayload = {
+                            linkmanId: to2,
+                            messageId: message._id.toString(),
+                            message: buildAIStreamMessage(
+                                message._id.toString(),
+                                toUser.toObject(),
+                                to2,
+                                contentSoFar,
+                                message.createTime,
+                                true,
+                            ),
+                        };
+                        await emitPrivateAIEvent(
+                            ctx,
+                            ctx.socket.user.toString(),
+                            'aiMessageChunk',
+                            chunkPayload,
+                        );
+                    },
+                );
+            } catch (error) {
+                logger.error('[sendBotMessage]', (error as Error).message);
+            }
 
-    return messageData;
+            message.content = reply;
+            message.aiContextOwner = ctx.socket.user.toString();
+            message.aiContextBot = bot._id.toString();
+            await message.save();
+
+            const donePayload: AIStreamEventPayload = {
+                linkmanId: to2,
+                messageId: message._id.toString(),
+                message: buildAIStreamMessage(
+                    message._id.toString(),
+                    toUser.toObject(),
+                    to2,
+                    reply,
+                    message.createTime,
+                    false,
+                ),
+            };
+            await emitPrivateAIEvent(
+                ctx,
+                ctx.socket.user.toString(),
+                'aiMessageDone',
+                donePayload,
+            );
+        })();
+    }, 0);
+
+    return initialMessage;
 }
 
 /**
@@ -487,19 +869,8 @@ export async function sendGroupBotMessage(ctx: Context<SendMessageData>) {
         });
     }
 
-    const user = await User.findOne(
-        { _id: ctx.socket.user },
-        { username: 1, avatar: 1, tag: 1, id: 1 },
-    );
-    if (!user) {
-        throw new AssertionError({ message: '用户不存在' });
-    }
-
-    const botName = await getConfigWithDefault('DEFAULT_BOT_NAME');
-    assert(botName, '未配置群聊机器人，请在管理台设置 DEFAULT_BOT_NAME');
-    const botAPIName = botName + '_API';
-    const botAPI = process.env[botAPIName];
-
+    const botName = await getPrimaryBotName();
+    assert(botName, '未配置机器人，请先设置 BOTS');
     const bot = await User.findOne({ username: botName });
     if (!bot) {
         throw new AssertionError({ message: `${botName}不存在` });
@@ -510,44 +881,123 @@ export async function sendGroupBotMessage(ctx: Context<SendMessageData>) {
         await toGroup.save();
     }
 
-    let reply = `🔴${botName}暂不可用, 请稍后再试`;
-
-    if (botAPI && type === 'text') {
-        const data = {
-            prompt: content,
-            group: toGroup._id.toString(),
-            uid: user.id.toString(),
-        };
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', botAPI);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.timeout = 10000;
-        xhr.send(JSON.stringify(data));
-        await new Promise((resolve) => (xhr.onload = resolve));
-        if (xhr.status === 200) {
-            reply = xhr.responseText;
-        }
+    if (type === 'text') {
+        await tagAIContextMessage(
+            ctx.socket.user.toString(),
+            to,
+            bot._id.toString(),
+            messageContent,
+        );
     }
 
     const message = await Message.create({
         from: bot._id,
         to,
         type: 'text',
-        content: reply,
+        content: '',
     } as MessageDocument);
 
-    const messageData = {
-        _id: message._id,
-        createTime: message.createTime,
-        from: bot.toObject(),
+    const thinkingContent =
+        type === 'text'
+            ? ''
+            : `🔴 ${botName}当前仅支持文本对话`;
+    const initialMessage = buildAIStreamMessage(
+        message._id.toString(),
+        bot.toObject(),
         to,
-        type: 'text',
-        content: message.content,
+        thinkingContent,
+        message.createTime,
+        type === 'text',
+    );
+    const startPayload: AIStreamEventPayload = {
+        linkmanId: to,
+        messageId: message._id.toString(),
+        message: initialMessage,
     };
 
-    ctx.socket.emit(toGroup._id.toString(), 'message', messageData);
+    emitGroupAIEvent(ctx, toGroup._id.toString(), 'aiMessageStart', startPayload, false);
 
-    return messageData;
+    if (type !== 'text') {
+        message.content = thinkingContent;
+        await message.save();
+        return initialMessage;
+    }
+
+    const aiUser = await User.findOne(
+        { _id: ctx.socket.user },
+        {
+            aiApiKey: 1,
+            aiBaseUrl: 1,
+            aiModel: 1,
+            aiContextCount: 1,
+        },
+    );
+    if (!aiUser) {
+        throw new AssertionError({ message: '用户不存在' });
+    }
+
+    setTimeout(() => {
+        void (async () => {
+            let reply = `🔴${botName}暂不可用, 请稍后再试`;
+            try {
+                reply = await streamAIReply(
+                    aiUser,
+                    botName,
+                    ctx.socket.user.toString(),
+                    bot._id.toString(),
+                    true,
+                    async (contentSoFar) => {
+                        const chunkPayload: AIStreamEventPayload = {
+                            linkmanId: to,
+                            messageId: message._id.toString(),
+                            message: buildAIStreamMessage(
+                                message._id.toString(),
+                                bot.toObject(),
+                                to,
+                                contentSoFar,
+                                message.createTime,
+                                true,
+                            ),
+                        };
+                        emitGroupAIEvent(
+                            ctx,
+                            toGroup!._id.toString(),
+                            'aiMessageChunk',
+                            chunkPayload,
+                        );
+                    },
+                );
+            } catch (error) {
+                logger.error('[sendGroupBotMessage]', (error as Error).message);
+            }
+
+            message.content = reply;
+            message.aiContextOwner = ctx.socket.user.toString();
+            message.aiContextBot = bot._id.toString();
+            await message.save();
+
+            const donePayload: AIStreamEventPayload = {
+                linkmanId: to,
+                messageId: message._id.toString(),
+                message: buildAIStreamMessage(
+                    message._id.toString(),
+                    bot.toObject(),
+                    to,
+                    reply,
+                    message.createTime,
+                    false,
+                ),
+            };
+            emitGroupAIEvent(
+                ctx,
+                toGroup!._id.toString(),
+                'aiMessageDone',
+                donePayload,
+            );
+        })();
+    }, 0);
+
+    return initialMessage;
 }
 
 /**

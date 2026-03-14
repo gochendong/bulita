@@ -94,6 +94,39 @@
     display: block;
 }
 
+.announcementInput {
+    width: 100%;
+    min-height: 96px;
+    padding: 12px 14px;
+    border-radius: @input-radius-sm;
+    border: 1px solid @input-border;
+    box-shadow: @input-shadow;
+    font-size: 14px;
+    line-height: 1.6;
+    color: @input-text;
+    background-color: @input-bg;
+    box-sizing: border-box;
+    resize: vertical;
+    overflow-y: auto;
+    transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+
+    &::placeholder {
+        color: @input-placeholder;
+    }
+
+    &:hover {
+        background-color: @input-bg-hover;
+        border-color: darken(@input-border, 3%);
+    }
+
+    &:focus {
+        outline: none;
+        border-color: @input-border-focus;
+        background-color: #fff;
+        box-shadow: @input-shadow-focus;
+    }
+}
+
 .button {
     height: 36px;
     line-height: 36px;

@@ -1,10 +1,8 @@
-import bcrypt from 'bcryptjs';
+import axios from 'axios';
 import assert, { AssertionError } from 'assert';
 import jwt from 'jwt-simple';
 import { Types } from '@bulita/database/mongoose';
 import config from '@bulita/config/server';
-import getRandomAvatar from '@bulita/utils/getRandomAvatar';
-import { SALT_ROUNDS } from '@bulita/utils/const';
 import Snowflake from '@bulita/utils/snowflake';
 import User, { UserDocument } from '@bulita/database/mongoose/models/user';
 import Group, { GroupDocument } from '@bulita/database/mongoose/models/group';
@@ -16,23 +14,13 @@ import Message, {
     handleInviteV2Messages,
 } from '@bulita/database/mongoose/models/message';
 import Notification from '@bulita/database/mongoose/models/notification';
-import {
-    DisableRegisterUserSendMessageKey,
-    DisableRegisterUserKey,
-    getNewRegisteredUserIpKey,
-    getNewUserKey,
-    Redis,
-} from '@bulita/database/redis/initRedis';
-import { getConfig, getConfigWithDefault } from '../utils/runtimeConfig';
+import { getConfigWithDefault } from '../utils/runtimeConfig';
 import chalk from 'chalk';
 
 const { XMLHttpRequest } = require('xmlhttprequest');
 const {IP_LOCATION_API} = process.env;
 
 const { isValid } = Types.ObjectId;
-
-/** 一天时间 */
-const OneDay = 1000 * 60 * 60 * 24;
 
 interface Environment {
     /** 客户端系统 */
@@ -41,6 +29,15 @@ interface Environment {
     browser: string;
     /** 客户端环境信息 */
     environment: string;
+}
+
+interface GoogleTokenInfo {
+    aud: string;
+    email?: string;
+    email_verified?: string | boolean;
+    name?: string;
+    picture?: string;
+    sub: string;
 }
 
 /**
@@ -61,31 +58,6 @@ function generateToken(user: string, uid: string, environment: string) {
     );
 }
 
-/**
- * 处理注册时间不满24小时的用户
- * @param user 用户
- * @param ip
- */
-async function handleNewUser(user: UserDocument, ip = '') {
-    // 将用户添加到新用户列表, 24小时后删除
-    if (Date.now() - user.createTime.getTime() < OneDay) {
-        const userId = user._id.toString();
-        await Redis.set(getNewUserKey(userId), userId, Redis.Day);
-
-        if (ip) {
-            const registerIpInterval = await getConfigWithDefault('REGISTER_IP_INTERVAL');
-            const registeredCount = await Redis.get(
-                getNewRegisteredUserIpKey(ip),
-            );
-            await Redis.set(
-                getNewRegisteredUserIpKey(ip),
-                (parseInt(registeredCount || '0', 10) + 1).toString(),
-                registerIpInterval,
-            );
-        }
-    }
-}
-
 async function getUserNotificationTokens(user: UserDocument) {
     const notifications = (await Notification.find({ user })) || [];
     return notifications.map(({ token }) => token);
@@ -102,7 +74,7 @@ function randomString(len: number) {
 }
 
 async function addDefaultLinkmans(user: UserDocument) {
-    // 登录时自动加群和加联系人
+    // 登录时自动加默认群
     const defaultGroup = await Group.findOne({ isDefault: true });
     if (!defaultGroup) {
         console.log(chalk.red('Default group does not exist'));
@@ -111,109 +83,86 @@ async function addDefaultLinkmans(user: UserDocument) {
     if (!defaultGroup.creator) {
         defaultGroup.creator = user._id;
     }
-    if (user && defaultGroup.members.indexOf(user._id) === -1) {
+    const isInDefaultGroup = defaultGroup.members.some(
+        (memberId) => memberId.toString() === user._id.toString(),
+    );
+    if (!isInDefaultGroup) {
         defaultGroup.members.push(user._id);
     }
     await defaultGroup.save();
-
-    const defaultLinkmans = await getConfigWithDefault('DEFAULT_LINKMANS');
-
-    if (defaultLinkmans) {
-        const defaultLinkmansArray = defaultLinkmans.split(',');
-        await Promise.all(
-            defaultLinkmansArray.map(async (defaultLinkman: UserDocument) => {
-                const linkman = await User.findOne({
-                    username: defaultLinkman,
-                });
-                if (!linkman) {
-                    console.log(chalk.red(`User [${linkman}] does not exist`));
-                } else {
-                    const friend = await Friend.find({
-                        from: user,
-                        to: linkman._id,
-                    });
-                    if (friend.length === 0) {
-                        Friend.create({
-                            from: user._id,
-                            to: linkman._id,
-                        } as FriendDocument);
-                    }
-                }
-            }),
-        );
-    }
 }
 
-/**
- * 注册新用户
- * @param ctx Context
- */
-export async function register(
-    ctx: Context<{ username: string; password: string } & Environment>,
-) {
-    const enableRegister = await getConfigWithDefault('ENABLE_REGISTER_USER');
-    if (enableRegister !== 'true') {
-        throw AssertionError({message: '本站暂不开放注册'});
-    }
-    let { username, password, os, browser, environment } = ctx.data;
-    const defaultUsername = await getConfigWithDefault('DEFAULT_USERNAME');
+function getGoogleOnlyMessage() {
+    return '当前仅支持 Google 登录';
+}
 
-    for (let i = 3; i < 10; i++) {
-        username = `${defaultUsername}${randomString(i)}`;
-        const user = await User.findOne({ username });
-        if (user) {
-            continue;
-        }
-        break;
-    }
+function isConfiguredAdmin(user: Pick<UserDocument, 'username' | 'email'>) {
+    const adminEmails = config.adminEmails.map((email) => email.trim()).filter(Boolean);
+    return !!user.email && adminEmails.includes(user.email);
+}
 
-    const registeredCountWithin24Hours = await Redis.get(
-        getNewRegisteredUserIpKey(ctx.socket.ip),
-    );
-    assert(
-        parseInt(registeredCountWithin24Hours || '0', 10) < 1,
-        '您的IP受限, 暂时无法登录',
-    );
+async function getPrimaryBotName() {
+    return (await getConfigWithDefault('BOTS'))
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)[0] || '';
+}
 
+async function resolveUserTag(username: string, ip: string) {
     let tag = '';
-    const botsList = (await getConfigWithDefault('BOTS')).split(',').map((s: string) => s.trim()).filter(Boolean);
+    const botsList = (await getConfigWithDefault('BOTS'))
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean);
     if (botsList.includes(username)) {
         tag = 'bot';
     } else if (IP_LOCATION_API) {
-        const url = `${IP_LOCATION_API}${ctx.socket.ip.split(',')[0]}`;
+        const url = `${IP_LOCATION_API}${ip.split(',')[0]}`;
         const xhr = new XMLHttpRequest();
         xhr.open('GET', url);
         xhr.timeout = 3000;
         xhr.send();
-        await new Promise((resolve) => (xhr.onload = resolve)); // 使用 await 等待请求完成
-        if (xhr.status === 200) {
-            tag = xhr.responseText;
+        try {
+            await new Promise((resolve) => (xhr.onload = resolve));
+            if (xhr.status === 200) {
+                tag = xhr.responseText;
+            }
+        } catch (error) {
+            console.log(error);
         }
     }
-    let newUser = null;
-    const snowflake = new Snowflake(1n, 1n, 0n);
-    try {
-        newUser = await User.create({
-            username,
-            id: snowflake.nextId().toString(),
-            avatar: getRandomAvatar(),
-            lastLoginIp: ctx.socket.ip,
-            tag,
-        } as UserDocument);
-    } catch (err) {
-        if ((err as Error).name === 'ValidationError') {
-            return '用户名包含不支持的字符或者长度超过限制';
-        }
-        throw err;
-    }
+    return tag;
+}
 
-    const user = newUser;
-
-    await handleNewUser(newUser, ctx.socket.ip);
+async function getLoginPayload(
+    user: UserDocument,
+    ctx: Context<Environment>,
+    includeToken: boolean,
+) {
+    const { os, browser, environment } = ctx.data;
 
     await addDefaultLinkmans(user);
+    user.lastLoginTime = new Date();
+    user.lastLoginIp = ctx.socket.ip;
+    user.tag = await resolveUserTag(user.username, ctx.socket.ip);
+    await user.save();
 
-    const defaultGroup = await Group.findOne({ isDefault: true });
+    const groups = await Group.find(
+        { members: user._id },
+        {
+            _id: 1,
+            name: 1,
+            avatar: 1,
+            announcement: 1,
+            creator: 1,
+            isDefault: 1,
+            createTime: 1,
+            members: 1,
+        },
+    );
+    groups.forEach((group: GroupDocument) => {
+        ctx.socket.join(group._id.toString());
+    });
 
     const friends = await Friend.find({ from: user._id }).populate('to', {
         avatar: 1,
@@ -224,166 +173,7 @@ export async function register(
         createTime: 1,
     });
 
-    const token = generateToken(
-        newUser._id.toString(),
-        newUser.id.toString(),
-        environment,
-    );
-
-    ctx.socket.user = newUser._id.toString();
-    await Socket.updateOne(
-        { id: ctx.socket.id },
-        {
-            user: newUser._id,
-            os,
-            browser,
-            environment,
-        },
-    );
-
-    // 创建欢迎消息并保存到数据库
-    if (defaultGroup) {
-        try {
-            // 先让用户加入默认群组的 room，这样才能收到消息
-            ctx.socket.join(defaultGroup._id.toString());
-            
-            // 查找或创建系统用户
-            let systemUser = await User.findOne({ username: '系统' });
-            if (!systemUser) {
-                // 如果系统用户不存在，使用新用户作为发送者（前端会处理显示）
-                systemUser = newUser;
-            }
-            
-            // 欢迎文案不包含用户名，由前端 SystemMessage 用 originUsername 展示为「用户名 + 欢迎加入！…」
-            const welcomeContent = '欢迎加入！开始你的聊天吧～';
-            const welcomeMessage = await Message.create({
-                from: systemUser._id,
-                to: defaultGroup._id.toString(),
-                type: 'system',
-                content: welcomeContent,
-            } as MessageDocument);
-
-            // 广播欢迎消息到群组
-            // 注意：from 对象需要包含前端需要的所有字段，originUsername 为新用户名供前端展示
-            const messageData = {
-                _id: welcomeMessage._id,
-                createTime: welcomeMessage.createTime,
-                from: {
-                    _id: systemUser._id.toString(),
-                    username: '系统',
-                    avatar: systemUser.avatar || '',
-                    originUsername: newUser.username,
-                    tag: 'system',
-                },
-                to: defaultGroup._id.toString(),
-                type: 'system',
-                content: welcomeContent,
-            };
-            
-            // 使用 socket.io 广播消息到群组
-            // 注意：ctx.socket.emit 使用 socket.to()，不会发送给发送者自己
-            // 所以需要先发送给当前用户，再广播给其他用户
-            const socket = (ctx.socket as any).__socket;
-            if (socket) {
-                // 直接发送给当前用户
-                socket.emit('message', messageData);
-                // 广播给群组中的其他用户
-                socket.to(defaultGroup._id.toString()).emit('message', messageData);
-            }
-        } catch (error) {
-            // 如果创建欢迎消息失败，不影响注册流程
-            console.error('创建欢迎消息失败:', error);
-        }
-    }
-
-    return {
-        _id: newUser._id,
-        avatar: newUser.avatar,
-        username: newUser.username,
-        groups: [
-            {
-                _id: defaultGroup._id,
-                name: defaultGroup.name,
-                avatar: defaultGroup.avatar,
-                creator: defaultGroup.creator,
-                createTime: defaultGroup.createTime,
-                messages: [],
-            },
-        ],
-        friends,
-        token,
-        isAdmin: false,
-        notificationTokens: [],
-    };
-}
-
-/**
- * 账密登录
- * @param ctx Context
- */
-export async function login(
-    ctx: Context<{ username: string; password: string } & Environment>,
-) {
-    const { username, password, os, browser, environment } = ctx.data;
-    assert(username, '用户名不能为空');
-    assert(password, '密码不能为空');
-
-    const user = await User.findOne({ username });
-    if (!user) {
-        throw new AssertionError({ message: '用户名或密码不正确' });
-    }
-
-    const isPasswordCorrect = bcrypt.compareSync(password, user.password);
-    assert(isPasswordCorrect, '用户名或密码不正确');
-
-    await handleNewUser(user);
-
-    let tag = '';
-    const botsList = (await getConfigWithDefault('BOTS')).split(',').map((s: string) => s.trim()).filter(Boolean);
-    if (botsList.includes(user.username)) {
-        tag = 'bot';
-    } else if (IP_LOCATION_API) {
-        const url = `${IP_LOCATION_API}${ctx.socket.ip.split(',')[0]}`;
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', url);
-        xhr.timeout = 3000;
-        xhr.send();
-        try {
-            await new Promise((resolve) => (xhr.onload = resolve)); // 使用 await 等待请求完成
-            if (xhr.status === 200) {
-                tag = xhr.responseText;
-            }
-        } catch (error) {
-            console.log(error);
-        }
-    }
-    user.lastLoginTime = new Date();
-    user.lastLoginIp = ctx.socket.ip;
-    user.tag = tag;
-    await user.save();
-
-    // await addDefaultLinkmans(user);
-
-    const groups = await Group.find(
-        { members: user._id },
-        {
-            _id: 1,
-            name: 1,
-            avatar: 1,
-            creator: 1,
-            createTime: 1,
-        },
-    );
-    groups.forEach((group) => {
-        ctx.socket.join(group._id.toString());
-    });
-
-    const token = generateToken(
-        user._id.toString(),
-        user.id.toString(),
-        environment,
-    );
-
+    const isAdmin = isConfiguredAdmin(user);
     ctx.socket.user = user._id.toString();
     await Socket.updateOne(
         { id: ctx.socket.id },
@@ -394,17 +184,28 @@ export async function login(
             environment,
         },
     );
+    const socket = (ctx.socket as any).__socket;
+    if (socket) {
+        socket.data.isAdmin = isAdmin;
+    }
+
+    let bot = null;
+    const defaultBotName = await getPrimaryBotName();
+    if (defaultBotName) {
+        bot = await User.findOne(
+            { username: defaultBotName },
+            {
+                _id: 1,
+                username: 1,
+                avatar: 1,
+                tag: 1,
+                level: 1,
+                signature: 1,
+            },
+        );
+    }
 
     const notificationTokens = await getUserNotificationTokens(user);
-
-    const friends = await Friend.find({ from: user._id }).populate('to', {
-        avatar: 1,
-        username: 1,
-        signature: 1,
-        level: 1,
-        tag: 1,
-        createTime: 1,
-    });
 
     return {
         _id: user._id,
@@ -414,13 +215,153 @@ export async function login(
         level: user.level,
         signature: user.signature,
         pushToken: user.pushToken,
+        aiApiKey: user.aiApiKey || '',
+        aiBaseUrl: user.aiBaseUrl || '',
+        aiModel: user.aiModel || '',
+        aiContextCount: user.aiContextCount || 0,
         tag: user.tag,
-        groups,
+        createTime: user.createTime,
+        groups: groups.map((g: GroupDocument) => ({
+            _id: g._id,
+            name: g.name,
+            avatar: g.avatar,
+            announcement: g.announcement,
+            creator: g.creator,
+            isDefault: g.isDefault,
+            createTime: g.createTime,
+            membersCount: g.members.length,
+        })),
         friends,
-        token,
-        isAdmin: config.administrators.includes(user.username),
+        bot,
+        isAdmin,
         notificationTokens,
+        ...(includeToken
+            ? {
+                  token: generateToken(
+                      user._id.toString(),
+                      user.id.toString(),
+                      environment,
+                  ),
+              }
+            : {}),
     };
+}
+
+function normalizeUsernameCandidate(value: string) {
+    return value.trim().replace(/\s+/g, ' ').slice(0, 20);
+}
+
+async function generateUniqueUsername(baseName: string) {
+    const normalizedBase =
+        normalizeUsernameCandidate(baseName) || 'Google用户';
+
+    let username = normalizedBase;
+    for (let i = 0; i < 10; i += 1) {
+        const existed = await User.findOne({ username });
+        if (!existed) {
+            return username;
+        }
+        const suffix = randomString(4);
+        username = `${normalizedBase.slice(0, 20 - suffix.length)}${suffix}`;
+    }
+
+    return `${'Google用户'.slice(0, 16)}${randomString(4)}`;
+}
+
+async function syncGoogleProfile(user: UserDocument, tokenInfo: GoogleTokenInfo) {
+    user.email = tokenInfo.email || user.email;
+    if (!user.googleId) {
+        user.googleId = tokenInfo.sub;
+    }
+}
+
+async function verifyGoogleCredential(credential: string) {
+    assert(credential, 'Google 登录凭证不能为空');
+    assert(config.googleClientId, '服务端未配置 GOOGLE_CLIENT_ID');
+
+    try {
+        const response = await axios.get<GoogleTokenInfo>(
+            'https://oauth2.googleapis.com/tokeninfo',
+            {
+                params: { id_token: credential },
+                timeout: 5000,
+            },
+        );
+        const tokenInfo = response.data;
+        assert(tokenInfo?.sub, 'Google 登录凭证无效');
+        assert(
+            tokenInfo.aud === config.googleClientId,
+            'Google 登录凭证不匹配当前站点',
+        );
+        assert(
+            tokenInfo.email_verified === true ||
+                tokenInfo.email_verified === 'true',
+            'Google 邮箱未验证',
+        );
+        return tokenInfo;
+    } catch (error) {
+        if (error instanceof AssertionError) {
+            throw error;
+        }
+        throw new AssertionError({ message: 'Google 登录校验失败' });
+    }
+}
+
+/**
+ * 注册新用户
+ * @param ctx Context
+ */
+export async function register(
+    _ctx: Context<Environment>,
+) {
+    throw new AssertionError({ message: getGoogleOnlyMessage() });
+}
+
+/**
+ * 已停用的旧登录入口
+ * @param ctx Context
+ */
+export async function login(
+    _ctx: Context<Environment>,
+) {
+    throw new AssertionError({ message: getGoogleOnlyMessage() });
+}
+
+export async function googleLogin(
+    ctx: Context<{ credential: string } & Environment>,
+) {
+    const { credential } = ctx.data;
+    const tokenInfo = await verifyGoogleCredential(credential);
+
+    let user = await User.findOne({ googleId: tokenInfo.sub });
+    if (!user && tokenInfo.email) {
+        const bindCandidate = await User.findOne({ email: tokenInfo.email });
+        if (bindCandidate && !bindCandidate.googleId) {
+            await syncGoogleProfile(bindCandidate, tokenInfo);
+            user = await bindCandidate.save();
+        }
+    }
+
+    if (!user) {
+        const username = await generateUniqueUsername(
+            tokenInfo.name || tokenInfo.email || '',
+        );
+        const snowflake = new Snowflake(1n, 1n, 0n);
+        user = await User.create({
+            username,
+            id: snowflake.nextId().toString(),
+            avatar: tokenInfo.picture || '',
+            email: tokenInfo.email || '',
+            googleId: tokenInfo.sub,
+            lastLoginIp: ctx.socket.ip,
+        } as UserDocument);
+        await addDefaultLinkmans(user);
+    } else {
+        await syncGoogleProfile(user, tokenInfo);
+        await user.save();
+    }
+
+    return getLoginPayload(user, ctx, true);
 }
 
 /**
@@ -430,7 +371,7 @@ export async function login(
 export async function loginByToken(
     ctx: Context<{ token: string } & Environment>,
 ) {
-    const { token, os, browser, environment } = ctx.data;
+    const { token } = ctx.data;
 
     assert(token, 'token不能为空');
 
@@ -457,6 +398,10 @@ export async function loginByToken(
             level: 1,
             signature: 1,
             pushToken: 1,
+            aiApiKey: 1,
+            aiBaseUrl: 1,
+            aiModel: 1,
+            aiContextCount: 1,
             tag: 1,
             createTime: 1,
         },
@@ -465,120 +410,18 @@ export async function loginByToken(
         throw new AssertionError({ message: '您的身份已过期 请重新登录' });
     }
 
-    await handleNewUser(user);
-
-    let tag = '';
-    const botsList = (await getConfigWithDefault('BOTS')).split(',').map((s: string) => s.trim()).filter(Boolean);
-    if (botsList.includes(user.username)) {
-        tag = 'bot';
-    } else if (IP_LOCATION_API) {
-        const url = `${IP_LOCATION_API}${ctx.socket.ip.split(',')[0]}`;
-        const xhr = new XMLHttpRequest();
-        xhr.open('GET', url);
-        xhr.timeout = 3000;
-        xhr.send();
-        try {
-            await new Promise((resolve) => (xhr.onload = resolve)); // 使用 await 等待请求完成
-            if (xhr.status === 200) {
-                tag = xhr.responseText;
-            }
-        } catch (error) {
-            console.log(error);
-        }
-    }
-    user.lastLoginTime = new Date();
-    user.lastLoginIp = ctx.socket.ip;
-    user.tag = tag;
-    await user.save();
-
-    // await addDefaultLinkmans(user);
-
-    const groups = await Group.find(
-        { members: user._id },
-        {
-            _id: 1,
-            name: 1,
-            avatar: 1,
-            announcement: 1,
-            creator: 1,
-            createTime: 1,
-            members: 1,
-        },
-    );
-    groups.forEach((group: GroupDocument) => {
-        ctx.socket.join(group._id.toString());
-    });
-
-    const friends = await Friend.find({ from: user._id }).populate('to', {
-        avatar: 1,
-        username: 1,
-        signature: 1,
-        level: 1,
-        tag: 1,
-        createTime: 1,
-    });
-
-    ctx.socket.user = user._id.toString();
-    await Socket.updateOne(
-        { id: ctx.socket.id },
-        {
-            user: user._id,
-            os,
-            browser,
-            environment,
-        },
-    );
-
-    let bot = null;
-    const defaultBotName = await getConfigWithDefault('DEFAULT_BOT_NAME');
-    if (defaultBotName) {
-        bot = await User.findOne({ username: defaultBotName }, {
-            _id: 1,
-            username: 1,
-            avatar: 1,
-            tag: 1,
-            level: 1,
-            signature: 1,
-        });
-    }
-
-    const notificationTokens = await getUserNotificationTokens(user);
-
-    return {
-        _id: user._id,
-        avatar: user.avatar,
-        username: user.username,
-        email: user.email,
-        level: user.level,
-        signature: user.signature,
-        pushToken: user.pushToken,
-        tag: user.tag,
-        createTime: user.createTime,
-        groups: groups.map((g: GroupDocument) => ({
-            _id: g._id,
-            name: g.name,
-            avatar: g.avatar,
-            announcement: g.announcement,
-            creator: g.creator,
-            createTime: g.createTime,
-            membersCount: g.members.length,
-        })),
-        friends,
-        bot,
-        isAdmin: config.administrators.includes(user.username),
-        notificationTokens,
-    };
+    return getLoginPayload(user as UserDocument, ctx, false);
 }
 
 /**
  * 游客登录, 只能获取默认群组信息
  * @param ctx Context
  */
-export async function guest(ctx: Context<Environment>) {
-    const { os, browser, environment } = ctx.data;
+export async function guest(_ctx: Context<Environment>) {
+    const { os, browser, environment } = _ctx.data;
 
     await Socket.updateOne(
-        { id: ctx.socket.id },
+        { id: _ctx.socket.id },
         {
             os,
             browser,
@@ -601,7 +444,7 @@ export async function guest(ctx: Context<Environment>) {
     if (!group) {
         throw new AssertionError({ message: '默认群组不存在' });
     }
-    ctx.socket.join(group._id.toString());
+    _ctx.socket.join(group._id.toString());
 
     const messages = await Message.find(
         { to: group._id },
@@ -691,39 +534,6 @@ export async function deleteFriend(ctx: Context<{ userId: string }>) {
 }
 
 /**
- * 修改用户密码
- * @param ctx Context
- */
-export async function changePassword(
-    ctx: Context<{ oldPassword: string; newPassword: string }>,
-) {
-    const { oldPassword, newPassword } = ctx.data;
-    assert(newPassword, '新密码不能为空');
-    assert(oldPassword === newPassword, '两次密码输入不一致');
-    const passwordRegex = await getConfigWithDefault('PASSWORD_REGEX');
-    const passwordTips = await getConfigWithDefault('PASSWORD_TIPS');
-    if (passwordRegex) {
-        const pattern = new RegExp(passwordRegex);
-        assert(pattern.test(newPassword), passwordTips);
-    }
-    const user = await User.findOne({ _id: ctx.socket.user });
-    if (!user) {
-        throw new AssertionError({ message: '用户不存在' });
-    }
-
-    const salt = await bcrypt.genSalt(SALT_ROUNDS);
-    const hash = await bcrypt.hash(newPassword, salt);
-
-    user.salt = salt;
-    user.password = hash;
-    await user.save();
-
-    return {
-        msg: 'ok',
-    };
-}
-
-/**
  * 修改用户名
  * @param ctx Context
  */
@@ -732,9 +542,6 @@ export async function changeUsername(ctx: Context<{ username: string }>) {
     if (!self) {
         throw new AssertionError({ message: '用户不存在' });
     }
-    // if (!self.password) {
-    //     throw new AssertionError({ message:'请先设置密码'});
-    // }
     const { username } = ctx.data;
     assert(username, '新用户名不能为空');
 
@@ -790,79 +597,58 @@ export async function changePushToken(ctx: Context<{ pushToken: string }>) {
 }
 
 /**
- * 重置用户密码, 需要管理员权限
+ * 修改 AI 对话配置
  * @param ctx Context
  */
-export async function resetUserPassword(ctx: Context<{ username: string }>) {
-    const { username } = ctx.data;
-    assert(username !== '', 'username不能为空');
-
-    const user = await User.findOne({ username });
-    if (!user) {
-        throw new AssertionError({ message: '用户不存在' });
-    }
-
-    const newPassword = await getConfigWithDefault('DEFAULT_PASSWORD');
-    assert(newPassword, '默认密码未配置，请在管理台设置 DEFAULT_PASSWORD');
-    const salt = await bcrypt.genSalt(SALT_ROUNDS);
-    const hash = await bcrypt.hash(newPassword, salt);
-
-    user.salt = salt;
-    user.password = hash;
-    await user.save();
-
-    return {
-        newPassword,
-    };
-}
-
-/**
- * 更新用户标签, 需要管理员权限
- * @param ctx Context
- */
-export async function setUserTag(
-    ctx: Context<{ username: string; tag: string }>,
+export async function changeAIConfig(
+    ctx: Context<{
+        aiApiKey?: string;
+        aiBaseUrl?: string;
+        aiModel?: string;
+        aiContextCount?: string | number;
+    }>,
 ) {
-    const { username, tag } = ctx.data;
-    assert(username !== '', 'username不能为空');
-    // assert(tag !== '', 'tag不能为空');
-    // assert(
-    //     /^([0-9a-zA-Z]{1,2}|[\u4e00-\u9eff]){1,5}$/.test(tag),
-    //     '标签不符合要求, 允许5个汉字或者10个字母',
-    // );
-
-    const user = await User.findOne({ username });
-    if (!user) {
+    const self = await User.findOne({ _id: ctx.socket.user });
+    if (!self) {
         throw new AssertionError({ message: '用户不存在' });
     }
 
-    user.tag = tag;
-    await user.save();
+    const aiApiKey = `${ctx.data.aiApiKey || ''}`.trim();
+    const aiBaseUrl = `${ctx.data.aiBaseUrl || ''}`.trim();
+    const aiModel = `${ctx.data.aiModel || ''}`.trim();
+    const rawContextCount = `${ctx.data.aiContextCount ?? ''}`.trim();
 
-    const sockets = await Socket.find({ user: user._id });
-    const socketIdList = sockets.map((socket) => socket.id);
-    if (socketIdList.length) {
-        ctx.socket.emit(socketIdList, 'changeTag', user.tag);
+    if (aiBaseUrl) {
+        assert(
+            /^https?:\/\//i.test(aiBaseUrl),
+            'Base URL 必须以 http:// 或 https:// 开头',
+        );
     }
+
+    let aiContextCount: number | undefined;
+    if (rawContextCount !== '') {
+        aiContextCount = parseInt(rawContextCount, 10);
+        assert(
+            Number.isFinite(aiContextCount) &&
+                aiContextCount >= 0 &&
+                aiContextCount <= 50,
+            '上下文数量必须是 0-50 的整数',
+        );
+    }
+
+    self.aiApiKey = aiApiKey;
+    self.aiBaseUrl = aiBaseUrl;
+    self.aiModel = aiModel;
+    self.aiContextCount = aiContextCount;
+    await self.save();
 
     return {
         msg: 'ok',
+        aiApiKey,
+        aiBaseUrl,
+        aiModel,
+        aiContextCount: aiContextCount || 0,
     };
-}
-
-/**
- * 获取指定在线用户 ip
- */
-export async function getUserIps(
-    ctx: Context<{ userId: string }>,
-): Promise<string[]> {
-    const { userId } = ctx.data;
-    assert(userId, 'userId不能为空');
-    assert(isValid(userId), '不合法的userId');
-
-    const sockets = await Socket.find({ user: userId });
-    const ipList = sockets.map((socket) => socket.ip) || [];
-    return Array.from(new Set(ipList));
 }
 
 const UserOnlineStatusCacheExpireTime = 1000 * 60;
@@ -918,21 +704,29 @@ function getUserOnlineStatusWrapper() {
 export const getUserOnlineStatus = getUserOnlineStatusWrapper();
 
 /**
- * 管理员按用户名查找用户（用于删除前校验）, 需要管理员权限
+ * 管理员按邮箱查找用户（用于删除/封禁前校验）, 需要管理员权限
  * @param ctx Context
  */
-export async function getAdminUserByUsername(
-    ctx: Context<{ username: string }>,
+export async function getAdminUserByEmail(
+    ctx: Context<{ email: string }>,
 ) {
-    const { username } = ctx.data;
-    assert(username, '用户名不能为空');
-    const name = (username as string).trim();
-    if (!name) {
+    const { email } = ctx.data;
+    assert(email, '邮箱不能为空');
+    const normalizedEmail = (email as string).trim();
+    if (!normalizedEmail) {
         return { exists: false };
     }
-    const user = await User.findOne({ username: name });
+    const user = await User.findOne(
+        { email: normalizedEmail },
+        { username: 1, email: 1 },
+    );
     return user
-        ? { exists: true, username: user.username, _id: user._id.toString() }
+        ? {
+              exists: true,
+              username: user.username,
+              email: user.email || '',
+              _id: user._id.toString(),
+          }
         : { exists: false };
 }
 
@@ -940,21 +734,17 @@ export async function getAdminUserByUsername(
  * 删除用户, 需要管理员权限
  * @param ctx Context
  */
-export async function deleteUser(ctx: Context<{ username: string }>) {
-    const { username } = ctx.data;
-    assert(username, '用户名不能为空');
+export async function deleteUser(ctx: Context<{ email: string }>) {
+    const { email } = ctx.data;
+    assert(email, '邮箱不能为空');
 
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ email });
     if (!user) {
         throw new AssertionError({ message: '用户不存在' });
     }
 
-    const adminsStr = await getConfigWithDefault('ADMINS');
-    const adminUsernames = adminsStr
-        ? adminsStr.split(',').map((s: string) => s.trim()).filter(Boolean)
-        : [];
     assert(
-        !adminUsernames.includes(username),
+        !isConfiguredAdmin(user),
         '不能删除管理员账号',
     );
 
@@ -995,5 +785,34 @@ export async function deleteUser(ctx: Context<{ username: string }>) {
 
     return {
         msg: 'ok',
+    };
+}
+
+/**
+ * 管理员查看指定用户资料, 需要管理员权限
+ * @param ctx Context
+ */
+export async function getAdminUserInfo(
+    ctx: Context<{ userId: string }>,
+) {
+    const { userId } = ctx.data;
+    assert(userId, 'userId不能为空');
+    assert(isValid(userId), '不合法的userId');
+
+    const user = await User.findOne(
+        { _id: userId },
+        { email: 1, lastLoginTime: 1 },
+    );
+    if (!user) {
+        throw new AssertionError({ message: '用户不存在' });
+    }
+
+    const sockets = await Socket.find({ user: userId }, { _id: 1 });
+    return {
+        email: user.email || '',
+        isOnline: sockets.length > 0,
+        lastLoginTime: user.lastLoginTime
+            ? (user.lastLoginTime as Date).toISOString()
+            : null,
     };
 }

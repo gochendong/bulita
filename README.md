@@ -1,52 +1,75 @@
 <div align="center">
-<h1> Bulita </h1>
-
-English / [简体中文](./README_ZH.md)
-
-Bulita is an interesting open source chatroom. It is developed based on [node.js](https://nodejs.org/), [react](https://reactjs.org/) and [socket.io](https://socket.io/) technologies
-
-Online Example: [https://chat.bulita.net/](https://chat.bulita.net)
-
-Github: [https://github.com/gochendong/bulita](https://github.com/gochendong/bulita)
+  <h1>布里塔</h1>
+  <p>简体中文 / <a href="./README_EN.md">English</a></p>
+  <p>一个基于 Node.js、React、Socket.IO、MongoDB 和 Redis 的开源聊天室。</p>
+  <p>
+    <a href="https://chat.bulita.net/">在线演示</a> ·
+    <a href="https://github.com/gochendong/bulita">GitHub</a>
+  </p>
 </div>
 
-## Features
+## 特色
 
-1. 100% fully open source frontend and backend, allowing for rapid construction based on the source code.
-2. Set up automatic replies for robots, set up separate APIs for each robot, and use Markdown to render the content of robot replies.
-3. One-click initialization of groups, contacts, bots, etc. through configuration files.
-4. You can find developers on the official website who can answer your questions in a timely manner.
+- 前后端完全开源，可直接基于源码二次开发。
+- 支持机器人自动回复，并可为每个机器人单独配置 API。
+- 机器人回复支持 Markdown 渲染。
+- 可通过配置文件一键初始化默认群组、联系人和机器人。
 
-## Install
+## 快速开始
 
-1. Switch to the code folder
-    ```
-    git clone https://github.com/gochendong/bulita && cd bulita
-    ```
-2. copy the .env.example to .env and edit it
-3. Start the Redis service. If it is already running, skip this step
-    ```
-    docker-compose -f docker-compose-redis.yaml up --build -d
-    ```
-4. Start the MongoDB service. If it is already running, skip this step
-    ```
-    docker-compose -f docker-compose-mongo.yaml up --build -d
-    ```
-5. Start the chatroom service
-    ```
-    docker-compose -f docker-compose.yaml up --build -d
-    ```
-6. Now you can access the chatroom through http://localhost:9200
+1. 克隆仓库：
 
+   ```bash
+   git clone https://github.com/gochendong/bulita.git
+   cd bulita
+   ```
 
-## Referenced project
+2. 复制环境变量模板：
 
-[https://github.com/yinxin630/fiora](https://github.com/yinxin630/fiora)
+   ```bash
+   cp .env.example .env
+   ```
 
-## License
+3. 修改 `.env` 中的关键配置。
 
-bulita is [MIT licensed](./LICENSE)
+   必填项：
 
-## Sponsor this project
+   - `MONGODB_USERNAME`
+   - `MONGODB_PASSWORD`
+   - `REDIS_PASSWORD`
+   - `JWT_SECRET`
+   - `GOOGLE_CLIENT_ID`
+   - `ADMIN_EMAILS`
 
-![](https://docs.bulita.net/media/202412/usdt_1733018911.png)
+4. 启动全部服务：
+
+   ```bash
+   docker compose up --build -d
+   ```
+
+5. 打开应用：
+
+   - Web: [http://localhost:9200](http://localhost:9200)
+
+## 默认端口
+
+- Bulita Web/服务端：`9200`
+- MongoDB 对外映射端口：`27018`
+- Redis 对外映射端口：`6380`
+
+应用容器内部会通过 Docker 服务名连接 MongoDB 和 Redis，因此容器内端口仍然是 `27017` 和 `6379`。
+
+## 说明
+
+- MongoDB 和 Redis 默认启用密码认证。
+- `ADMIN_EMAILS` 为必填项，首个邮箱会作为默认群创建者的预创建管理员账号。
+- 默认机器人初始化仍然依赖 `BOTS` 等环境变量。
+- Google 登录需要有效的 `GOOGLE_CLIENT_ID`，并在 Google Cloud Console 中配置正确的 JavaScript 来源。
+
+## 参考项目
+
+- 灵感参考 [fiora](https://github.com/yinxin630/fiora)
+
+## 开源协议
+
+[MIT](./LICENSE)

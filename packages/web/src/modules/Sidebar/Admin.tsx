@@ -12,16 +12,13 @@ import store from '../../state/store';
 import { ActionTypes } from '../../state/action';
 import {
     getSealList,
-    resetUserPassword,
     sealUser,
-    setUserTag,
-    sealIp,
+    unsealUser,
     toggleSendMessage,
-    toggleNewUserSendMessage,
     toggleGroupAI,
     getSystemConfig,
     setSystemConfig as setSystemConfigApi,
-    getAdminUserByUsername,
+    getAdminUserByEmail,
     deleteUser,
 } from '../../service';
 
@@ -36,12 +33,9 @@ const styles = {
 
 type SystemConfig = {
     disableSendMessage: boolean;
-    disableNewUserSendMessage: boolean;
     groupAISwitch?: boolean;
     adminConfig?: Record<string, string>;
     adminConfigLabels?: Record<string, string>;
-    /** 修改后需重启服务才能生效的配置键 */
-    restartRequiredKeys?: string[];
 };
 
 interface AdminProps {
@@ -52,15 +46,11 @@ interface AdminProps {
 function Admin(props: AdminProps) {
     const { visible, onClose } = props;
 
-    const [tagUsername, setTagUsername] = useState('');
-    const [tag, setTag] = useState('');
-    const [resetPasswordUsername, setResetPasswordUsername] = useState('');
-    const [sealUsername, setSealUsername] = useState('');
-    const [deleteUsername, setDeleteUsername] = useState('');
-    const deleteUsernameRef = useRef(deleteUsername);
-    deleteUsernameRef.current = deleteUsername;
-    const [sealList, setSealList] = useState({ users: [], ips: [] });
-    const [sealIpAddress, setSealIpAddress] = useState('');
+    const [sealEmail, setSealEmail] = useState('');
+    const [deleteEmail, setDeleteEmail] = useState('');
+    const deleteEmailRef = useRef(deleteEmail);
+    deleteEmailRef.current = deleteEmail;
+    const [sealList, setSealList] = useState({ users: [] });
     const [systemConfig, setSystemConfig] = useState<SystemConfig>();
     const [adminConfigValues, setAdminConfigValues] = useState<Record<string, string>>({});
     const adminConfigValuesRef = useRef<Record<string, string>>({});
@@ -89,44 +79,42 @@ function Admin(props: AdminProps) {
     }, [visible]);
 
     /**
-     * 处理更新用户标签
-     */
-    async function handleSetTag() {
-        const isSuccess = await setUserTag(tagUsername, tag.trim());
-        if (isSuccess) {
-            Message.success('更新用户标签成功, 请刷新页面更新数据');
-            setTagUsername('');
-            setTag('');
-        }
-    }
-
-    /**
-     * 处理重置用户密码操作
-     */
-    async function handleResetPassword() {
-        const res = await resetUserPassword(resetPasswordUsername);
-        if (res) {
-            Message.success(`已将该用户的密码重置为 ${res.newPassword}`);
-            setResetPasswordUsername('');
-        }
-    }
-    /**
      * 处理封禁用户操作
      */
     async function handleSeal() {
-        const isSuccess = await sealUser(sealUsername);
+        const email = sealEmail.trim();
+        if (!email) {
+            Message.warning('请输入要封禁的邮箱');
+            return;
+        }
+        const target = await getAdminUserByEmail(email);
+        if (!target?.exists) {
+            Message.warning('用户不存在');
+            return;
+        }
+        // eslint-disable-next-line no-restricted-globals
+        if (!confirm(`确定要封禁 ${target.username} <${target.email || email}> 吗？`)) {
+            return;
+        }
+        const isSuccess = await sealUser(email);
         if (isSuccess) {
             Message.success('封禁用户成功');
-            setSealUsername('');
+            setSealEmail('');
             handleGetSealList();
         }
     }
 
-    async function handleSealIp() {
-        const isSuccess = await sealIp(sealIpAddress);
+    async function handleUnseal(email: string) {
+        if (!email) {
+            return;
+        }
+        // eslint-disable-next-line no-restricted-globals
+        if (!confirm(`确定要解除封禁 ${email} 吗？`)) {
+            return;
+        }
+        const isSuccess = await unsealUser(email);
         if (isSuccess) {
-            Message.success('封禁ip成功');
-            setSealIpAddress('');
+            Message.success('解除封禁成功');
             handleGetSealList();
         }
     }
@@ -149,21 +137,6 @@ function Admin(props: AdminProps) {
         }
     }
 
-    async function handleDisableSNewUserendMessage() {
-        const isSuccess = await toggleNewUserSendMessage(false);
-        if (isSuccess) {
-            Message.success('开启新用户禁言成功');
-            handleGetSystemConfig();
-        }
-    }
-    async function handleEnableNewUserSendMessage() {
-        const isSuccess = await toggleNewUserSendMessage(true);
-        if (isSuccess) {
-            Message.success('关闭新用户禁言成功');
-            handleGetSystemConfig();
-        }
-    }
-
     async function handleToggleGroupAI(enable: boolean) {
         const isSuccess = await toggleGroupAI(enable);
         if (isSuccess) {
@@ -179,11 +152,7 @@ function Admin(props: AdminProps) {
     async function handleSetSystemConfig(key: string, value: string) {
         const isSuccess = await setSystemConfigApi(key, value);
         if (isSuccess) {
-            const needRestart = systemConfig?.restartRequiredKeys?.includes(key);
             Message.success('已保存');
-            if (needRestart) {
-                Message.warning('该配置需重启服务后生效');
-            }
             handleGetSystemConfig();
         } else {
             Message.error('保存失败');
@@ -191,32 +160,38 @@ function Admin(props: AdminProps) {
     }
 
     /**
-     * 失焦时查找用户是否存在
+     * 失焦时按邮箱查找用户是否存在
      */
     async function handleLookupDeleteUser() {
-        const name = deleteUsernameRef.current.trim();
-        if (!name) return;
-        const res = await getAdminUserByUsername(name);
+        const email = deleteEmailRef.current.trim();
+        if (!email) return;
+        const res = await getAdminUserByEmail(email);
         if (res?.exists) {
-            Message.success(`用户「${res.username}」存在`);
+            Message.success(`用户「${res.username} <${res.email || email}>」存在`);
         } else {
             Message.warning('用户不存在');
         }
     }
 
     async function handleDeleteUser() {
-        if (!deleteUsername) {
-            Message.warning('请输入要删除的用户名');
+        const email = deleteEmail.trim();
+        if (!email) {
+            Message.warning('请输入要删除的邮箱');
+            return;
+        }
+        const target = await getAdminUserByEmail(email);
+        if (!target?.exists) {
+            Message.warning('用户不存在');
             return;
         }
         // eslint-disable-next-line no-restricted-globals
-        if (!confirm(`确定要删除用户 ${deleteUsername} 吗？此操作不可恢复！`)) {
+        if (!confirm(`确定要删除用户 ${target.username} <${target.email || email}> 吗？此操作不可恢复！`)) {
             return;
         }
-        const isSuccess = await deleteUser(deleteUsername);
+        const isSuccess = await deleteUser(email);
         if (isSuccess) {
-            Message.success(`用户 ${deleteUsername} 已被删除`);
-            setDeleteUsername('');
+            Message.success(`用户 ${target.email || email} 已被删除`);
+            setDeleteEmail('');
         }
     }
 
@@ -233,15 +208,17 @@ function Admin(props: AdminProps) {
                         {systemConfig?.adminConfig && systemConfig?.adminConfigLabels && (
                             <div className={Common.block}>
                                 <p className={Common.title}>系统配置</p>
-                                <p className={Style.configTip}>以下配置优先写入 Redis。输入框留空表示该项设为空（不会使用 .env）。点击输入框外即保存。标注「需重启」的项修改后需重启服务生效。</p>
+                                <p className={Style.configTip}>以下配置优先写入 Redis。输入框留空表示该项设为空（不会使用 .env）。点击输入框外即保存。</p>
                                 <div className={Style.configList}>
                                     {Object.keys(systemConfig.adminConfig).map((key) => {
                                         const label =
                                             systemConfig.adminConfigLabels[key] || key;
                                         const isBoolConfig =
-                                            ['ENABLE_REGISTER_USER', 'ONLY_SEARCH_DEFAULT_GROUP'].includes(
+                                            ['ONLY_SEARCH_DEFAULT_GROUP'].includes(
                                                 key,
                                             );
+                                        const isSecretConfig =
+                                            key === 'OPENAI_API_KEY';
                                         const rawValue =
                                             adminConfigValues[key] ??
                                             systemConfig.adminConfig[key] ??
@@ -253,11 +230,6 @@ function Admin(props: AdminProps) {
                                             <div key={key} className={Style.configRow}>
                                                 <label className={Style.configLabel}>
                                                     {label}
-                                                    {systemConfig.restartRequiredKeys?.includes(
-                                                        key,
-                                                    )
-                                                        ? ' (需重启)'
-                                                        : ''}
                                                 </label>
                                                 {isBoolConfig ? (
                                                     <div className={Style.configSwitch}>
@@ -303,7 +275,17 @@ function Admin(props: AdminProps) {
                                                                     .current[key] ?? '',
                                                             )
                                                         }
+                                                        type={
+                                                            isSecretConfig
+                                                                ? 'password'
+                                                                : 'text'
+                                                        }
                                                         placeholder="留空表示该项为空"
+                                                        autoComplete={
+                                                            isSecretConfig
+                                                                ? 'new-password'
+                                                                : 'off'
+                                                        }
                                                     />
                                                 )}
                                             </div>
@@ -330,21 +312,6 @@ function Admin(props: AdminProps) {
                                     关闭全局禁言
                                 </Button>
                             )}
-                            {!systemConfig?.disableNewUserSendMessage ? (
-                                <Button
-                                    className={styles.button}
-                                    onClick={handleDisableSNewUserendMessage}
-                                >
-                                    开启新用户禁言
-                                </Button>
-                            ) : (
-                                <Button
-                                    className={styles.button}
-                                    onClick={handleEnableNewUserSendMessage}
-                                >
-                                    关闭新用户禁言
-                                </Button>
-                            )}
                             {!systemConfig?.groupAISwitch ? (
                                 <Button
                                     className={`${Style.groupAIButton}`}
@@ -367,52 +334,21 @@ function Admin(props: AdminProps) {
                 <div className={Style.adminCol}>
                     <div className={Common.container}>
                         <div className={Common.block}>
-                            <p className={Common.title}>重置用户密码</p>
-                            <div className={Style.inputBlock}>
-                                <Input
-                                    className={Style.input}
-                                    value={resetPasswordUsername}
-                                    onChange={setResetPasswordUsername}
-                                    onBlur={() => resetPasswordUsername.trim() && handleResetPassword()}
-                                    placeholder="要重置密码的用户名"
-                                />
-                            </div>
-                        </div>
-                        <div className={Common.block}>
-                            <p className={Common.title}>更新用户标签</p>
-                            <div className={Style.inputBlock}>
-                                <Input
-                                    className={`${Style.input} ${Style.tagUsernameInput}`}
-                                    value={tagUsername}
-                                    onChange={setTagUsername}
-                                    onBlur={() => tagUsername.trim() && tag.trim() && handleSetTag()}
-                                    placeholder="要更新标签的用户名"
-                                />
-                                <Input
-                                    className={`${Style.input} ${Style.tagInput}`}
-                                    value={tag}
-                                    onChange={setTag}
-                                    onBlur={() => tagUsername.trim() && tag.trim() && handleSetTag()}
-                                    placeholder="标签内容"
-                                />
-                            </div>
-                        </div>
-                        <div className={Common.block}>
                             <p className={Common.title}>删除用户</p>
                             <div className={Style.inputBlock}>
                                 <Input
                                     className={Style.input}
-                                    value={deleteUsername}
-                                    onChange={setDeleteUsername}
+                                    value={deleteEmail}
+                                    onChange={setDeleteEmail}
                                     onBlur={() => handleLookupDeleteUser()}
-                                    placeholder="要删除的用户名"
+                                    placeholder="要删除的邮箱"
                                 />
                                 <Button
                                     className={Style.button}
                                     type="danger"
                                     onClick={handleDeleteUser}
                                 >
-                                    删除
+                                    确认删除
                                 </Button>
                             </div>
                         </div>
@@ -421,42 +357,34 @@ function Admin(props: AdminProps) {
                             <div className={Style.inputBlock}>
                                 <Input
                                     className={Style.input}
-                                    value={sealUsername}
-                                    onChange={setSealUsername}
-                                    onBlur={() => sealUsername.trim() && handleSeal()}
-                                    placeholder="要封禁的用户名"
+                                    value={sealEmail}
+                                    onChange={setSealEmail}
+                                    placeholder="要封禁的邮箱"
                                 />
+                                <Button
+                                    className={Style.button}
+                                    type="danger"
+                                    onClick={handleSeal}
+                                >
+                                    确认封禁
+                                </Button>
                             </div>
                         </div>
                         <div className={Common.block}>
                             <p className={Common.title}>封禁用户列表</p>
                             <div className={Style.sealList}>
-                                {sealList.users.map((username) => (
-                                    <span className={Style.sealUsername} key={username}>
-                                        {username}
-                                    </span>
-                                ))}
-                            </div>
-                        </div>
-                        <div className={Common.block}>
-                            <p className={Common.title}>封禁ip</p>
-                            <div className={Style.inputBlock}>
-                                <Input
-                                    className={Style.input}
-                                    value={sealIpAddress}
-                                    onChange={setSealIpAddress}
-                                    onBlur={() => sealIpAddress.trim() && handleSealIp()}
-                                    placeholder="要封禁的ip"
-                                />
-                            </div>
-                        </div>
-                        <div className={Common.block}>
-                            <p className={Common.title}>封禁ip列表</p>
-                            <div className={Style.sealList}>
-                                {sealList.ips.map((ip) => (
-                                    <span className={Style.sealUsername} key={ip}>
-                                        {ip}
-                                    </span>
+                                {sealList.users.map((email) => (
+                                    <div className={Style.sealUserItem} key={email}>
+                                        <span className={Style.sealUsername}>
+                                            {email}
+                                        </span>
+                                        <Button
+                                            className={Style.unsealButton}
+                                            onClick={() => handleUnseal(email)}
+                                        >
+                                            解除封禁
+                                        </Button>
+                                    </div>
                                 ))}
                             </div>
                         </div>

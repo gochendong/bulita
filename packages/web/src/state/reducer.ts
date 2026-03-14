@@ -1,7 +1,7 @@
 import { isMobile } from '@bulita/utils/ua';
 import getFriendId from '@bulita/utils/getFriendId';
 import convertMessage from '@bulita/utils/convertMessage';
-import getData from '../localStorage';
+import getData, { LocalStorageKey } from '../localStorage';
 import {
     Action,
     ActionTypes,
@@ -60,6 +60,7 @@ export interface Group {
     announcement?: string;
     createTime: string;
     creator: string;
+    isDefault?: boolean;
     membersCount?: number;
     onlineMembers: GroupMember[];
 }
@@ -98,6 +99,10 @@ export interface User {
     email: string;
     signature: string;
     pushToken: string;
+    aiApiKey: string;
+    aiBaseUrl: string;
+    aiModel: string;
+    aiContextCount: number;
     tag: string;
 }
 
@@ -114,6 +119,10 @@ export interface State {
         email: string;
         signature: string;
         pushToken: string;
+        aiApiKey: string;
+        aiBaseUrl: string;
+        aiModel: string;
+        aiContextCount: number;
     } | null;
     linkmans: LinkmansMap;
     /** 聚焦的联系人 */
@@ -274,11 +283,31 @@ function transformTemporary(temporary: Linkman): Linkman {
     return temporary;
 }
 
+function syncFocusStorage(focus: string) {
+    try {
+        if (focus) {
+            window.localStorage.setItem(LocalStorageKey.Focus, focus);
+        } else {
+            window.localStorage.removeItem(LocalStorageKey.Focus);
+        }
+    } catch (_) {
+        // ignore localStorage errors
+    }
+}
+
+function getStoredFocus() {
+    try {
+        return window.localStorage.getItem(LocalStorageKey.Focus) || '';
+    } catch (_) {
+        return '';
+    }
+}
+
 const localStorage = getData();
 export const initialState: State = {
     user: null,
     linkmans: {},
-    focus: '',
+    focus: localStorage.focus || '',
     connect: false,
     status: {
         ready: false,
@@ -343,6 +372,11 @@ function reducer(state: State = initialState, action: Action): State {
                     email: '',
                     level: 0,
                     signature: '',
+                    pushToken: '',
+                    aiApiKey: '',
+                    aiBaseUrl: '',
+                    aiModel: '',
+                    aiContextCount: 0,
                 },
                 linkmans: {
                     [group._id]: group,
@@ -361,6 +395,10 @@ function reducer(state: State = initialState, action: Action): State {
                 level,
                 signature,
                 pushToken,
+                aiApiKey,
+                aiBaseUrl,
+                aiModel,
+                aiContextCount,
                 groups,
                 friends,
                 isAdmin,
@@ -373,12 +411,20 @@ function reducer(state: State = initialState, action: Action): State {
                 ...friends.map(transformFriend),
             ];
 
-            // 如果没登录过, 则将聚焦联系人设置为第一个联系人
-            let { focus } = state;
-            /* istanbul ignore next */
-            if (!state.user && linkmans.length > 0) {
+            const defaultGroup = groups.find((group) => group.isDefault);
+            const persistedFocus = getStoredFocus() || state.focus;
+            let focus = persistedFocus;
+            const hasFocusedLinkman = !!linkmans.find(
+                (linkman) => linkman._id === persistedFocus,
+            );
+            if (hasFocusedLinkman) {
+                focus = persistedFocus;
+            } else if (defaultGroup) {
+                focus = defaultGroup._id;
+            } else if (linkmans.length > 0) {
                 focus = linkmans[0]._id;
             }
+            syncFocusStorage(focus);
             return {
                 ...state,
                 user: {
@@ -389,6 +435,10 @@ function reducer(state: State = initialState, action: Action): State {
                     level,
                     signature,
                     pushToken,
+                    aiApiKey,
+                    aiBaseUrl,
+                    aiModel,
+                    aiContextCount,
                     tag,
                     isAdmin,
                 },
@@ -454,6 +504,7 @@ function reducer(state: State = initialState, action: Action): State {
                     messageKeys.slice(0, messageKeys.length - 50),
                 );
             }
+            syncFocusStorage(focus);
 
             return {
                 ...state,
@@ -493,6 +544,7 @@ function reducer(state: State = initialState, action: Action): State {
                     return state;
                 }
             }
+            syncFocusStorage(focus);
 
             return {
                 ...state,
@@ -511,6 +563,7 @@ function reducer(state: State = initialState, action: Action): State {
             );
             const linkmanIds = Object.keys(linkmans);
             const focus = linkmanIds.length > 0 ? linkmanIds[0] : '';
+            syncFocusStorage(focus);
             return {
                 ...state,
                 linkmans: {

@@ -8,7 +8,24 @@ export default function fetch<T = any>(
     { toast = true } = {},
 ): Promise<[string | null, T | null]> {
     return new Promise((resolve) => {
+        let settled = false;
+        const timer = window.setTimeout(() => {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            if (toast) {
+                Message.info('请求超时，请检查网络后重试');
+            }
+            resolve(['请求超时，请检查网络后重试', null]);
+        }, 15000);
+
         socket.emit(event, data, (res: any) => {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            window.clearTimeout(timer);
             if (typeof res === 'string') {
                 if (toast) {
                     if (res !== '已过滤重复的消息') {

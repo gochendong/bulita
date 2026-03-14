@@ -42,6 +42,33 @@
     width: 80px;
 }
 
+.friendsToggleButton {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--primary-color-10);
+    cursor: pointer;
+    transition: color 0.2s ease, transform 0.2s ease;
+
+    &:hover {
+        color: var(--primary-color-8);
+    }
+}
+
+.friendsToggleIconExpanded,
+.friendsToggleIconCollapsed {
+    transition: transform 0.2s ease;
+}
+
+.friendsToggleIconCollapsed {
+    transform: rotate(180deg);
+}
+
 .rightButtonContainer {
     justify-content: flex-end;
 }

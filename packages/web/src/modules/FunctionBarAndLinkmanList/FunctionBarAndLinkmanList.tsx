@@ -18,7 +18,7 @@ function FunctionBarAndLinkmanList() {
     );
     const aero = useAero();
 
-    if (!functionBarAndLinkmanListVisible) {
+    if (!isLogin || !functionBarAndLinkmanListVisible) {
         return null;
     }
 

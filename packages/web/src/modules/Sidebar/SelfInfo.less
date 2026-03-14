@@ -3,6 +3,18 @@
 .selfInfo {
     height: initial !important;
     width: 500px;
+
+    :global(.rc-dialog-body) {
+        max-height: calc(85vh - 56px);
+    }
+
+    @media @mobile {
+        width: 94vw !important;
+
+        :global(.rc-dialog-body) {
+            padding-bottom: 18px;
+        }
+    }
 }
 
 .changeAvatar {
@@ -49,6 +61,13 @@
     font-size: @font-size-base;
     font-weight: @font-weight-normal;
     color: @warm-text;
+}
+
+.aiConfigTip {
+    margin-bottom: 10px;
+    font-size: @font-size-sm;
+    line-height: 1.6;
+    color: @warm-text-muted;
 }
 
 .button {

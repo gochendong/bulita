@@ -19,7 +19,6 @@ import { ShowUserOrGroupInfoContext } from './context';
 import Chat from './modules/Chat/Chat';
 import globalStyles from './globalStyles';
 import InviteInfo from './modules/InviteInfo';
-import useAction from './hooks/useAction';
 
 /**
  * 获取窗口宽度百分比
@@ -60,7 +59,6 @@ function App() {
         ? getOSSFileUrl(backgroundImageUrl, `image/quality,q_95`)
         : '#';
     const $app = useRef(null);
-    const action = useAction();
 
     // 计算窗口高度/宽度百分比
     const [width, setWidth] = useState(getWidthPercent());
@@ -69,10 +67,6 @@ function App() {
         function handleResize() {
             setWidth(getWidthPercent());
             setHeight(getHeightPercent());
-            // 在宽屏（PC 布局）下，强制显示左侧好友列表
-            if (window.innerWidth >= 900) {
-                action.setStatus('functionBarAndLinkmanListVisible', true);
-            }
         }
 
         handleResize();
@@ -84,7 +78,7 @@ function App() {
         return () => {
             window.removeEventListener('resize', handleResize);
         };
-    }, [action]);
+    }, []);
 
     // 获取底图尺寸
     const [backgroundWidth, setBackgroundWidth] = useState(window.innerWidth);
@@ -92,20 +86,27 @@ function App() {
         window.innerHeight,
     );
     useEffect(() => {
+        if (!backgroundImage) {
+            setBackgroundWidth(window.innerWidth);
+            setBackgroundHeight(window.innerHeight);
+            return undefined;
+        }
         const img = new Image();
         img.onload = () => {
             setBackgroundWidth(Math.max(img.width, window.innerWidth));
             setBackgroundHeight(Math.max(img.height, window.innerHeight));
         };
         img.src = backgroundImage;
+        return undefined;
     }, [backgroundImage]);
 
     // 主体样式
     const style = useMemo(
         () => ({
-            backgroundImage: `url(${backgroundImage})`,
+            background: backgroundImage
+                ? `url(${backgroundImage}) no-repeat`
+                : 'linear-gradient(180deg, #fbfcfd 0%, #f3f5f7 100%)',
             backgroundSize: `${backgroundWidth}px ${backgroundHeight}px`,
-            backgroundRepeat: 'no-repeat',
         }),
         [backgroundImage, backgroundWidth, backgroundHeight],
     );

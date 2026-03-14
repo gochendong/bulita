@@ -16,17 +16,22 @@ const UserSchema = new Schema({
         match: NAME_REGEXP,
         index: true,
     },
-    salt: String,
     email: {
         type: String,
+    },
+    googleId: {
+        type: String,
+        index: true,
+        unique: true,
+        sparse: true,
     },
     level: Number,
     signature: String,
     pushToken: String,
-    password: {
-        type: String,
-        trim: true,
-    },
+    aiApiKey: String,
+    aiBaseUrl: String,
+    aiModel: String,
+    aiContextCount: Number,
     avatar: String,
     tag: {
         type: String,
@@ -49,16 +54,22 @@ export interface UserDocument extends Document {
     username: string;
     /** 邮箱 */
     email: string;
+    /** Google 用户唯一标识 */
+    googleId: string;
     /** 等级 */
     level: Number;
     /** 签名 */
     signature: string;
     /** 推送token */
     pushToken: string;
-    /** 密码加密盐 */
-    salt: string;
-    /** 加密的密码 */
-    password: string;
+    /** AI API Key */
+    aiApiKey: string;
+    /** AI Base URL */
+    aiBaseUrl: string;
+    /** AI Model */
+    aiModel: string;
+    /** AI Context Count */
+    aiContextCount: number;
     /** 头像 */
     avatar: string;
     /** 用户标签 */

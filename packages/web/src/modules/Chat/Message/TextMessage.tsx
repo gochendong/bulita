@@ -69,6 +69,7 @@ function TextMessageBot(props: TextMessageProps) {
     });
     return (
         <div
+            className={`${Style.textMessage} ${Style.botMarkdown}`}
             style={{ wordWrap: 'break-word' }}
             // eslint-disable-next-line react/no-danger
             dangerouslySetInnerHTML={{ __html: content }}

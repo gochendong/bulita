@@ -3,6 +3,7 @@ import themes from './themes';
 
 /** LocalStorage存储的键值 */
 export enum LocalStorageKey {
+    Focus = 'focus',
     Theme = 'theme',
     PrimaryColor = 'primaryColor',
     PrimaryTextColor = 'primaryTextColor',
@@ -37,6 +38,38 @@ function getSwitchValue(key: string, defaultValue: boolean = true) {
     return value ? value === 'true' : defaultValue;
 }
 
+function getSoundValue() {
+    const supportedSounds = new Set([
+        'default',
+        'apple',
+        'pcqq',
+        'mobileqq',
+        'huaji',
+    ]);
+    const defaultSound = supportedSounds.has(config.sound)
+        ? config.sound
+        : 'apple';
+    const value = getTextValue(LocalStorageKey.Sound, defaultSound);
+    return supportedSounds.has(value) ? value : defaultSound;
+}
+
+function getBackgroundImageValue(defaultValue: string) {
+    const value = getTextValue(LocalStorageKey.BackgroundImage, defaultValue);
+    if (!value) {
+        return '';
+    }
+    // 兼容旧版本残留的本地背景图文件名，避免继续请求已移除资源
+    if (
+        value === 'background.jpg' ||
+        value === '/background.jpg' ||
+        value === 'images/background.jpg' ||
+        value === '/images/background.jpg'
+    ) {
+        return '';
+    }
+    return value;
+}
+
 /**
  * 获取LocalStorage值
  */
@@ -62,17 +95,17 @@ export default function getData() {
                 LocalStorageKey.PrimaryTextColor,
                 themes[config.defaultTheme]?.primaryTextColor,
             ),
-            backgroundImage: getTextValue(
-                LocalStorageKey.BackgroundImage,
-                themes[config.defaultTheme]?.backgroundImage,
+            backgroundImage: getBackgroundImageValue(
+                themes[config.defaultTheme]?.backgroundImage || '',
             ),
             aero: getSwitchValue(LocalStorageKey.Aero, false),
         };
     }
     return {
+        focus: getTextValue(LocalStorageKey.Focus, ''),
         theme,
         ...themeConfig,
-        sound: getTextValue(LocalStorageKey.Sound, config.sound),
+        sound: getSoundValue(),
         soundSwitch: getSwitchValue(LocalStorageKey.SoundSwitch),
         notificationSwitch: getSwitchValue(LocalStorageKey.NotificationSwitch),
         voiceSwitch: getSwitchValue(LocalStorageKey.VoiceSwitch),

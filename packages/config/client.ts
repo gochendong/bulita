@@ -21,6 +21,7 @@ export default {
     defaultTheme: 'default',
     sound: process.env.SOUND,
     tagColorMode: 'singleColor',
+    googleClientId: process.env.GOOGLE_CLIENT_ID || '',
 
     // 禁止用户撤回消息, 不包括管理员, 管理员始终能撤回任何消息
     disableDeleteMessage: false,

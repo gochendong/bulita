@@ -292,9 +292,6 @@ class Message extends Component<MessageProps, MessageState> {
                         {!isSelf && type !== 'system' && tag !== 'bot' && senderCreateTime && (
                             <UserBadge createTime={senderCreateTime} />
                         )}
-                        {process.env.ADMINS.split(',').includes(username) && (
-                            <span className={Style.adminTagInMessage}>管理员</span>
-                        )}
                         <span className={Style.time}>{this.formatTime()}</span>
                     </div>
                     <div
@@ -422,21 +419,15 @@ class Message extends Component<MessageProps, MessageState> {
                                         placement={isSelf ? 'bottomRight' : 'bottomLeft'}
                                         getPopupContainer={() => document.body}
                                     >
-                                        <Tooltip
-                                            placement={isSelf ? 'left' : 'right'}
-                                            mouseEnterDelay={0.3}
-                                            overlay={<span>更多</span>}
-                                        >
-                                            <div>
-                                                <IconButton
-                                                    className={Style.button}
-                                                    icon="omit"
-                                                    iconSize={12}
-                                                    width={15}
-                                                    height={15}
-                                                />
-                                            </div>
-                                        </Tooltip>
+                                        <div aria-label="更多">
+                                            <IconButton
+                                                className={Style.button}
+                                                icon="omit"
+                                                iconSize={12}
+                                                width={15}
+                                                height={15}
+                                            />
+                                        </div>
                                     </Dropdown>
                                 )}
                             </div>

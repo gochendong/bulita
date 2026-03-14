@@ -35,7 +35,7 @@
     border-radius: 8px;
     width: 170px;
     height: 180px;
-    background-image: url('~@bulita/assets/images/no-linkman.jpeg');
+    background-image: url('~@bulita/assets/images/default.png');
     background-position-y: 180px;
 }
 
@@ -74,4 +74,90 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     flex: 1;
+}
+
+.guestLoginShell {
+    position: absolute;
+    inset: 88px 24px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 3;
+
+    @media @mobile {
+        inset: 78px 14px 18px;
+    }
+}
+
+.guestLoginCard {
+    width: 100%;
+    max-width: 660px;
+    padding: 34px 40px;
+    border-radius: 28px;
+    border: 1px solid rgba(60, 64, 67, 0.14);
+    background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(251, 252, 255, 0.94) 100%);
+    box-shadow:
+        0 20px 60px rgba(60, 64, 67, 0.12),
+        0 4px 18px rgba(60, 64, 67, 0.08);
+    backdrop-filter: blur(14px);
+    pointer-events: auto;
+
+    @media @mobile {
+        max-width: 100%;
+        padding: 24px 18px 20px;
+        border-radius: 22px;
+    }
+}
+
+.guestLoginHeader {
+    text-align: center;
+    margin-bottom: 22px;
+}
+
+.guestLoginEyebrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 92px;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: rgba(52, 168, 83, 0.12);
+    color: @google-green;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.guestLoginTitle {
+    margin: 16px 0 12px;
+    color: #202124;
+    font-size: 34px;
+    line-height: 1.14;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+
+    @media @mobile {
+        font-size: 24px;
+    }
+}
+
+.guestLoginDesc {
+    max-width: 500px;
+    margin: 0 auto;
+    color: #5f6368;
+    font-size: 16px;
+    line-height: 1.55;
+
+    @media @mobile {
+        font-size: 14px;
+    }
+}
+
+.guestLoginButton {
+    width: 100%;
+    min-height: auto;
+    padding: 0;
 }

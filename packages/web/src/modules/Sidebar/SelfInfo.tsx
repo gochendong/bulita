@@ -14,13 +14,12 @@ import { State } from '../../state/reducer';
 import Message from '../../components/Message';
 import {
     changeAvatar,
-    changePassword,
     changeUsername,
     changeSignature,
-    changePushToken
+    changePushToken,
+    changeAIConfig,
 } from '../../service';
 import useAction from '../../hooks/useAction';
-import socket from '../../socket';
 
 import Style from './SelfInfo.less';
 import Common from './Common.less';
@@ -29,11 +28,6 @@ import store from '../../state/store';
 // import useAction from "./hooks/useAction";
 
 const { dispatch } = store;
-
-
-const PASSWORD_REGEX = process.env.PASSWORD_REGEX || '';
-const PASSWORD_TIPS = process.env.PASSWORD_TIPS || '';
-const pattern = new RegExp(PASSWORD_REGEX);
 
 interface SelfInfoProps {
     visible: boolean;
@@ -49,6 +43,10 @@ function SelfInfo(props: SelfInfoProps) {
     const currentUsername = useSelector((state: State) => state.user?.username);
     const currentSignature = useSelector((state: State) => state.user?.signature);
     const currentPushToken = useSelector((state: State) => state.user?.pushToken);
+    const currentAiApiKey = useSelector((state: State) => state.user?.aiApiKey);
+    const currentAiBaseUrl = useSelector((state: State) => state.user?.aiBaseUrl);
+    const currentAiModel = useSelector((state: State) => state.user?.aiModel);
+    const currentAiContextCount = useSelector((state: State) => state.user?.aiContextCount);
 
     const primaryColor = useSelector(
         (state: State) => state.status.primaryColor,
@@ -120,35 +118,14 @@ function SelfInfo(props: SelfInfoProps) {
         });
     }
 
-    function reLogin(message: string) {
-        action.logout();
-        window.localStorage.removeItem('token');
-        Message.success(message);
-        // 不需要手动断开和重连，socket.io 会自动处理
-        // socket 会在 connect 事件中自动处理登录状态
-    }
-
-    const [oldPassword, setOldPassword] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-
-    async function handleChangePassword() {
-        if (oldPassword !== newPassword) {
-            Message.warning('两次密码输入不一致');
-            return;
-        }
-        if (PASSWORD_REGEX && !pattern.test(newPassword)) {
-            Message.warning(PASSWORD_TIPS);
-            return
-        }
-        const isSuccess = await changePassword(oldPassword, newPassword);
-        if (isSuccess) {
-            onClose();
-            reLogin(`${username} 密码已更新, 请使用新密码重新登录`);
-        }
-    }
-
     const [username, setUsername] = useState(currentUsername);
     const [signature, setSignature] = useState(currentSignature);
+    const [aiApiKey, setAiApiKey] = useState(currentAiApiKey || '');
+    const [aiBaseUrl, setAiBaseUrl] = useState(currentAiBaseUrl || '');
+    const [aiModel, setAiModel] = useState(currentAiModel || '');
+    const [aiContextCount, setAiContextCount] = useState(
+        currentAiContextCount?.toString() || '0'
+    );
     /**
      * 按 token 长度脱敏：两侧各显示若干字符，中间用 * 填充
      */
@@ -176,8 +153,19 @@ function SelfInfo(props: SelfInfoProps) {
         if (visible) {
             setPushToken(currentPushToken);
             setPushTokenDisplay(currentPushToken ? maskPushToken(currentPushToken) : '');
+            setAiApiKey(currentAiApiKey || '');
+            setAiBaseUrl(currentAiBaseUrl || '');
+            setAiModel(currentAiModel || '');
+            setAiContextCount(`${currentAiContextCount || 0}`);
         }
-    }, [visible, currentPushToken]);
+    }, [
+        visible,
+        currentPushToken,
+        currentAiApiKey,
+        currentAiBaseUrl,
+        currentAiModel,
+        currentAiContextCount,
+    ]);
 
     useEffect(() => {
         setSignature(currentSignature);
@@ -235,6 +223,46 @@ function SelfInfo(props: SelfInfoProps) {
                 },
             });
             Message.success('私聊通知token已更新');
+        }
+    }
+
+    async function handleChangeAIConfig() {
+        const normalizedApiKey = aiApiKey.trim();
+        const normalizedBaseUrl = aiBaseUrl.trim();
+        const normalizedModel = aiModel.trim();
+        const normalizedContextCount = parseInt(aiContextCount.trim() || '0', 10);
+
+        if (
+            normalizedApiKey === (currentAiApiKey || '') &&
+            normalizedBaseUrl === (currentAiBaseUrl || '') &&
+            normalizedModel === (currentAiModel || '') &&
+            normalizedContextCount === (currentAiContextCount || 0)
+        ) {
+            return;
+        }
+
+        if (!Number.isFinite(normalizedContextCount) || normalizedContextCount < 0 || normalizedContextCount > 50) {
+            Message.error('上下文数量需为 0-50 的整数');
+            setAiContextCount(`${currentAiContextCount || 0}`);
+            return;
+        }
+
+        const data = await changeAIConfig(
+            normalizedApiKey,
+            normalizedBaseUrl,
+            normalizedModel,
+            normalizedContextCount,
+        );
+        if (data) {
+            dispatch({
+                type: ActionTypes.UpdateUserInfo,
+                payload: data,
+            });
+            setAiApiKey(data.aiApiKey || '');
+            setAiBaseUrl(data.aiBaseUrl || '');
+            setAiModel(data.aiModel || '');
+            setAiContextCount(`${data.aiContextCount || 0}`);
+            Message.success('AI 配置已更新');
         }
     }
 
@@ -364,25 +392,49 @@ function SelfInfo(props: SelfInfoProps) {
                     </div>
                 </div>
                 <div className={Common.block}>
-                    <p className={Common.title}>密码</p>
+                    <p className={Common.title}>个人 AI 配置</p>
+                    <div className={Style.aiConfigTip}>
+                        设置后，所有 AI 对话优先使用你自己的 API 配置
+                    </div>
                     <div>
                         <Input
                             className={Style.input}
-                            value={oldPassword}
-                            onChange={setOldPassword}
+                            value={aiApiKey}
+                            onChange={setAiApiKey}
+                            onBlur={handleChangeAIConfig}
                             type="password"
-                            placeholder="当前密码"
-                            showClearBtn={false}
+                            placeholder="API Key"
                             autoComplete="new-password"
                         />
+                    </div>
+                    <div>
                         <Input
                             className={Style.input}
-                            value={newPassword}
-                            onChange={setNewPassword}
-                            onBlur={() => oldPassword && newPassword && handleChangePassword()}
-                            type="password"
-                            placeholder="新密码（填写后点击输入框外即保存）"
-                            showClearBtn={false}
+                            value={aiBaseUrl}
+                            onChange={setAiBaseUrl}
+                            onBlur={handleChangeAIConfig}
+                            type="text"
+                            placeholder="Base URL，例如 https://your-newapi/v1"
+                        />
+                    </div>
+                    <div>
+                        <Input
+                            className={Style.input}
+                            value={aiModel}
+                            onChange={setAiModel}
+                            onBlur={handleChangeAIConfig}
+                            type="text"
+                            placeholder="Model，例如 gpt-4o-mini"
+                        />
+                    </div>
+                    <div>
+                        <Input
+                            className={Style.input}
+                            value={aiContextCount}
+                            onChange={setAiContextCount}
+                            onBlur={handleChangeAIConfig}
+                            type="number"
+                            placeholder="上下文数量，0-50"
                         />
                     </div>
                 </div>

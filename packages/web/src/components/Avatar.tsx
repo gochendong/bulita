@@ -1,9 +1,11 @@
 import React, { SyntheticEvent, useState, useMemo } from 'react';
 import { getAvatarUrl } from '../utils/uploadFile';
 
-/** 默认/占位头像（packages/assets/images/avatar/ai.png） */
-import avatarFailbackImg from '@bulita/assets/images/avatar/ai.png';
-export const avatarFailback = avatarFailbackImg;
+/** AI 机器人占位头像（packages/assets/images/avatar/ai.png） */
+import aiAvatarImg from '@bulita/assets/images/avatar/ai.png';
+export const aiAvatar = aiAvatarImg;
+/** 全站默认头像统一使用站点 Logo */
+export const avatarFailback = '/favicon-192.png';
 
 type Props = {
     /** 头像链接 */

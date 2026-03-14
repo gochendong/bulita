@@ -15,9 +15,8 @@ import {
     getLinkmanHistoryMessages,
     deleteFriend,
     sealUser,
-    getUserIps,
-    sealUserOnlineIp,
     getUserOnlineStatus,
+    getAdminUserInfo,
 } from '../service';
 
 interface UserInfoProps {
@@ -26,7 +25,6 @@ interface UserInfoProps {
         _id: string;
         username: string;
         avatar: string;
-        ip: string;
         isOnline?: boolean;
         lastLoginTime?: string | null;
         email: string;
@@ -59,31 +57,36 @@ function UserInfo(props: UserInfoProps) {
     );
     const [largerAvatar, toggleLargetAvatar] = useState(false);
 
-    const [userIps, setUserIps] = useState([]);
-    /** 管理员查看时拉取的在线/最后在线（即使用户不是好友也能看到） */
-    const [adminOnlineStatus, setAdminOnlineStatus] = useState<{ isOnline: boolean; lastLoginTime: string | null } | null>(null);
-
-    useEffect(() => {
-        if (isAdmin && user && user._id) {
-            (async () => {
-                const ips = await getUserIps(user._id.replace(selfId, ''));
-                setUserIps(ips);
-            })();
-        }
-    }, [isAdmin, selfId, user]);
+    /** 管理员查看时拉取的补充信息 */
+    const [adminDetails, setAdminDetails] = useState<{
+        email: string;
+        isOnline: boolean;
+        lastLoginTime: string | null;
+    } | null>(null);
 
     useEffect(() => {
         if (!visible || !user || !isAdmin) {
-            setAdminOnlineStatus(null);
+            setAdminDetails(null);
             return;
         }
         const rawUserId = user._id.replace(selfId, '');
         if (!rawUserId) return;
-        getUserOnlineStatus(rawUserId).then((status) => {
-            if (status) {
-                setAdminOnlineStatus({
-                    isOnline: status.isOnline,
-                    lastLoginTime: status.lastLoginTime ?? null,
+        getAdminUserInfo(rawUserId).then((info) => {
+            if (info) {
+                setAdminDetails({
+                    email: info.email || '',
+                    isOnline: info.isOnline,
+                    lastLoginTime: info.lastLoginTime ?? null,
+                });
+            } else {
+                getUserOnlineStatus(rawUserId).then((status) => {
+                    if (status) {
+                        setAdminDetails({
+                            email: user.email || '',
+                            isOnline: status.isOnline,
+                            lastLoginTime: status.lastLoginTime ?? null,
+                        });
+                    }
                 });
             }
         });
@@ -144,18 +147,19 @@ function UserInfo(props: UserInfoProps) {
     }
 
     async function handleSeal() {
+        const email = (adminDetails?.email || user.email || '').trim();
+        if (!email) {
+            Message.warning('该用户没有可用邮箱');
+            return;
+        }
+        // eslint-disable-next-line no-restricted-globals
+        if (!confirm(`确定要封禁 ${email} 吗？`)) {
+            return;
+        }
         // @ts-ignore
-        const isSuccess = await sealUser(user.name || user.username);
+        const isSuccess = await sealUser(email);
         if (isSuccess) {
             Message.success('封禁用户成功');
-        }
-    }
-
-    async function handleSealIp() {
-        // @ts-ignore
-        const isSuccess = await sealUserOnlineIp(originUserId);
-        if (isSuccess) {
-            Message.success('封禁ip成功');
         }
     }
 
@@ -172,10 +176,6 @@ function UserInfo(props: UserInfoProps) {
         if (diffH < 24) return `${diffH} 小时前`;
         if (diffD < 30) return `${diffD} 天前`;
         return date.toLocaleDateString();
-    }
-
-    function searchIp(ip: string) {
-        window.open(`https://www.baidu.com/s?wd=${ip}`);
     }
 
     function handleClose() {
@@ -208,8 +208,8 @@ function UserInfo(props: UserInfoProps) {
                             />
                             <p>{user.username}</p>
                             {(() => {
-                                const isOnline = adminOnlineStatus?.isOnline ?? user.isOnline;
-                                const lastLoginTime = adminOnlineStatus?.lastLoginTime ?? user.lastLoginTime;
+                                const isOnline = adminDetails?.isOnline ?? user.isOnline;
+                                const lastLoginTime = adminDetails?.lastLoginTime ?? user.lastLoginTime;
                                 if (user.tag === 'bot' || isOnline === true) {
                                     return <p className={Style.onlineStatus}>当前在线</p>;
                                 }
@@ -222,17 +222,11 @@ function UserInfo(props: UserInfoProps) {
                                 }
                                 return null;
                             })()}
-                            <p className={Style.ip}>
-                                {userIps.map((ip) => (
-                                    <span
-                                        key={ip}
-                                        onClick={() => searchIp(ip)}
-                                        role="button"
-                                    >
-                                        {ip}
-                                    </span>
-                                ))}
-                            </p>
+                            {isAdmin && (adminDetails?.email || user.email) ? (
+                                <p className={Style.metaLine}>
+                                    {adminDetails?.email || user.email}
+                                </p>
+                            ) : null}
                         </div>
                         <div className={Style.info}>
                             {isFriend ? (
@@ -255,11 +249,6 @@ function UserInfo(props: UserInfoProps) {
                             {isAdmin ? (
                                 <Button type="danger" onClick={handleSeal}>
                                     封禁用户
-                                </Button>
-                            ) : null}
-                            {isAdmin ? (
-                                <Button type="danger" onClick={handleSealIp}>
-                                    封禁ip
                                 </Button>
                             ) : null}
                         </div>

@@ -9,6 +9,7 @@ export default function isLogin(socket: Socket) {
     const noRequireLoginEvent = new Set([
         'register',
         'login',
+        'googleLogin',
         'loginByToken',
         'guest',
         'getDefaultGroupHistoryMessages',

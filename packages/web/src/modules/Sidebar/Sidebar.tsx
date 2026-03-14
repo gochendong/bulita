@@ -11,18 +11,15 @@ import Tooltip from '../../components/Tooltip';
 import IconButton from '../../components/IconButton';
 import OnlineStatus from './OnlineStatus';
 import useAction from '../../hooks/useAction';
-import socket from '../../socket';
 import Message from '../../components/Message';
 import { guest } from '../../service';
 import convertMessage from '@bulita/utils/convertMessage';
 import { ActionTypes } from '../../state/action';
 
 import Admin from './Admin';
-import About from './About';
 
 import Style from './Sidebar.less';
 import useAero from '../../hooks/useAero';
-import { LocalStorageKey } from '../../localStorage';
 import store from '../../state/store';
 
 const SelfInfoAsync = loadable(
@@ -56,7 +53,6 @@ function Sidebar() {
     const [downloadDialogVisible, toggleDownloadDialogVisible] =
         useState(false);
     const [rewardDialogVisible, toggleRewardDialogVisible] = useState(false);
-    const [aboutDialogVisible, toggleAboutDialogVisible] = useState(false);
     const [settingDialogVisible, toggleSettingDialogVisible] = useState(false);
     const aero = useAero();
 
@@ -68,8 +64,7 @@ function Sidebar() {
         action.logout();
         window.localStorage.removeItem('token');
         Message.success('您已退出聊天室');
-        
-        // 加载游客视角
+
         try {
             const defaultGroup = await guest(
                 platform.os?.family,
@@ -93,7 +88,7 @@ function Sidebar() {
                 });
             }
         } catch (error) {
-            console.error('加载游客视角失败:', error);
+            console.error('加载默认聊天室失败:', error);
         }
     }
 
@@ -140,22 +135,11 @@ function Sidebar() {
                                     height={40}
                                     icon="administrator"
                                     iconSize={28}
+                                    className={Style.adminButton}
                                     onClick={() => toggleAdminDialogVisible(true)}
                                 />
                             </div>,
                         )}
-                    {renderTooltip(
-                        '关于',
-                        <div className={Style.iconWrapBlue}>
-                            <IconButton
-                                width={40}
-                                height={40}
-                                icon="about"
-                                iconSize={26}
-                                onClick={() => toggleAboutDialogVisible(true)}
-                            />
-                        </div>,
-                    )}
                     {isLogin &&
                         renderTooltip(
                             '设置',
@@ -165,6 +149,7 @@ function Sidebar() {
                                     height={40}
                                     icon="setting"
                                     iconSize={26}
+                                    className={Style.settingButton}
                                     onClick={() => toggleSettingDialogVisible(true)}
                                 />
                             </div>,
@@ -177,7 +162,8 @@ function Sidebar() {
                                     width={40}
                                     height={40}
                                     icon="logout"
-                                    iconSize={26}
+                                    iconSize={24}
+                                    className={Style.logoutButton}
                                     onClick={logout}
                                 />
                             </div>,
@@ -197,10 +183,6 @@ function Sidebar() {
                         onClose={() => toggleAdminDialogVisible(false)}
                     />
                 )}
-                <About
-                    visible={aboutDialogVisible}
-                    onClose={() => toggleAboutDialogVisible(false)}
-                />
                 {isLogin && settingDialogVisible && (
                     <SettingAsync
                         visible={settingDialogVisible}

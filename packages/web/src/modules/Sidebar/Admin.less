@@ -1,3 +1,5 @@
+@import '../../styles/variable.less';
+
 .admin {
     width: 720px !important;
     max-width: 94vw;
@@ -23,6 +25,14 @@
             background: #a89a8c;
         }
     }
+
+    @media @mobile {
+        width: 94vw !important;
+
+        :global(.rc-dialog-body) {
+            padding-right: 0;
+        }
+    }
 }
 
 .adminColumns {
@@ -45,6 +55,60 @@
     max-width: 280px;
 }
 
+@media @mobile {
+    .adminColumns {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .adminCol,
+    .adminCol:first-child,
+    .adminCol:last-child {
+        flex: none;
+        max-width: none;
+        width: 100%;
+    }
+
+    .inputBlock {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .button {
+        width: 100%;
+    }
+
+    .groupAIButton,
+    .groupAIButtonOff,
+    .unsealButton {
+        width: 100%;
+    }
+
+    .configRow {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+    }
+
+    .configLabel {
+        width: auto;
+    }
+
+    .configList {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .sealUserItem {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .unsealButton {
+        width: 100%;
+    }
+}
+
 .inputBlock {
     display: flex;
 }
@@ -52,15 +116,6 @@
 .input {
     flex: 1;
     height: 36px;
-}
-
-.tagUsernameInput {
-    flex: 3;
-}
-
-.tagInput {
-    flex: 2;
-    margin-left: 6px;
 }
 
 .buttonWrap {
@@ -115,10 +170,24 @@
     min-height: 22px;
 }
 
+.sealUserItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
 .sealUsername {
-    margin-right: 10px;
     line-height: 22px;
     font-size: 14px;
+    word-break: break-all;
+}
+
+.unsealButton {
+    flex-shrink: 0;
+    min-width: 88px;
+    height: 30px;
 }
 
 .configTip {

@@ -294,7 +294,7 @@
 
 .recallDropdown {
     min-width: 80px;
-    margin-top: 4px; /* 与触发按钮留出间距，避免重叠 */
+    margin-top: 6px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     border-radius: 4px;
     overflow: hidden;
@@ -332,6 +332,146 @@
     word-break: break-word;
     //overflow: hidden;
     line-height: 30px;
+}
+
+.botMarkdown {
+    line-height: 1.72;
+    color: @warm-text;
+
+    > :first-child {
+        margin-top: 0;
+    }
+
+    > :last-child {
+        margin-bottom: 0;
+    }
+
+    p,
+    ul,
+    ol,
+    pre,
+    blockquote,
+    table,
+    hr {
+        margin: 0 0 0.72em;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        margin: 0.95em 0 0.45em;
+        line-height: 1.35;
+        font-weight: @font-weight-semibold;
+        color: @warm-text;
+    }
+
+    h1 {
+        font-size: 1.28em;
+    }
+
+    h2 {
+        font-size: 1.18em;
+    }
+
+    h3 {
+        font-size: 1.08em;
+    }
+
+    ul,
+    ol {
+        padding-left: 1.3em;
+    }
+
+    li {
+        margin: 0.18em 0;
+    }
+
+    li > ul,
+    li > ol {
+        margin-top: 0.22em;
+        margin-bottom: 0.22em;
+    }
+
+    blockquote {
+        padding: 0.45em 0.8em;
+        border-left: 3px solid @google-blue;
+        background: @google-blue-light;
+        border-radius: 0 8px 8px 0;
+        color: fade(@warm-text, 88%);
+    }
+
+    pre {
+        padding: 10px 12px;
+        overflow-x: auto;
+        border-radius: 10px;
+        background: #f7f9fc;
+        border: 1px solid rgba(218, 220, 224, 0.9);
+        line-height: 1.55;
+    }
+
+    code {
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        font-size: 0.92em;
+    }
+
+    :not(pre) > code {
+        padding: 0.12em 0.4em;
+        border-radius: 6px;
+        background: rgba(66, 133, 244, 0.12);
+        color: darken(@google-blue, 10%);
+    }
+
+    pre code {
+        display: block;
+        white-space: pre;
+        color: #1f2937;
+    }
+
+    a {
+        color: @google-blue;
+        text-decoration: none;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+
+    img {
+        margin: 0.35em 0;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95em;
+        overflow: hidden;
+        border-radius: 10px;
+        border: 1px solid rgba(218, 220, 224, 0.9);
+    }
+
+    th,
+    td {
+        padding: 8px 10px;
+        text-align: left;
+        border-bottom: 1px solid rgba(218, 220, 224, 0.7);
+    }
+
+    th {
+        background: #f7f9fc;
+        font-weight: @font-weight-semibold;
+    }
+
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    hr {
+        border: none;
+        border-top: 1px solid rgba(218, 220, 224, 0.9);
+    }
 }
 
 .imageMessage {
