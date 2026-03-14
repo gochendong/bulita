@@ -83,6 +83,9 @@ function HeaderBar(props: Props) {
     const sidebarVisible = useSelector(
         (state: State) => state.status.sidebarVisible,
     );
+    const functionBarAndLinkmanListVisible = useSelector(
+        (state: State) => state.status.functionBarAndLinkmanListVisible,
+    );
     const aero = useAero();
 
     function handleShareGroup() {
@@ -91,8 +94,8 @@ function HeaderBar(props: Props) {
 
     return (
         <div className={Style.headerBar} {...aero}>
-            {isMobile && (
-                <div className={Style.buttonContainer}>
+            <div className={Style.buttonContainer}>
+                {isMobile && (
                     <IconButton
                         width={40}
                         height={40}
@@ -102,6 +105,8 @@ function HeaderBar(props: Props) {
                             action.setStatus('sidebarVisible', !sidebarVisible)
                         }
                     />
+                )}
+                {isLogin && (
                     <IconButton
                         width={40}
                         height={40}
@@ -110,12 +115,12 @@ function HeaderBar(props: Props) {
                         onClick={() =>
                             action.setStatus(
                                 'functionBarAndLinkmanListVisible',
-                                true,
+                                !functionBarAndLinkmanListVisible,
                             )
                         }
                     />
-                </div>
-            )}
+                )}
+            </div>
             <h2 className={Style.name}>
                 {name}
                 {type === 'group' && totalMemberCount != null && (
