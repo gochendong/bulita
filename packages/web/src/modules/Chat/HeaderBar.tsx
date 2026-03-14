@@ -107,18 +107,54 @@ function HeaderBar(props: Props) {
                     />
                 )}
                 {isLogin && (
-                    <IconButton
-                        width={40}
-                        height={40}
-                        icon="friends"
-                        iconSize={24}
+                    <button
+                        type="button"
+                        className={Style.friendsToggleButton}
                         onClick={() =>
                             action.setStatus(
                                 'functionBarAndLinkmanListVisible',
                                 !functionBarAndLinkmanListVisible,
                             )
                         }
-                    />
+                        aria-label={
+                            functionBarAndLinkmanListVisible
+                                ? '收起会话列表'
+                                : '展开会话列表'
+                        }
+                        title={
+                            functionBarAndLinkmanListVisible
+                                ? '收起会话列表'
+                                : '展开会话列表'
+                        }
+                    >
+                        <svg
+                            width="22"
+                            height="22"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            className={
+                                functionBarAndLinkmanListVisible
+                                    ? Style.friendsToggleIconExpanded
+                                    : Style.friendsToggleIconCollapsed
+                            }
+                        >
+                            <path
+                                d="M15 6L9 12L15 18"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                            <path
+                                d="M20 6L14 12L20 18"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </button>
                 )}
             </div>
             <h2 className={Style.name}>
