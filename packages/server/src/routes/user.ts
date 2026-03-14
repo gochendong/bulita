@@ -118,7 +118,10 @@ async function addDefaultLinkmans(user: UserDocument) {
     if (!defaultGroup.creator) {
         defaultGroup.creator = user._id;
     }
-    if (user && defaultGroup.members.indexOf(user._id) === -1) {
+    const isInDefaultGroup = defaultGroup.members.some(
+        (memberId) => memberId.toString() === user._id.toString(),
+    );
+    if (!isInDefaultGroup) {
         defaultGroup.members.push(user._id);
     }
     await defaultGroup.save();
@@ -193,6 +196,7 @@ async function getLoginPayload(
 ) {
     const { os, browser, environment } = ctx.data;
 
+    await addDefaultLinkmans(user);
     await handleNewUser(user);
 
     user.lastLoginTime = new Date();
