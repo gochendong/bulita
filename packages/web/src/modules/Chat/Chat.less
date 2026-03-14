@@ -70,10 +70,19 @@
 .groupAnnouncementText {
     font-size: 13px;
     color: @warm-text;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     flex: 1;
+    line-height: 1.45;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+.groupAnnouncementLink {
+    color: @google-blue;
+    text-decoration: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
 }
 
 .guestLoginShell {

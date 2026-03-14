@@ -10,6 +10,7 @@ import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Message from '../../components/Message';
 import Avatar from '../../components/Avatar';
+import LinkifyText from '../../components/LinkifyText';
 import UserBadge from '../../components/UserBadge';
 import Tooltip from '../../components/Tooltip';
 import Dialog from '../../components/Dialog';
@@ -259,7 +260,11 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                     ) : announcement ? (
                         <div className={Style.block}>
                             <p className={Style.blockTitle}>群公告</p>
-                            <p className={Style.announcementText}>{announcement}</p>
+                            <LinkifyText
+                                className={Style.announcementText}
+                                linkClassName={Style.announcementLink}
+                                text={announcement}
+                            />
                         </div>
                     ) : null}
                     {isLogin && selfId === creator ? (

@@ -75,11 +75,21 @@
 }
 
 .announcementText {
+    display: block;
     font-size: 14px;
     color: #555;
     line-height: 1.5;
     word-break: break-word;
     white-space: pre-wrap;
+}
+
+.announcementLink {
+    color: @google-blue;
+    text-decoration: none;
+
+    &:hover {
+        text-decoration: underline;
+    }
 }
 
 .name {

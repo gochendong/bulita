@@ -7,6 +7,7 @@ import MessageList from './MessageList';
 import ChatInput from './ChatInput';
 import GroupManagePanel from './GroupManagePanel';
 import GoogleLogin from '../LoginAndRegister/GoogleLogin';
+import LinkifyText from '../../components/LinkifyText';
 import { State, GroupMember } from '../../state/reducer';
 import { ShowUserOrGroupInfoContext } from '../../context';
 import useIsLogin from '../../hooks/useIsLogin';
@@ -182,9 +183,12 @@ function Chat() {
                     role="button"
                 >
                     <span className={Style.groupAnnouncementIcon}>📢</span>
-                    <span className={Style.groupAnnouncementText}>
-                        {linkman.announcement}
-                    </span>
+                    <LinkifyText
+                        className={Style.groupAnnouncementText}
+                        linkClassName={Style.groupAnnouncementLink}
+                        text={linkman.announcement}
+                        stopPropagation
+                    />
                 </div>
             ) : null}
             {!isLogin && (
