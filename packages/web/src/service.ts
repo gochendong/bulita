@@ -122,7 +122,7 @@ export async function changeAIConfig(
     aiApiKey: string,
     aiBaseUrl: string,
     aiModel: string,
-    aiContextCount: number,
+    aiContextCount: string | number,
 ) {
     const [error, data] = await fetch('changeAIConfig', {
         aiApiKey,

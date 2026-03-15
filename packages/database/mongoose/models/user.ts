@@ -69,7 +69,7 @@ export interface UserDocument extends Document {
     /** AI Model */
     aiModel: string;
     /** AI Context Count */
-    aiContextCount: number;
+    aiContextCount?: number | null;
     /** 头像 */
     avatar: string;
     /** 用户标签 */

@@ -218,7 +218,7 @@ async function getLoginPayload(
         aiApiKey: user.aiApiKey || '',
         aiBaseUrl: user.aiBaseUrl || '',
         aiModel: user.aiModel || '',
-        aiContextCount: user.aiContextCount || 0,
+        aiContextCount: user.aiContextCount ?? null,
         tag: user.tag,
         createTime: user.createTime,
         groups: groups.map((g: GroupDocument) => ({
@@ -647,7 +647,7 @@ export async function changeAIConfig(
         aiApiKey,
         aiBaseUrl,
         aiModel,
-        aiContextCount: aiContextCount || 0,
+        aiContextCount: aiContextCount ?? null,
     };
 }
 

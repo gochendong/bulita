@@ -102,7 +102,7 @@ export interface User {
     aiApiKey: string;
     aiBaseUrl: string;
     aiModel: string;
-    aiContextCount: number;
+    aiContextCount: number | null;
     tag: string;
 }
 
@@ -122,7 +122,7 @@ export interface State {
         aiApiKey: string;
         aiBaseUrl: string;
         aiModel: string;
-        aiContextCount: number;
+        aiContextCount: number | null;
     } | null;
     linkmans: LinkmansMap;
     /** 聚焦的联系人 */
@@ -376,7 +376,7 @@ function reducer(state: State = initialState, action: Action): State {
                     aiApiKey: '',
                     aiBaseUrl: '',
                     aiModel: '',
-                    aiContextCount: 0,
+                    aiContextCount: null,
                 },
                 linkmans: {
                     [group._id]: group,

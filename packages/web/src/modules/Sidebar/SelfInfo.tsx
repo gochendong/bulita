@@ -124,7 +124,7 @@ function SelfInfo(props: SelfInfoProps) {
     const [aiBaseUrl, setAiBaseUrl] = useState(currentAiBaseUrl || '');
     const [aiModel, setAiModel] = useState(currentAiModel || '');
     const [aiContextCount, setAiContextCount] = useState(
-        currentAiContextCount?.toString() || '0'
+        currentAiContextCount == null ? '' : currentAiContextCount.toString()
     );
     /**
      * 按 token 长度脱敏：两侧各显示若干字符，中间用 * 填充
@@ -156,7 +156,9 @@ function SelfInfo(props: SelfInfoProps) {
             setAiApiKey(currentAiApiKey || '');
             setAiBaseUrl(currentAiBaseUrl || '');
             setAiModel(currentAiModel || '');
-            setAiContextCount(`${currentAiContextCount || 0}`);
+            setAiContextCount(
+                currentAiContextCount == null ? '' : `${currentAiContextCount}`,
+            );
         }
     }, [
         visible,
@@ -230,20 +232,29 @@ function SelfInfo(props: SelfInfoProps) {
         const normalizedApiKey = aiApiKey.trim();
         const normalizedBaseUrl = aiBaseUrl.trim();
         const normalizedModel = aiModel.trim();
-        const normalizedContextCount = parseInt(aiContextCount.trim() || '0', 10);
+        const rawContextCount = aiContextCount.trim();
+        const normalizedContextCount =
+            rawContextCount === '' ? null : parseInt(rawContextCount, 10);
 
         if (
             normalizedApiKey === (currentAiApiKey || '') &&
             normalizedBaseUrl === (currentAiBaseUrl || '') &&
             normalizedModel === (currentAiModel || '') &&
-            normalizedContextCount === (currentAiContextCount || 0)
+            normalizedContextCount === (currentAiContextCount ?? null)
         ) {
             return;
         }
 
-        if (!Number.isFinite(normalizedContextCount) || normalizedContextCount < 0 || normalizedContextCount > 50) {
+        if (
+            normalizedContextCount !== null &&
+            (!Number.isFinite(normalizedContextCount) ||
+                normalizedContextCount < 0 ||
+                normalizedContextCount > 50)
+        ) {
             Message.error('上下文数量需为 0-50 的整数');
-            setAiContextCount(`${currentAiContextCount || 0}`);
+            setAiContextCount(
+                currentAiContextCount == null ? '' : `${currentAiContextCount}`,
+            );
             return;
         }
 
@@ -251,7 +262,7 @@ function SelfInfo(props: SelfInfoProps) {
             normalizedApiKey,
             normalizedBaseUrl,
             normalizedModel,
-            normalizedContextCount,
+            normalizedContextCount === null ? '' : normalizedContextCount,
         );
         if (data) {
             dispatch({
@@ -261,7 +272,9 @@ function SelfInfo(props: SelfInfoProps) {
             setAiApiKey(data.aiApiKey || '');
             setAiBaseUrl(data.aiBaseUrl || '');
             setAiModel(data.aiModel || '');
-            setAiContextCount(`${data.aiContextCount || 0}`);
+            setAiContextCount(
+                data.aiContextCount == null ? '' : `${data.aiContextCount}`,
+            );
             Message.success('AI 配置已更新');
         }
     }
@@ -434,7 +447,7 @@ function SelfInfo(props: SelfInfoProps) {
                             onChange={setAiContextCount}
                             onBlur={handleChangeAIConfig}
                             type="number"
-                            placeholder="上下文数量，0-50"
+                            placeholder="上下文数量，留空跟随管理员"
                         />
                     </div>
                 </div>
