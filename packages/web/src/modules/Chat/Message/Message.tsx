@@ -3,6 +3,7 @@ import pureRender from 'pure-render-decorator';
 import { connect } from 'react-redux';
 
 import Time from '@bulita/utils/time';
+import getFriendId from '@bulita/utils/getFriendId';
 import {
     getRandomColor,
     getPerRandomColor,
@@ -51,6 +52,9 @@ interface MessageProps {
     shouldScroll: boolean;
     tagColorMode: string;
     isAdmin?: boolean;
+    linkmanType?: string;
+    isBotConversation?: boolean;
+    isSelfConversation?: boolean;
     /** 发送者的注册时间（用于显示UserBadge） */
     senderCreateTime?: string | null;
     /** 发送者是否在线（用于点击头像弹窗） */
@@ -252,9 +256,32 @@ class Message extends Component<MessageProps, MessageState> {
     }
 
     render() {
-        const { isSelf, avatar, tag, tagColorMode, username, type, content, loading, sendFailed, onRetry, linkmanId, id, isAdmin, senderCreateTime } =
-            this.props;
+        const {
+            isSelf,
+            avatar,
+            tag,
+            tagColorMode,
+            username,
+            type,
+            content,
+            loading,
+            sendFailed,
+            onRetry,
+            linkmanId,
+            id,
+            isAdmin,
+            linkmanType,
+            isBotConversation,
+            isSelfConversation,
+            senderCreateTime,
+        } = this.props;
         const { showButtonList } = this.state;
+        const showQuoteButton = linkmanType === 'group' && type !== 'system';
+        const isReadonlyPrivateConversation =
+            linkmanType !== 'group' && (isBotConversation || isSelfConversation);
+        const showRecallButton =
+            !isReadonlyPrivateConversation &&
+            (isAdmin || (!client.disableDeleteMessage && isSelf));
 
         let tagColor = `rgb(${themes.default.primaryColor})`;
         if (tagColorMode === 'fixedColor') {
@@ -299,13 +326,13 @@ class Message extends Component<MessageProps, MessageState> {
                         onMouseEnter={this.handleMouseEnter}
                         onMouseLeave={this.handleMouseLeave}
                     >
-<div
-                        className={
-                            type === 'image'
-                                ? Style.imageContent
-                                : Style.content
-                        }
-                    >
+                        <div
+                            className={
+                                type === 'image'
+                                    ? Style.imageContent
+                                    : Style.content
+                            }
+                        >
                             {this.renderContent()}
                         </div>
                         {isSelf && loading && (
@@ -366,42 +393,44 @@ class Message extends Component<MessageProps, MessageState> {
                                         </svg>
                                     </button>
                                 </Tooltip>
-                                <Tooltip
-                                    placement={isSelf ? 'left' : 'right'}
-                                    mouseEnterDelay={0.3}
-                                    overlay={<span>引用</span>}
-                                >
-                                    <button
-                                        type="button"
-                                        className={Style.copyButton}
-                                        onClick={() => {
-                                            if (type === 'system') return;
-                                            const preview =
-                                                type === 'text'
-                                                    ? content || ''
-                                                    : `[${type} 消息]`;
-                                            dispatch({
-                                                type: ActionTypes.SetStatus,
-                                                payload: {
-                                                    key: 'quotedMessage',
-                                                    value: {
-                                                        linkmanId,
-                                                        messageId: id,
-                                                        username,
-                                                        content: preview,
-                                                        type,
-                                                    },
-                                                },
-                                            });
-                                            MessageToast.success('已引用该条消息');
-                                        }}
-                                        aria-label="引用"
-                                        title="引用"
+                                {showQuoteButton && (
+                                    <Tooltip
+                                        placement={isSelf ? 'left' : 'right'}
+                                        mouseEnterDelay={0.3}
+                                        overlay={<span>引用</span>}
                                     >
-                                        「」
-                                    </button>
-                                </Tooltip>
-                                {(isAdmin || (!client.disableDeleteMessage && isSelf)) && (
+                                        <button
+                                            type="button"
+                                            className={Style.copyButton}
+                                            onClick={() => {
+                                                if (type === 'system') return;
+                                                const preview =
+                                                    type === 'text'
+                                                        ? content || ''
+                                                        : `[${type} 消息]`;
+                                                dispatch({
+                                                    type: ActionTypes.SetStatus,
+                                                    payload: {
+                                                        key: 'quotedMessage',
+                                                        value: {
+                                                            linkmanId,
+                                                            messageId: id,
+                                                            username,
+                                                            content: preview,
+                                                            type,
+                                                        },
+                                                    },
+                                                });
+                                                MessageToast.success('已引用该条消息');
+                                            }}
+                                            aria-label="引用"
+                                            title="引用"
+                                        >
+                                            「」
+                                        </button>
+                                    </Tooltip>
+                                )}
+                                {showRecallButton && (
                                     <Dropdown
                                         trigger={['click']}
                                         overlay={
@@ -440,6 +469,20 @@ class Message extends Component<MessageProps, MessageState> {
     }
 }
 
-export default connect((state: State) => ({
-    isAdmin: !!(state.user && state.user.isAdmin),
-}))(Message);
+export { Message };
+
+export default connect((state: State, ownProps: MessageProps) => {
+    const linkman = state.linkmans[ownProps.linkmanId];
+    const selfId = state.user?._id || '';
+    const isSelfConversation =
+        !!selfId &&
+        linkman?.type !== 'group' &&
+        ownProps.linkmanId === getFriendId(selfId, selfId);
+
+    return {
+        isAdmin: !!(state.user && state.user.isAdmin),
+        linkmanType: linkman?.type || '',
+        isBotConversation: linkman?.type !== 'group' && linkman?.tag === 'bot',
+        isSelfConversation,
+    };
+})(Message);
