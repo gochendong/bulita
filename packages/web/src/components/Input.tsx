@@ -9,6 +9,8 @@ interface InputProps {
     placeholder?: string;
     className?: string;
     autoComplete?: string;
+    inputMode?: React.HTMLAttributes<HTMLInputElement>['inputMode'];
+    enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send';
     showClearBtn?: boolean;
     onChange: (value: string) => void;
     onEnter?: (value: string) => void;
@@ -23,6 +25,8 @@ function Input(props: InputProps) {
         placeholder = '',
         className = '',
         autoComplete = type === 'password' ? 'new-password' : 'off',
+        inputMode,
+        enterKeyHint = 'enter',
         showClearBtn = true,
         onChange,
         onEnter = () => {},
@@ -37,7 +41,7 @@ function Input(props: InputProps) {
     const [focused, setFocused] = useState(false);
     const [readonlyGuard, setReadonlyGuard] = useState(true);
     const normalizedAutoComplete =
-        autoComplete === 'off' ? 'new-password' : autoComplete;
+        autoComplete === 'off' ? 'one-time-code' : autoComplete;
 
     function handleInput(e: any) {
         onChange(e.target.value);
@@ -85,6 +89,19 @@ function Input(props: InputProps) {
             data-has-value={!!(value && value.toString().trim())}
         >
             <input
+                className={Style.autofillTrap}
+                tabIndex={-1}
+                aria-hidden="true"
+                autoComplete="username"
+            />
+            <input
+                className={Style.autofillTrap}
+                tabIndex={-1}
+                aria-hidden="true"
+                autoComplete="current-password"
+                type="password"
+            />
+            <input
                 className={Style.input}
                 type={type}
                 value={value}
@@ -105,7 +122,10 @@ function Input(props: InputProps) {
                 data-form-type="other"
                 data-lpignore="true"
                 data-1p-ignore="true"
+                data-gramm="false"
                 name={inputNameRef.current}
+                inputMode={inputMode}
+                enterKeyHint={enterKeyHint}
                 readOnly={readonlyGuard}
             />
             {value && showClearBtn && focused && (

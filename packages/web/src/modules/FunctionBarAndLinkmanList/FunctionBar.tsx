@@ -30,6 +30,27 @@ function FunctionBar() {
     const context = useContext(ShowUserOrGroupInfoContext);
     const placeholder = '';
 
+    async function handleSearchNow(rawKeywords = keywordsRef.current) {
+        if (searchTimerRef.current) {
+            clearTimeout(searchTimerRef.current);
+            searchTimerRef.current = null;
+        }
+
+        const valueToSearch = rawKeywords.trim();
+        if (!valueToSearch) {
+            setSearchResult({ users: [], groups: [] });
+            return;
+        }
+
+        toggleAddButtonVisible(false);
+        toggleSearchResultVisible(true);
+        const result = await search(valueToSearch);
+        if (keywordsRef.current.trim() !== valueToSearch) {
+            return;
+        }
+        setSearchResult(result || { users: [], groups: [] });
+    }
+
     function resetSearch() {
         if (searchTimerRef.current) {
             clearTimeout(searchTimerRef.current);
@@ -175,12 +196,15 @@ function FunctionBar() {
                     }`}
                     type="text"
                     placeholder={placeholder}
+                    inputMode="search"
+                    enterKeyHint="search"
                     value={keywords}
                     onChange={(v) => {
                         keywordsRef.current = v;
                         setKeywords(v);
                     }}
                     onFocus={handleFocus}
+                    onEnter={(value) => handleSearchNow(value)}
                 />
             </form>
             <button

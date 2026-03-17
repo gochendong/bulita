@@ -21,6 +21,11 @@ function Expression(props: ExpressionProps) {
     const [searchLoading, toggleSearchLoading] = useState(false);
     const [searchResults, setSearchResults] = useState([]);
     const searchTimerRef = useRef<number | null>(null);
+    const keywordsRef = useRef(keywords);
+
+    useEffect(() => {
+        keywordsRef.current = keywords;
+    }, [keywords]);
 
     async function handleSearchExpression() {
         const valueToSearch = keywords.trim();
@@ -32,6 +37,32 @@ function Expression(props: ExpressionProps) {
         toggleSearchLoading(true);
         setSearchResults([]);
         const result = await searchExpression(valueToSearch);
+        setSearchResults(result || []);
+        toggleSearchLoading(false);
+    }
+
+    async function handleSearchExpressionNow(value: string) {
+        if (searchTimerRef.current) {
+            clearTimeout(searchTimerRef.current);
+            searchTimerRef.current = null;
+        }
+        const nextValue = value.trim();
+        keywordsRef.current = value;
+        setKeywords(value);
+        if (activeTab !== 'search') {
+            setActiveTab('search');
+        }
+        if (!nextValue) {
+            setSearchResults([]);
+            toggleSearchLoading(false);
+            return;
+        }
+        toggleSearchLoading(true);
+        setSearchResults([]);
+        const result = await searchExpression(nextValue);
+        if (keywordsRef.current.trim() !== nextValue) {
+            return;
+        }
         setSearchResults(result || []);
         toggleSearchLoading(false);
     }
@@ -102,6 +133,9 @@ function Expression(props: ExpressionProps) {
                         className={Style.searchExpressionInput}
                         value={keywords}
                         onChange={setKeywords}
+                        inputMode="search"
+                        enterKeyHint="search"
+                        onEnter={handleSearchExpressionNow}
                     />
                 </div>
             <div

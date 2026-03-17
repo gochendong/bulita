@@ -134,6 +134,30 @@ function GroupManagePanel(props: GroupManagePanelProps) {
         memberKeywordsRef.current = memberKeywords;
     }, [memberKeywords]);
 
+    async function handleMemberSearchNow(rawKeywords = memberKeywordsRef.current) {
+        if (memberSearchTimerRef.current) {
+            clearTimeout(memberSearchTimerRef.current);
+            memberSearchTimerRef.current = null;
+        }
+
+        const keywords = rawKeywords.trim();
+        if (!keywords) {
+            setMemberSearchResult([]);
+            return;
+        }
+
+        const result = await search(keywords);
+        if (memberKeywordsRef.current.trim() !== keywords) {
+            return;
+        }
+
+        const memberIds = new Set(allMembers.map((item) => item.user._id));
+        const users = (result?.users || []).filter(
+            (item: any) => !memberIds.has(item._id),
+        );
+        setMemberSearchResult(users);
+    }
+
     useEffect(() => {
         if (!visible || !canManageMembers) {
             return undefined;
@@ -602,6 +626,11 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                                     value={memberKeywords}
                                     onChange={setMemberKeywords}
                                     placeholder="搜索邮箱或用户名"
+                                    inputMode="search"
+                                    enterKeyHint="search"
+                                    onEnter={(value) =>
+                                        handleMemberSearchNow(value)
+                                    }
                                 />
                             </div>
                             {memberSearchResult.length > 0 && (

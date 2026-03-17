@@ -77,6 +77,25 @@ function Admin(props: AdminProps) {
         sealKeywordsRef.current = sealKeywords;
     }, [sealKeywords]);
 
+    async function handleSealSearchNow(rawKeywords = sealKeywordsRef.current) {
+        if (sealSearchTimerRef.current) {
+            clearTimeout(sealSearchTimerRef.current);
+            sealSearchTimerRef.current = null;
+        }
+
+        const keywords = rawKeywords.trim();
+        if (!keywords) {
+            setSealSearchResult([]);
+            return;
+        }
+
+        const result = await searchAdminUsers(keywords);
+        if (sealKeywordsRef.current.trim() !== keywords) {
+            return;
+        }
+        setSealSearchResult(result?.users || []);
+    }
+
     useEffect(() => {
         if (!visible) {
             return undefined;
@@ -311,6 +330,11 @@ function Admin(props: AdminProps) {
                                         value={sealKeywords}
                                         onChange={setSealKeywords}
                                         placeholder="搜索邮箱或用户名"
+                                        inputMode="search"
+                                        enterKeyHint="search"
+                                        onEnter={(value) =>
+                                            handleSealSearchNow(value)
+                                        }
                                     />
                                 </div>
                                 {sealSearchResult.length > 0 && (
