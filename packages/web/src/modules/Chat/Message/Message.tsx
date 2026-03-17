@@ -278,7 +278,7 @@ class Message extends Component<MessageProps, MessageState> {
         const { showButtonList } = this.state;
         const showQuoteButton = linkmanType === 'group' && type !== 'system';
         const isReadonlyPrivateConversation =
-            linkmanType !== 'group' && (isBotConversation || isSelfConversation);
+            linkmanType !== 'group' && isBotConversation;
         const showRecallButton =
             !isReadonlyPrivateConversation &&
             (isAdmin || (!client.disableDeleteMessage && isSelf));

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 
+import getFriendId from '@bulita/utils/getFriendId';
 import { Linkman, State } from '../../state/reducer';
 import LinkmanComponent from './Linkman';
 
@@ -8,6 +9,7 @@ import Style from './LinkmanList.less';
 
 function LinkmanList() {
     const linkmans = useSelector((state: State) => state.linkmans);
+    const selfId = useSelector((state: State) => state.user?._id || '');
 
     function renderLinkman(linkman: Linkman, index: number) {
         const messages = Object.values(linkman.messages);
@@ -55,6 +57,7 @@ function LinkmanList() {
 
     function shouldShowLinkman(linkman: Linkman): boolean {
         if (linkman.type === 'group') return true;
+        if (selfId && linkman._id === getFriendId(selfId, selfId)) return true;
         const lastTime = getLinkmanLastTime(linkman);
         const sixMonthsAgo = Date.now() - SIX_MONTHS_MS;
         return lastTime >= sixMonthsAgo;

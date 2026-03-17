@@ -89,6 +89,16 @@ async function addDefaultLinkmans(user: UserDocument) {
     if (!isInDefaultGroup) {
         defaultGroup.members.push(user._id);
     }
+    const selfFriend = await Friend.findOne({
+        from: user._id,
+        to: user._id,
+    });
+    if (!selfFriend) {
+        await Friend.create({
+            from: user._id,
+            to: user._id,
+        } as FriendDocument);
+    }
     await defaultGroup.save();
 }
 
@@ -523,6 +533,7 @@ export async function addFriend(ctx: Context<{ userId: string }>) {
 export async function deleteFriend(ctx: Context<{ userId: string }>) {
     const { userId } = ctx.data;
     assert(isValid(userId), '无效的用户ID');
+    assert(ctx.socket.user.toString() !== userId, '不能删除自己');
 
     const user = await User.findOne({ _id: userId });
     if (!user) {

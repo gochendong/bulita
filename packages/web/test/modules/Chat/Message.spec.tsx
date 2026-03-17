@@ -73,7 +73,7 @@ describe('Chat Message actions', () => {
         expect(screen.queryByLabelText('更多')).not.toBeInTheDocument();
     });
 
-    it('shows only copy in self conversations', () => {
+    it('shows copy and recall in self conversations', () => {
         renderMessage({
             linkmanType: 'friend',
             isSelfConversation: true,
@@ -81,6 +81,6 @@ describe('Chat Message actions', () => {
 
         expect(screen.getByLabelText('复制')).toBeInTheDocument();
         expect(screen.queryByLabelText('引用')).not.toBeInTheDocument();
-        expect(screen.queryByLabelText('更多')).not.toBeInTheDocument();
+        expect(screen.getByLabelText('更多')).toBeInTheDocument();
     });
 });

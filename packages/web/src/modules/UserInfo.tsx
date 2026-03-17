@@ -42,6 +42,7 @@ function UserInfo(props: UserInfoProps) {
 
     const selfId =
         useSelector((state: State) => state.user && state.user._id) || '';
+    const selfLinkmanId = getFriendId(selfId, selfId);
     // 获取好友id
     if (user && user._id.length === selfId.length) {
         user._id = getFriendId(selfId, user._id);
@@ -52,6 +53,7 @@ function UserInfo(props: UserInfoProps) {
     // @ts-ignore
     const linkman = useSelector((state: State) => state.linkmans[user?._id]);
     const isFriend = linkman && linkman.type === 'friend';
+    const isSelfUser = !!user && !!selfId && user._id === selfLinkmanId;
     const isAdmin = useSelector(
         (state: State) => state.user && state.user.isAdmin,
     );
@@ -207,9 +209,15 @@ function UserInfo(props: UserInfoProps) {
                                 alt="用户头像"
                             />
                             <p>{user.username}</p>
+                            {isSelfUser ? (
+                                <p className={Style.selfLabel}>这是自己</p>
+                            ) : null}
                             {(() => {
                                 const isOnline = adminDetails?.isOnline ?? user.isOnline;
                                 const lastLoginTime = adminDetails?.lastLoginTime ?? user.lastLoginTime;
+                                if (isSelfUser) {
+                                    return <p className={Style.onlineStatus}>个人会话</p>;
+                                }
                                 if (user.tag === 'bot' || isOnline === true) {
                                     return <p className={Style.onlineStatus}>当前在线</p>;
                                 }
@@ -234,19 +242,19 @@ function UserInfo(props: UserInfoProps) {
                                     发送消息
                                 </Button>
                             ) : null}
-                            {isFriend ? (
+                            {isFriend && !isSelfUser ? (
                                 <Button
                                     type="danger"
                                     onClick={handleDeleteFriend}
                                 >
                                     删除聊天
                                 </Button>
-                            ) : (
+                            ) : !isFriend ? (
                                 <Button onClick={handleAddFriend}>
                                     开始聊天
                                 </Button>
-                            )}
-                            {isAdmin ? (
+                            ) : null}
+                            {isAdmin && !isSelfUser ? (
                                 <Button type="danger" onClick={handleSeal}>
                                     封禁用户
                                 </Button>

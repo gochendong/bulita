@@ -1,6 +1,7 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 
+import getFriendId from '@bulita/utils/getFriendId';
 import Time from '@bulita/utils/time';
 import { isMobile } from '@bulita/utils/ua';
 import Avatar from '../../components/Avatar';
@@ -34,8 +35,10 @@ function Linkman(props: LinkmanProps) {
 
     const action = useAction();
     const focus = useSelector((state: State) => state.focus);
+    const selfId = useSelector((state: State) => state.user?._id || '');
     const aero = useAero();
     const { linkmans } = useStore();
+    const isSelfLinkman = !!selfId && id === getFriendId(selfId, selfId);
 
     function formatLastOnline(dateStr: string | null | undefined): string {
         if (!dateStr) return '从未登录';
@@ -94,12 +97,19 @@ function Linkman(props: LinkmanProps) {
             <Avatar src={avatar} size={48} />
             <div className={Style.container}>
                 <div className={`${Style.rowContainer} ${Style.nameTimeBlock}`}>
-                    <p className={Style.name}>{name}</p>
+                    <p className={Style.name}>
+                        {name}
+                        {isSelfLinkman && (
+                            <span className={Style.selfTag}>这是自己</span>
+                        )}
+                    </p>
                     <p className={Style.time}>{formatTime()}</p>
                 </div>
-                {(isOnline !== undefined || tag === 'bot') && (
+                {(isSelfLinkman || isOnline !== undefined || tag === 'bot') && (
                     <div className={Style.onlineStatus}>
-                        {tag === 'bot' || isOnline ? (
+                        {isSelfLinkman ? (
+                            <span className={Style.selfText}>个人会话</span>
+                        ) : tag === 'bot' || isOnline ? (
                             <span className={Style.onlineText}>在线</span>
                         ) : lastLoginTime != null ? (
                             <span className={Style.offlineText}>

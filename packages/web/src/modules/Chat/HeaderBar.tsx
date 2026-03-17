@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import CopyToClipboard from 'react-copy-to-clipboard';
 import { css } from 'linaria';
 
+import getFriendId from '@bulita/utils/getFriendId';
 import { isMobile } from '@bulita/utils/ua';
 import { State } from '../../state/reducer';
 import useIsLogin from '../../hooks/useIsLogin';
@@ -87,6 +88,9 @@ function HeaderBar(props: Props) {
         (state: State) => state.status.functionBarAndLinkmanListVisible,
     );
     const aero = useAero();
+    const selfId = useSelector((state: State) => state.user?._id || '');
+    const isSelfLinkman =
+        !!selfId && type === 'friend' && id === getFriendId(selfId, selfId);
 
     function handleShareGroup() {
         Message.success('邀请链接复制成功');
@@ -152,13 +156,25 @@ function HeaderBar(props: Props) {
                 {type === 'friend' && createTime && tag !== 'bot' && (
                     <UserBadge createTime={createTime} />
                 )}
+                {isSelfLinkman && (
+                    <span className={Style.selfTag}>这是自己</span>
+                )}
                 {tag === 'bot' && (
                     <span className={Style.adminTag}>机器人</span>
                 )}
-                {type === 'friend' && (tag === 'bot' || isOnline === true) && (
+                {isSelfLinkman && (
+                    <span className={Style.selfStatusText}>个人会话</span>
+                )}
+                {type === 'friend' &&
+                    !isSelfLinkman &&
+                    (tag === 'bot' || isOnline === true) && (
                     <span className={Style.onlineStatusText}>当前在线</span>
                 )}
-                {type === 'friend' && tag !== 'bot' && isOnline === false && lastLoginTime != null && (
+                {type === 'friend' &&
+                    !isSelfLinkman &&
+                    tag !== 'bot' &&
+                    isOnline === false &&
+                    lastLoginTime != null && (
                     <span className={Style.lastOnlineText}>
                         离线 最后在线：{formatLastOnline(lastLoginTime)}
                     </span>
