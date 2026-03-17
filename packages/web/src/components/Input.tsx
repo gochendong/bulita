@@ -31,7 +31,13 @@ function Input(props: InputProps) {
     } = props;
 
     const $input = useRef(null);
+    const inputNameRef = useRef(
+        `bulita-input-${Math.random().toString(36).slice(2, 10)}`,
+    );
     const [focused, setFocused] = useState(false);
+    const [readonlyGuard, setReadonlyGuard] = useState(true);
+    const normalizedAutoComplete =
+        autoComplete === 'off' ? 'new-password' : autoComplete;
 
     function handleInput(e: any) {
         onChange(e.target.value);
@@ -56,11 +62,13 @@ function Input(props: InputProps) {
     }
 
     function handleFocus(e: any) {
+        setReadonlyGuard(false);
         setFocused(true);
         onFocus();
     }
 
     function handleBlur(e: any) {
+        setReadonlyGuard(true);
         setFocused(false);
         onBlur();
     }
@@ -80,13 +88,17 @@ function Input(props: InputProps) {
                 onBlur={handleBlur}
                 ref={$input}
                 placeholder={placeholder}
-                autoComplete={autoComplete}
+                autoComplete={normalizedAutoComplete}
                 autoCorrect="off"
                 autoCapitalize="off"
                 spellCheck={false}
+                autoSave="off"
+                aria-autocomplete="none"
                 data-form-type="other"
                 data-lpignore="true"
                 data-1p-ignore="true"
+                name={inputNameRef.current}
+                readOnly={readonlyGuard}
             />
             {value && showClearBtn && focused && (
                 <IconButton

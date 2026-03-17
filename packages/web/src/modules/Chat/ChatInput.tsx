@@ -129,6 +129,10 @@ function ChatInput(props: InputAreaProps) {
         { type: 'image' | 'file'; data: ReadFileResult; previewUrl?: string }[]
     >([]);
     const sendingLockRef = useRef(false);
+    const chatInputNameRef = useRef(
+        `bulita-chat-${Math.random().toString(36).slice(2, 10)}`,
+    );
+    const [textareaReadonly, setTextareaReadonly] = useState(true);
 
     const { minHeight, maxHeight } = props;
 
@@ -875,9 +879,11 @@ function ChatInput(props: InputAreaProps) {
             return [];
         }
         const botName = defaultBotName || 'AI';
+        const canMentionBot = linkman.aiEnabled === true;
         const regex = new RegExp(`^${at.content.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
         const filtered = (linkman.onlineMembers || []).filter((member) =>
-            regex.test(member.user.username),
+            regex.test(member.user.username)
+            && (canMentionBot || member.user.tag !== 'bot'),
         );
         const botFirst = [...filtered].sort((a, b) => {
             if (a.user.username === botName) return -1;
@@ -976,7 +982,7 @@ function ChatInput(props: InputAreaProps) {
             </div>
             <form
                 className={Style.form}
-                autoComplete="off"
+                autoComplete="new-password"
                 onSubmit={(e) => e.preventDefault()}
             >
                 {pendingAttachments.length > 0 && (
@@ -1069,14 +1075,18 @@ function ChatInput(props: InputAreaProps) {
                     className={Style.input}
                     autoFocus={!isMobile}
                     placeholder={isMobile ? "" : "Enter 发送，Shift + Enter 换行"}
-                    autoComplete="off"
+                    autoComplete="new-password"
                     autoCorrect="off"
                     autoCapitalize="off"
                     spellCheck={false}
+                    autoSave="off"
+                    aria-autocomplete="none"
                     data-form-type="other"
                     data-lpignore="true"
                     data-1p-ignore="true"
                     enterKeyHint={isMobile ? 'send' : 'enter'}
+                    name={chatInputNameRef.current}
+                    readOnly={textareaReadonly}
                     ref={$input}
                     onBeforeInput={handleBeforeInput}
                     onKeyDown={handleInputKeyDown}
@@ -1088,11 +1098,15 @@ function ChatInput(props: InputAreaProps) {
                         inputIME = false;
                     }}
                     onFocus={() => {
+                        setTextareaReadonly(false);
                         toggleInputFocus(true);
                         const v = ($input.current?.value ?? '').trim();
                         setInputHasContent(v.length > 0);
                     }}
-                    onBlur={() => toggleInputFocus(false)}
+                    onBlur={() => {
+                        setTextareaReadonly(true);
+                        toggleInputFocus(false);
+                    }}
                     onInput={({ currentTarget }) => {
                         setTextAreaHeight(currentTarget, minHeight, maxHeight);
                         setInputHasContent((currentTarget.value || '').trim().length > 0);

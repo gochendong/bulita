@@ -6,6 +6,20 @@
         .rc-tabs-top {
             border-bottom: none;
         }
+
+        @media @mobile {
+            .rc-dialog {
+                max-height: calc(100dvh - 12px);
+            }
+
+            .rc-dialog-content {
+                max-height: calc(100dvh - 12px);
+            }
+
+            .rc-dialog-body {
+                padding-bottom: 14px;
+            }
+        }
     }
 }
 
@@ -145,7 +159,15 @@
     margin-top: 20px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    max-height: 52vh;
+    max-height: 68vh;
+}
+
+@media @mobile {
+    .scrollContainer {
+        margin-top: 12px;
+        max-height: calc(100dvh - 124px);
+        padding-bottom: 8px;
+    }
 }
 
 .settingRow {

@@ -166,7 +166,7 @@ function FunctionBar() {
             </span>
             <form
                 className={Style.form}
-                autoComplete="off"
+                autoComplete="new-password"
                 onSubmit={(e) => e.preventDefault()}
             >
                 <Input

@@ -85,6 +85,10 @@ function GroupManagePanel(props: GroupManagePanelProps) {
     const [memberSearchResult, setMemberSearchResult] = useState<any[]>([]);
     const memberKeywordsRef = useRef(memberKeywords);
     const memberSearchTimerRef = useRef<number | null>(null);
+    const announcementFieldNameRef = useRef(
+        `bulita-textarea-${Math.random().toString(36).slice(2, 10)}`,
+    );
+    const [announcementReadonly, setAnnouncementReadonly] = useState(true);
     const context = useContext(ShowUserOrGroupInfoContext);
     const isOwner = isLogin && !!selfId && selfId === creator;
     const canManageMembers = isOwner && !isDefault;
@@ -484,15 +488,23 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                                 className={Style.announcementInput}
                                 value={groupAnnouncement}
                                 onChange={(event) => setGroupAnnouncement(event.target.value)}
-                                onBlur={handleChangeGroupAnnouncement}
+                                onFocus={() => setAnnouncementReadonly(false)}
+                                onBlur={() => {
+                                    setAnnouncementReadonly(true);
+                                    handleChangeGroupAnnouncement();
+                                }}
                                 placeholder="设置群公告，成员将在聊天顶部看到"
-                                autoComplete="off"
+                                autoComplete="new-password"
                                 autoCorrect="off"
                                 autoCapitalize="off"
                                 spellCheck={false}
+                                autoSave="off"
+                                aria-autocomplete="none"
                                 data-form-type="other"
                                 data-lpignore="true"
                                 data-1p-ignore="true"
+                                name={announcementFieldNameRef.current}
+                                readOnly={announcementReadonly}
                                 rows={4}
                             />
                         </div>
@@ -557,10 +569,10 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                     )}
 
                     <div className={Style.block}>
-                        <p className={Style.blockTitle}>消息提醒</p>
+                        <p className={Style.blockTitle}>消息免打扰</p>
                         <div className={Style.joinSwitchRow}>
                             <span className={Style.joinSwitchText}>
-                                {groupMuted ? '当前群组已开启免打扰' : '当前群组正常提醒'}
+                                消息免打扰
                             </span>
                             <Switch
                                 onColor="#52d88a"

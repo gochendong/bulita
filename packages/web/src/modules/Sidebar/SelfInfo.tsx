@@ -262,11 +262,6 @@ function SelfInfo(props: SelfInfoProps) {
                         {currentEmail || '未绑定邮箱'}
                     </div>
                 </div>
-                <div className={Common.block}>
-                    <p className={Style.tip}>
-                        更多通知、AI 和隐私相关设置已移动到左侧设置面板
-                    </p>
-                </div>
             </div>
         </Dialog>
     );
