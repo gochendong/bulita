@@ -1,6 +1,7 @@
 import axios from 'axios';
 import assert, { AssertionError } from 'assert';
 import jwt from 'jwt-simple';
+import RegexEscape from 'regex-escape';
 import { Types } from '@bulita/database/mongoose';
 import config from '@bulita/config/server';
 import Snowflake from '@bulita/utils/snowflake';
@@ -165,6 +166,7 @@ async function getLoginPayload(
             avatar: 1,
             announcement: 1,
             allowJoin: 1,
+            aiEnabled: 1,
             creator: 1,
             isDefault: 1,
             createTime: 1,
@@ -217,6 +219,9 @@ async function getLoginPayload(
     }
 
     const notificationTokens = await getUserNotificationTokens(user);
+    const mutedGroupIdSet = new Set(
+        (user.mutedGroupIds || []).map((groupId) => groupId.toString()),
+    );
 
     return {
         _id: user._id,
@@ -240,6 +245,8 @@ async function getLoginPayload(
             avatar: g.avatar,
             announcement: g.announcement,
             allowJoin: g.allowJoin !== false,
+            aiEnabled: g.aiEnabled === true,
+            muted: mutedGroupIdSet.has(g._id.toString()),
             creator: g.creator,
             isDefault: g.isDefault,
             createTime: g.createTime,
@@ -774,62 +781,42 @@ export async function getAdminUserByEmail(
         : { exists: false };
 }
 
+export async function searchAdminUsers(
+    ctx: Context<{ keywords: string }>,
+) {
+    const keywords = `${ctx.data.keywords || ''}`.trim();
+    if (!keywords) {
+        return { users: [] };
+    }
+
+    const escapedKeywords = RegexEscape(keywords);
+    const users = await User.find(
+        {
+            $or: [
+                { username: { $regex: escapedKeywords, $options: 'i' } },
+                { email: { $regex: escapedKeywords, $options: 'i' } },
+            ],
+        },
+        { _id: 1, username: 1, email: 1 },
+    )
+        .sort({ lastLoginTime: -1 })
+        .limit(20);
+
+    return {
+        users: users.map((user) => ({
+            _id: user._id.toString(),
+            username: user.username,
+            email: user.email || '',
+        })),
+    };
+}
+
 /**
  * 删除用户, 需要管理员权限
  * @param ctx Context
  */
-export async function deleteUser(ctx: Context<{ email: string }>) {
-    const { email } = ctx.data;
-    assert(email, '邮箱不能为空');
-
-    const user = await User.findOne({ email });
-    if (!user) {
-        throw new AssertionError({ message: '用户不存在' });
-    }
-
-    assert(
-        !isConfiguredAdmin(user),
-        '不能删除管理员账号',
-    );
-
-    const userId = user._id;
-
-    // 断开 Socket 连接
-    const sockets = await Socket.find({ user: userId });
-    const io = (ctx.socket as any).__socket.server;
-    sockets.forEach((socketRecord) => {
-        const connectedSocket = io.sockets.sockets.get(socketRecord.id);
-        if (connectedSocket) {
-            connectedSocket.emit('deleteUser', '您的账号已被删除');
-            connectedSocket.disconnect(true);
-        }
-    });
-    await Socket.deleteMany({ user: userId });
-
-    // 处理创建的群组：转让给系统用户
-    const systemUser = await User.findOne({ tag: 'system' });
-    if (systemUser) {
-        await Group.updateMany({ creator: userId }, { creator: systemUser._id });
-    }
-
-    // 删除用户
-    await User.deleteOne({ _id: userId });
-
-    // 删除好友关系
-    await Friend.deleteMany({ $or: [{ from: userId }, { to: userId }] });
-
-    // 退出所有群组
-    await Group.updateMany({}, { $pull: { members: userId } });
-
-    // 删除发送的消息
-    await Message.deleteMany({ $or: [{ from: userId }, { to: userId }] });
-
-    // 删除通知
-    await Notification.deleteMany({ user: userId });
-
-    return {
-        msg: 'ok',
-    };
+export async function deleteUser() {
+    throw new AssertionError({ message: '删除用户功能已移除' });
 }
 
 /**

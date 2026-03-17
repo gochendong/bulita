@@ -22,7 +22,7 @@ function Input(props: InputProps) {
         type = 'text',
         placeholder = '',
         className = '',
-        autoComplete = 'off',
+        autoComplete = type === 'password' ? 'new-password' : 'off',
         showClearBtn = true,
         onChange,
         onEnter = () => {},
@@ -81,6 +81,12 @@ function Input(props: InputProps) {
                 ref={$input}
                 placeholder={placeholder}
                 autoComplete={autoComplete}
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
             />
             {value && showClearBtn && focused && (
                 <IconButton

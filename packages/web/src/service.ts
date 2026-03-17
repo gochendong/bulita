@@ -242,6 +242,22 @@ export async function changeGroupAllowJoin(
     return !error;
 }
 
+export async function changeGroupAIEnabled(
+    groupId: string,
+    aiEnabled: boolean,
+) {
+    const [error] = await fetch('changeGroupAIEnabled', { groupId, aiEnabled });
+    return !error;
+}
+
+export async function changeGroupMute(groupId: string, muted: boolean) {
+    const [error, result] = await fetch('changeGroupMute', { groupId, muted });
+    if (error) {
+        return null;
+    }
+    return result;
+}
+
 /**
  * 离开群组
  * @param groupId 群组id
@@ -481,16 +497,11 @@ export async function getSystemConfig() {
 }
 
 /**
- * 获取公开系统配置（群聊 AI 开关等，供聊天区使用）
+ * 获取公开系统配置（供聊天区使用）
  */
 export async function getPublicSystemConfig() {
     const [, config] = await fetch('getPublicSystemConfig');
     return config;
-}
-
-export async function toggleGroupAI(enable: boolean) {
-    const [, result] = await fetch('toggleGroupAI', { enable });
-    return !!result;
 }
 
 /**
@@ -525,6 +536,16 @@ export async function getAdminUserByEmail(
 ): Promise<{ exists: boolean; username?: string; email?: string; _id?: string } | null> {
     const [err, res] = await fetch('getAdminUserByEmail', {
         email: email.trim(),
+    });
+    if (err) return null;
+    return res;
+}
+
+export async function searchAdminUsers(
+    keywords: string,
+): Promise<{ users: { _id: string; username: string; email: string }[] } | null> {
+    const [err, res] = await fetch('searchAdminUsers', {
+        keywords: keywords.trim(),
     });
     if (err) return null;
     return res;

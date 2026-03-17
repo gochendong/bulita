@@ -18,9 +18,12 @@ import {
     changeGroupAvatar,
     changeGroupAnnouncement,
     changeGroupAllowJoin,
+    changeGroupAIEnabled,
+    changeGroupMute,
     deleteGroup,
     leaveGroup,
     getGroupAllMembers,
+    getGroupOnlineMembers,
     GroupAllMemberItem,
     addGroupMember,
     kickGroupMember,
@@ -39,6 +42,8 @@ interface GroupManagePanelProps {
     avatar: string;
     announcement: string;
     allowJoin: boolean;
+    aiEnabled: boolean;
+    muted: boolean;
     isDefault: boolean;
     creator: string;
     onlineMembers: GroupMember[];
@@ -53,6 +58,8 @@ function GroupManagePanel(props: GroupManagePanelProps) {
         avatar,
         announcement,
         allowJoin,
+        aiEnabled,
+        muted,
         isDefault,
         creator,
         onlineMembers,
@@ -71,6 +78,8 @@ function GroupManagePanel(props: GroupManagePanelProps) {
     const [groupName, setGroupName] = useState(name);
     const [groupAnnouncement, setGroupAnnouncement] = useState(announcement);
     const [groupAllowJoin, setGroupAllowJoin] = useState(allowJoin);
+    const [groupAIEnabled, setGroupAIEnabled] = useState(aiEnabled);
+    const [groupMuted, setGroupMuted] = useState(muted);
     const [allMembers, setAllMembers] = useState<GroupAllMemberItem[]>([]);
     const [memberKeywords, setMemberKeywords] = useState('');
     const [memberSearchResult, setMemberSearchResult] = useState<any[]>([]);
@@ -109,11 +118,13 @@ function GroupManagePanel(props: GroupManagePanelProps) {
             setGroupName(name);
             setGroupAnnouncement(announcement);
             setGroupAllowJoin(allowJoin);
+            setGroupAIEnabled(aiEnabled);
+            setGroupMuted(muted);
             setMemberKeywords('');
             setMemberSearchResult([]);
             loadMembers();
         }
-    }, [visible, name, announcement, allowJoin, groupId]);
+    }, [visible, name, announcement, allowJoin, aiEnabled, muted, groupId]);
 
     useEffect(() => {
         memberKeywordsRef.current = memberKeywords;
@@ -185,6 +196,36 @@ function GroupManagePanel(props: GroupManagePanelProps) {
             return;
         }
         setGroupAllowJoin(!nextAllowJoin);
+    }
+
+    async function handleChangeGroupAI(nextAIEnabled: boolean) {
+        setGroupAIEnabled(nextAIEnabled);
+        const isSuccess = await changeGroupAIEnabled(groupId, nextAIEnabled);
+        if (isSuccess) {
+            action.setLinkmanProperty(groupId, 'aiEnabled', nextAIEnabled);
+            const onlineMembers = await getGroupOnlineMembers(groupId);
+            if (Array.isArray(onlineMembers)) {
+                action.setLinkmanProperty(groupId, 'onlineMembers', onlineMembers);
+            }
+            loadMembers();
+            Message.success(nextAIEnabled ? '已开启当前群组 AI' : '已关闭当前群组 AI');
+            return;
+        }
+        setGroupAIEnabled(!nextAIEnabled);
+    }
+
+    async function handleChangeGroupMute(nextMuted: boolean) {
+        setGroupMuted(nextMuted);
+        const result = await changeGroupMute(groupId, nextMuted);
+        if (result) {
+            action.setLinkmanProperty(groupId, 'muted', nextMuted);
+            if (nextMuted) {
+                action.setLinkmanProperty(groupId, 'unread', 0);
+            }
+            Message.success(nextMuted ? '已开启群消息免打扰' : '已关闭群消息免打扰');
+            return;
+        }
+        setGroupMuted(!nextMuted);
     }
 
     async function handleChangeGroupAvatar() {
@@ -445,6 +486,13 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                                 onChange={(event) => setGroupAnnouncement(event.target.value)}
                                 onBlur={handleChangeGroupAnnouncement}
                                 placeholder="设置群公告，成员将在聊天顶部看到"
+                                autoComplete="off"
+                                autoCorrect="off"
+                                autoCapitalize="off"
+                                spellCheck={false}
+                                data-form-type="other"
+                                data-lpignore="true"
+                                data-1p-ignore="true"
                                 rows={4}
                             />
                         </div>
@@ -488,6 +536,42 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                             </div>
                         </div>
                     )}
+
+                    {isOwner && (
+                        <div className={Style.block}>
+                            <p className={Style.blockTitle}>群聊 AI</p>
+                            <div className={Style.joinSwitchRow}>
+                                <span className={Style.joinSwitchText}>
+                                    {groupAIEnabled ? '当前群组已开启 AI 回复' : '当前群组已关闭 AI 回复'}
+                                </span>
+                                <Switch
+                                    onColor="#52d88a"
+                                    offColor="#d4d4d8"
+                                    uncheckedIcon={false}
+                                    checkedIcon={false}
+                                    checked={groupAIEnabled}
+                                    onChange={handleChangeGroupAI}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    <div className={Style.block}>
+                        <p className={Style.blockTitle}>消息提醒</p>
+                        <div className={Style.joinSwitchRow}>
+                            <span className={Style.joinSwitchText}>
+                                {groupMuted ? '当前群组已开启免打扰' : '当前群组正常提醒'}
+                            </span>
+                            <Switch
+                                onColor="#52d88a"
+                                offColor="#d4d4d8"
+                                uncheckedIcon={false}
+                                checkedIcon={false}
+                                checked={groupMuted}
+                                onChange={handleChangeGroupMute}
+                            />
+                        </div>
+                    </div>
 
                     {canManageMembers && (
                         <div className={Style.block}>

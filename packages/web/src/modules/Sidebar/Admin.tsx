@@ -9,18 +9,14 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 import Message from '../../components/Message';
-import store from '../../state/store';
-import { ActionTypes } from '../../state/action';
 import {
     getSealList,
+    searchAdminUsers,
     sealUser,
     unsealUser,
     toggleSendMessage,
-    toggleGroupAI,
     getSystemConfig,
     setSystemConfig as setSystemConfigApi,
-    getAdminUserByEmail,
-    deleteUser,
 } from '../../service';
 
 const styles = {
@@ -34,7 +30,6 @@ const styles = {
 
 type SystemConfig = {
     disableSendMessage: boolean;
-    groupAISwitch?: boolean;
     adminConfig?: Record<string, string>;
     adminConfigLabels?: Record<string, string>;
 };
@@ -47,10 +42,12 @@ interface AdminProps {
 function Admin(props: AdminProps) {
     const { visible, onClose } = props;
 
-    const [sealEmail, setSealEmail] = useState('');
-    const [deleteEmail, setDeleteEmail] = useState('');
-    const deleteEmailRef = useRef(deleteEmail);
-    deleteEmailRef.current = deleteEmail;
+    const [sealKeywords, setSealKeywords] = useState('');
+    const [sealSearchResult, setSealSearchResult] = useState<
+        { _id: string; username: string; email: string }[]
+    >([]);
+    const sealKeywordsRef = useRef(sealKeywords);
+    const sealSearchTimerRef = useRef<number | null>(null);
     const [sealList, setSealList] = useState({ users: [] });
     const [systemConfig, setSystemConfig] = useState<SystemConfig>();
     const [adminConfigValues, setAdminConfigValues] = useState<Record<string, string>>({});
@@ -83,21 +80,55 @@ function Admin(props: AdminProps) {
         if (visible) {
             handleGetSystemConfig();
             handleGetSealList();
+            setSealKeywords('');
+            setSealSearchResult([]);
         }
     }, [visible]);
+
+    useEffect(() => {
+        sealKeywordsRef.current = sealKeywords;
+    }, [sealKeywords]);
+
+    useEffect(() => {
+        if (!visible) {
+            return undefined;
+        }
+
+        if (sealSearchTimerRef.current) {
+            clearTimeout(sealSearchTimerRef.current);
+        }
+
+        const keywords = sealKeywords.trim();
+        if (!keywords) {
+            setSealSearchResult([]);
+            return undefined;
+        }
+
+        sealSearchTimerRef.current = window.setTimeout(async () => {
+            const result = await searchAdminUsers(keywords);
+            if (sealKeywordsRef.current.trim() !== keywords) {
+                return;
+            }
+            setSealSearchResult(result?.users || []);
+        }, 1000);
+
+        return () => {
+            if (sealSearchTimerRef.current) {
+                clearTimeout(sealSearchTimerRef.current);
+            }
+        };
+    }, [sealKeywords, visible]);
 
     /**
      * 处理封禁用户操作
      */
-    async function handleSeal() {
-        const email = sealEmail.trim();
+    async function handleSeal(target: {
+        username: string;
+        email: string;
+    }) {
+        const email = target.email.trim();
         if (!email) {
-            Message.warning('请输入要封禁的邮箱');
-            return;
-        }
-        const target = await getAdminUserByEmail(email);
-        if (!target?.exists) {
-            Message.warning('用户不存在');
+            Message.warning('该用户没有可用邮箱');
             return;
         }
         setConfirmDialog({
@@ -108,7 +139,8 @@ function Admin(props: AdminProps) {
                 const isSuccess = await sealUser(email);
                 if (isSuccess) {
                     Message.success('封禁用户成功');
-                    setSealEmail('');
+                    setSealKeywords('');
+                    setSealSearchResult([]);
                     handleGetSealList();
                 }
             },
@@ -152,18 +184,6 @@ function Admin(props: AdminProps) {
         }
     }
 
-    async function handleToggleGroupAI(enable: boolean) {
-        const isSuccess = await toggleGroupAI(enable);
-        if (isSuccess) {
-            store.dispatch({
-                type: ActionTypes.SetStatus,
-                payload: { key: 'groupAISwitch', value: enable },
-            });
-            Message.success(enable ? '已开启群聊 AI' : '已关闭群聊 AI');
-            handleGetSystemConfig();
-        }
-    }
-
     async function handleSetSystemConfig(key: string, value: string) {
         const isSuccess = await setSystemConfigApi(key, value);
         if (isSuccess) {
@@ -172,45 +192,6 @@ function Admin(props: AdminProps) {
         } else {
             Message.error('保存失败');
         }
-    }
-
-    /**
-     * 失焦时按邮箱查找用户是否存在
-     */
-    async function handleLookupDeleteUser() {
-        const email = deleteEmailRef.current.trim();
-        if (!email) return;
-        const res = await getAdminUserByEmail(email);
-        if (res?.exists) {
-            Message.success(`用户「${res.username} <${res.email || email}>」存在`);
-        } else {
-            Message.warning('用户不存在');
-        }
-    }
-
-    async function handleDeleteUser() {
-        const email = deleteEmail.trim();
-        if (!email) {
-            Message.warning('请输入要删除的邮箱');
-            return;
-        }
-        const target = await getAdminUserByEmail(email);
-        if (!target?.exists) {
-            Message.warning('用户不存在');
-            return;
-        }
-        setConfirmDialog({
-            title: '确认删除用户',
-            description: `将删除用户 ${target.username} <${target.email || email}>，此操作不可恢复。`,
-            confirmText: '确认删除',
-            onConfirm: async () => {
-                const isSuccess = await deleteUser(email);
-                if (isSuccess) {
-                    Message.success(`用户 ${target.email || email} 已被删除`);
-                    setDeleteEmail('');
-                }
-            },
-        });
     }
 
     async function handleConfirmAction() {
@@ -366,25 +347,6 @@ function Admin(props: AdminProps) {
                                             关闭全局禁言
                                         </Button>
                                     )}
-                                    {!systemConfig?.groupAISwitch ? (
-                                        <Button
-                                            className={`${Style.groupAIButton}`}
-                                            onClick={() =>
-                                                handleToggleGroupAI(true)
-                                            }
-                                        >
-                                            开启群聊 AI
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            className={`${Style.groupAIButton} ${Style.groupAIButtonOff}`}
-                                            onClick={() =>
-                                                handleToggleGroupAI(false)
-                                            }
-                                        >
-                                            关闭群聊 AI
-                                        </Button>
-                                    )}
                                 </div>
                             </div>
                         </div>
@@ -392,41 +354,41 @@ function Admin(props: AdminProps) {
                     <div className={Style.adminCol}>
                         <div className={Common.container}>
                             <div className={Common.block}>
-                                <p className={Common.title}>删除用户</p>
-                                <div className={Style.inputBlock}>
-                                    <Input
-                                        className={Style.input}
-                                        value={deleteEmail}
-                                        onChange={setDeleteEmail}
-                                        onBlur={() => handleLookupDeleteUser()}
-                                        placeholder="要删除的邮箱"
-                                    />
-                                    <Button
-                                        className={Style.button}
-                                        type="danger"
-                                        onClick={handleDeleteUser}
-                                    >
-                                        确认删除
-                                    </Button>
-                                </div>
-                            </div>
-                            <div className={Common.block}>
                                 <p className={Common.title}>封禁用户</p>
                                 <div className={Style.inputBlock}>
                                     <Input
                                         className={Style.input}
-                                        value={sealEmail}
-                                        onChange={setSealEmail}
-                                        placeholder="要封禁的邮箱"
+                                        value={sealKeywords}
+                                        onChange={setSealKeywords}
+                                        placeholder="搜索邮箱或用户名"
                                     />
-                                    <Button
-                                        className={Style.button}
-                                        type="danger"
-                                        onClick={handleSeal}
-                                    >
-                                        确认封禁
-                                    </Button>
                                 </div>
+                                {sealSearchResult.length > 0 && (
+                                    <div className={Style.userSearchList}>
+                                        {sealSearchResult.map((user) => (
+                                            <div
+                                                className={Style.userSearchItem}
+                                                key={user._id}
+                                            >
+                                                <div className={Style.userSearchInfo}>
+                                                    <span className={Style.userSearchName}>
+                                                        {user.username}
+                                                    </span>
+                                                    <span className={Style.userSearchEmail}>
+                                                        {user.email || '未绑定邮箱'}
+                                                    </span>
+                                                </div>
+                                                <Button
+                                                    className={Style.userActionButton}
+                                                    type="danger"
+                                                    onClick={() => handleSeal(user)}
+                                                >
+                                                    封禁
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <div className={Common.block}>
                                 <p className={Common.title}>封禁用户列表</p>

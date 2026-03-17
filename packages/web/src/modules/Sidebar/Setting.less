@@ -34,6 +34,18 @@
     font-size: 14px;
 }
 
+.input {
+    height: 36px;
+    margin-bottom: 8px;
+}
+
+.tip {
+    margin-bottom: 10px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #777;
+}
+
 .radioGroup {
     display: flex !important;
     flex-wrap: wrap;
@@ -134,4 +146,36 @@
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     max-height: 52vh;
+}
+
+.settingRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid rgba(196, 184, 171, 0.45);
+
+    &:first-of-type {
+        border-top: none;
+        padding-top: 2px;
+    }
+}
+
+.settingInfo {
+    min-width: 0;
+    flex: 1;
+}
+
+.settingLabel {
+    margin: 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.settingDesc {
+    margin: 4px 0 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: #777;
 }

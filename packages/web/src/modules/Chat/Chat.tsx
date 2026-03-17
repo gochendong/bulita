@@ -229,6 +229,8 @@ function Chat() {
                     avatar={linkman.avatar}
                     announcement={linkman.announcement || ''}
                     allowJoin={linkman.allowJoin !== false}
+                    aiEnabled={linkman.aiEnabled === true}
+                    muted={linkman.muted === true}
                     isDefault={linkman.isDefault === true}
                     creator={linkman.creator}
                     onlineMembers={linkman.onlineMembers}

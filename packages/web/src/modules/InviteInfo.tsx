@@ -47,6 +47,7 @@ function InviteInfo() {
     }
 
     function handleClose() {
+        clearInviteId();
         updateVisible(false);
     }
 

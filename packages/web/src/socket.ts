@@ -22,6 +22,7 @@ import {
     getLinkmanHistoryMessages,
     getLinkmansLastMessagesV2,
     getPublicSystemConfig,
+    updateHistory,
 } from './service';
 import store from './state/store';
 // import useAction from "./hooks/useAction";
@@ -182,12 +183,6 @@ socket.on('connect', async () => {
                 payload: linkmanMessages,
             });
             const publicConfig = await getPublicSystemConfig();
-            if (publicConfig?.groupAISwitch !== undefined) {
-                dispatch({
-                    type: ActionTypes.SetStatus,
-                    payload: { key: 'groupAISwitch', value: publicConfig.groupAISwitch },
-                });
-            }
             if (publicConfig?.defaultBotName !== undefined) {
                 dispatch({
                     type: ActionTypes.SetStatus,
@@ -337,6 +332,8 @@ socket.on('message', async (message: any) => {
     }
 
     const linkman = state.linkmans[message.to];
+    const isMutedGroup =
+        linkman?.type === 'group' && linkman.muted === true;
     let title = '';
     if (linkman) {
         dispatch({
@@ -348,6 +345,9 @@ socket.on('message', async (message: any) => {
         });
         if (linkman.type === 'group') {
             title = `${message.from.username} 在 ${linkman.name} 对大家说:`;
+            if (isMutedGroup) {
+                updateHistory(message.to, message._id);
+            }
         } else {
             title = `${message.from.username} 对你说:`;
         }
@@ -386,7 +386,11 @@ socket.on('message', async (message: any) => {
         }
     }
 
-    if (windowStatus === 'blur' && state.status.notificationSwitch) {
+    if (
+        !isMutedGroup &&
+        windowStatus === 'blur' &&
+        state.status.notificationSwitch
+    ) {
         const body =
             message.type === 'text'
                 ? message.content.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
@@ -416,7 +420,11 @@ socket.on('message', async (message: any) => {
         );
     }
 
-    if (state.status.soundSwitch && linkman.type !== 'group') {
+    if (
+        !isMutedGroup &&
+        state.status.soundSwitch &&
+        linkman.type !== 'group'
+    ) {
         const soundType = state.status.sound;
         playSound(soundType);
     }
@@ -597,6 +605,20 @@ socket.on(
                 linkmanId: groupId,
                 key: 'allowJoin',
                 value: allowJoin,
+            } as SetLinkmanPropertyPayload,
+        });
+    },
+);
+
+socket.on(
+    'changeGroupAIEnabled',
+    ({ groupId, aiEnabled }: { groupId: string; aiEnabled: boolean }) => {
+        dispatch({
+            type: ActionTypes.SetLinkmanProperty,
+            payload: {
+                linkmanId: groupId,
+                key: 'aiEnabled',
+                value: aiEnabled,
             } as SetLinkmanPropertyPayload,
         });
     },

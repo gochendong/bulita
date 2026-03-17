@@ -22,7 +22,6 @@ import Socket from '@bulita/database/mongoose/models/socket';
 
 import {
     DisableSendMessageKey,
-    GroupAISwitchKey,
     Redis,
     DisableRegisterUserSendMessageKey,
 } from '@bulita/database/redis/initRedis';
@@ -583,12 +582,20 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
             user: {
                 $in: toGroup.members,
             },
-        });
+        }).populate('user', { mutedGroupIds: 1 });
         const notificationTokens: string[] = [];
         notifications.forEach((notification) => {
+            const notificationUser = notification.user as UserDocument;
             // Messages sent by yourself don’t push notification to yourself
             if (
-                notification.user._id.toString() === ctx.socket.user.toString()
+                notificationUser._id.toString() === ctx.socket.user.toString()
+            ) {
+                return;
+            }
+            if (
+                (notificationUser.mutedGroupIds || []).some(
+                    (groupId) => groupId.toString() === toGroup!._id.toString(),
+                )
             ) {
                 return;
             }
@@ -798,15 +805,10 @@ export async function sendBotMessage(ctx: Context<SendMessageData>) {
 
 /**
  * 发送群组 BOT 消息
- * 当群聊 AI 开关开启时，用户发送群消息后可调用此接口触发默认机器人回复
+ * 当当前群组开启群聊 AI 时，用户发送群消息后可调用此接口触发默认机器人回复
  * @param ctx Context
  */
 export async function sendGroupBotMessage(ctx: Context<SendMessageData>) {
-    const groupAISwitch = (await Redis.get(GroupAISwitchKey)) ?? 'false';
-    if (groupAISwitch !== 'true') {
-        throw new AssertionError({ message: '群聊 AI 已关闭' });
-    }
-
     const { to, content } = ctx.data;
     let { type } = ctx.data;
     assert(to, 'to不能为空');
@@ -815,6 +817,7 @@ export async function sendGroupBotMessage(ctx: Context<SendMessageData>) {
     if (isValid(to)) {
         toGroup = await Group.findOne({ _id: to });
         assert(toGroup, '群组不存在');
+        assert(toGroup.aiEnabled === true, '当前群组已关闭群聊 AI');
     } else {
         throw new AssertionError({ message: '群聊 AI 仅支持群组' });
     }
@@ -1038,6 +1041,13 @@ export async function getLinkmansLastMessagesV2(
     ctx: Context<{ linkmans: string[] }>,
 ) {
     const { linkmans } = ctx.data;
+    const currentUser = await User.findOne(
+        { _id: ctx.socket.user },
+        { mutedGroupIds: 1 },
+    );
+    const mutedGroupIdSet = new Set(
+        (currentUser?.mutedGroupIds || []).map((groupId) => groupId.toString()),
+    );
 
     const histories = await History.find({
         user: ctx.socket.user.toString(),
@@ -1088,7 +1098,11 @@ export async function getLinkmansLastMessagesV2(
                 );
                 result[linkmanId] = {
                     messages: messages.slice(0, 15).reverse(),
-                    unread: messageIndex === -1 ? 100 : messageIndex,
+                    unread: mutedGroupIdSet.has(linkmanId)
+                        ? 0
+                        : messageIndex === -1
+                            ? 100
+                            : messageIndex,
                 };
             } else {
                 result[linkmanId] = {

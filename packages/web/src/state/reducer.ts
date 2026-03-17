@@ -60,6 +60,8 @@ export interface Group {
     avatar: string;
     announcement?: string;
     allowJoin?: boolean;
+    aiEnabled?: boolean;
+    muted?: boolean;
     createTime: string;
     creator: string;
     isDefault?: boolean;
@@ -173,8 +175,6 @@ export interface State {
         functionBarAndLinkmanListVisible: boolean;
         /** enable search expression when input some phrase */
         enableSearchExpression: boolean;
-        /** 群聊 AI 开关（由管理员在控制台设置，从服务端拉取） */
-        groupAISwitch: boolean;
         /** 群聊中 @ 的默认机器人名（用于 @ 列表置顶与判断是否触发群聊 AI） */
         defaultBotName: string;
         /** 用户最大建群数，0 表示不限 */
@@ -259,6 +259,8 @@ function transformGroup(group: Linkman): Linkman {
     initLinkmanFields(group, 'group');
     group.creator = group.creator || '';
     group.allowJoin = group.allowJoin !== false;
+    group.aiEnabled = group.aiEnabled === true;
+    group.muted = group.muted === true;
     group.onlineMembers = [];
     return group;
 }
@@ -333,7 +335,6 @@ export const initialState: State = {
         sidebarVisible: !isMobile,
         functionBarAndLinkmanListVisible: !isMobile,
         enableSearchExpression: localStorage.enableSearchExpression,
-        groupAISwitch: false,
         defaultBotName: '',
         maxGroupNum: 0,
         pendingRetryMessage: null,
@@ -629,7 +630,13 @@ function reducer(state: State = initialState, action: Action): State {
         case ActionTypes.AddLinkmanMessage: {
             const payload = action.payload as AddLinkmanMessagePayload;
             let { unread } = state.linkmans[payload.linkmanId];
-            if (state.focus !== payload.linkmanId) {
+            if (
+                state.focus !== payload.linkmanId &&
+                !(
+                    state.linkmans[payload.linkmanId].type === 'group' &&
+                    state.linkmans[payload.linkmanId].muted === true
+                )
+            ) {
                 unread++;
             }
             return {

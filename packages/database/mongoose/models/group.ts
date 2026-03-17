@@ -20,6 +20,10 @@ const GroupSchema = new Schema({
         type: Boolean,
         default: true,
     },
+    aiEnabled: {
+        type: Boolean,
+        default: false,
+    },
     creator: {
         type: Schema.Types.ObjectId,
         ref: 'User',
@@ -45,6 +49,8 @@ export interface GroupDocument extends Document {
     announcement: string;
     /** 是否允许加入 */
     allowJoin: boolean;
+    /** 是否开启群聊 AI */
+    aiEnabled: boolean;
     /** 创建者 */
     creator: string;
     /** 是否为默认群组 */

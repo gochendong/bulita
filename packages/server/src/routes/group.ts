@@ -18,6 +18,8 @@ function formatGroup(group: GroupDocument) {
         avatar: group.avatar,
         announcement: group.announcement || '',
         allowJoin: group.allowJoin !== false,
+        aiEnabled: group.aiEnabled === true,
+        muted: false,
         createTime: group.createTime,
         creator: group.creator?.toString?.() || '',
         isDefault: group.isDefault,
@@ -35,6 +37,28 @@ function assertGroupOwner(group: GroupDocument, userId: string) {
 
 function assertManageableGroup(group: GroupDocument) {
     assert(group.isDefault !== true, '默认群组仅支持转让管理员');
+}
+
+async function ensurePrimaryBotInGroup(group: GroupDocument) {
+    const { getConfigWithDefault } = await import('../utils/runtimeConfig');
+    const botName = (await getConfigWithDefault('BOTS'))
+        .split(',')
+        .map((s: string) => s.trim())
+        .filter(Boolean)[0] || '';
+    assert(botName, '未配置机器人，请先设置 BOTS');
+
+    const bot = await User.findOne({ username: botName }, { _id: 1 });
+    assert(bot, `${botName}不存在`);
+
+    const botId = bot._id.toString();
+    const exists = group.members.some(
+        (memberId) => memberId.toString() === botId,
+    );
+    if (!exists) {
+        group.members.push(botId);
+        return true;
+    }
+    return false;
 }
 
 async function syncUserSocketsGroupRoom(
@@ -135,6 +159,7 @@ export async function createGroup(ctx: Context<{ name: string }>) {
             name,
             avatar: getRandomAvatar(),
             allowJoin: true,
+            aiEnabled: false,
             creator: ctx.socket.user,
             members: [ctx.socket.user],
         } as GroupDocument);
@@ -464,6 +489,7 @@ export async function getGroupBasicInfo(ctx: Context<{ groupId: string }>) {
         avatar: group.avatar,
         announcement: group.announcement || '',
         allowJoin: group.allowJoin !== false,
+        aiEnabled: group.aiEnabled === true,
         members: group.members.length,
     };
 }
@@ -571,6 +597,77 @@ export async function changeGroupAllowJoin(
         allowJoin: group.allowJoin !== false,
     });
     return {};
+}
+
+/**
+ * 切换群聊 AI 开关，仅群主可修改
+ */
+export async function changeGroupAIEnabled(
+    ctx: Context<{ groupId: string; aiEnabled: boolean }>,
+) {
+    const { groupId, aiEnabled } = ctx.data;
+    assert(isValid(groupId), '无效的群组ID');
+
+    const group = await Group.findOne({ _id: groupId });
+    if (!group) {
+        throw new AssertionError({ message: '群组不存在' });
+    }
+    assertGroupOwner(group, ctx.socket.user.toString());
+
+    group.aiEnabled = aiEnabled === true;
+    const botAdded =
+        group.aiEnabled === true ? await ensurePrimaryBotInGroup(group) : false;
+    await group.save();
+
+    getSocketServer().to(groupId).emit('changeGroupAIEnabled', {
+        groupId,
+        aiEnabled: group.aiEnabled === true,
+    });
+    if (botAdded) {
+        getSocketServer().to(groupId).emit('changeGroupMembersCount', {
+            groupId,
+            membersCount: group.members.length,
+        });
+    }
+    return {};
+}
+
+/**
+ * 设置当前用户对指定群组的免打扰状态
+ */
+export async function changeGroupMute(
+    ctx: Context<{ groupId: string; muted: boolean }>,
+) {
+    const { groupId, muted } = ctx.data;
+    assert(isValid(groupId), '无效的群组ID');
+
+    const [group, user] = await Promise.all([
+        Group.findOne({ _id: groupId }, { members: 1 }),
+        User.findOne({ _id: ctx.socket.user }, { mutedGroupIds: 1 }),
+    ]);
+    if (!group) {
+        throw new AssertionError({ message: '群组不存在' });
+    }
+    if (!user) {
+        throw new AssertionError({ message: '用户不存在' });
+    }
+    assert(
+        group.members.some(
+            (memberId) => memberId.toString() === ctx.socket.user.toString(),
+        ),
+        '你不在当前群组中',
+    );
+
+    const mutedGroupIds = (user.mutedGroupIds || []).map((id) => id.toString());
+    user.mutedGroupIds =
+        muted === true
+            ? Array.from(new Set([...mutedGroupIds, groupId]))
+            : mutedGroupIds.filter((id) => id !== groupId);
+    await user.save();
+
+    return {
+        muted: muted === true,
+    };
 }
 
 /**

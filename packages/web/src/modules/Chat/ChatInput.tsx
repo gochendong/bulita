@@ -94,7 +94,6 @@ function ChatInput(props: InputAreaProps) {
     const focus = useSelector((state: State) => state.focus);
     const status = useSelector((state: State) => state.status);
     const linkman = useSelector((state: State) => state.linkmans[focus]);
-    const groupAISwitch = useSelector((state: State) => state.status.groupAISwitch);
     const defaultBotName = useSelector((state: State) => state.status.defaultBotName) || '';
     const voiceSwitch = useSelector((state: State) => state.status.voiceSwitch);
     const selfVoiceSwitch = useSelector(
@@ -376,7 +375,7 @@ function ChatInput(props: InputAreaProps) {
         const botNameForGroup = defaultBotName || 'AI';
         const contentMentionsBot = botNameForGroup && content.includes(`@${botNameForGroup}`);
         if (linkman.type === 'group' && contentMentionsBot) {
-            if (groupAISwitch) {
+            if (linkman.aiEnabled === true) {
                 const botMessageId = addGroupBotMessage(
                     'text',
                     '',
@@ -390,7 +389,7 @@ function ChatInput(props: InputAreaProps) {
                     action.updateMessage(focus, botMessageId, groupBotMsg);
                 }
             } else {
-                Message.warning('管理员已关闭群聊 AI，@ 机器人不会触发回复');
+                Message.warning('当前群组已关闭群聊 AI，@ 机器人不会触发回复');
             }
         }
     }
@@ -1074,6 +1073,9 @@ function ChatInput(props: InputAreaProps) {
                     autoCorrect="off"
                     autoCapitalize="off"
                     spellCheck={false}
+                    data-form-type="other"
+                    data-lpignore="true"
+                    data-1p-ignore="true"
                     enterKeyHint={isMobile ? 'send' : 'enter'}
                     ref={$input}
                     onBeforeInput={handleBeforeInput}

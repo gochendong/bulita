@@ -16,7 +16,6 @@ import {
     getAllSealUser,
     getSealUserKey,
     DisableSendMessageKey,
-    GroupAISwitchKey,
     Redis,
 } from '@bulita/database/redis/initRedis';
 import {
@@ -333,12 +332,9 @@ export async function toggleSendMessage(ctx: Context<{ enable: boolean }>) {
 }
 
 export async function getSystemConfig() {
-    const groupAISwitch =
-        (await Redis.get(GroupAISwitchKey)) ?? 'false';
     const adminConfig = await getAllAdminConfig();
     return {
         disableSendMessage: (await Redis.get(DisableSendMessageKey)) === 'true',
-        groupAISwitch: groupAISwitch === 'true',
         adminConfig,
         adminConfigLabels: ADMIN_CONFIG_LABELS,
         restartRequiredKeys: [...RESTART_REQUIRED_KEYS],
@@ -349,8 +345,6 @@ export async function getSystemConfig() {
  * 获取公开系统配置（供前端聊天区使用，无需管理员）
  */
 export async function getPublicSystemConfig() {
-    const groupAISwitch =
-        (await Redis.get(GroupAISwitchKey)) ?? 'false';
     const defaultTitle = await getConfigWithDefault('DEFAULT_TITLE');
     const defaultBotName = (await getConfigWithDefault('BOTS'))
         .split(',')
@@ -359,20 +353,10 @@ export async function getPublicSystemConfig() {
     const maxGroupNumStr = await getConfigWithDefault('MAX_GROUP_NUM');
     const maxGroupNum = parseInt(maxGroupNumStr, 10) || 0;
     return {
-        groupAISwitch: groupAISwitch === 'true',
         defaultTitle,
         defaultBotName: defaultBotName || '',
         maxGroupNum,
     };
-}
-
-/**
- * 切换群聊 AI 开关，需要管理员权限
- */
-export async function toggleGroupAI(ctx: Context<{ enable: boolean }>) {
-    const { enable } = ctx.data;
-    await Redis.set(GroupAISwitchKey, enable ? 'true' : 'false');
-    return { msg: 'ok' };
 }
 
 /**

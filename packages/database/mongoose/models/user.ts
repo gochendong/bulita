@@ -40,6 +40,12 @@ const UserSchema = new Schema({
         type: Boolean,
         default: false,
     },
+    mutedGroupIds: [
+        {
+            type: Schema.Types.ObjectId,
+            ref: 'Group',
+        },
+    ],
     avatar: String,
     tag: {
         type: String,
@@ -82,6 +88,8 @@ export interface UserDocument extends Document {
     rejectPrivateChat?: boolean;
     /** 拒绝被拉入群聊 */
     rejectGroupInvite?: boolean;
+    /** 免打扰群组 ID 列表 */
+    mutedGroupIds?: string[];
     /** 头像 */
     avatar: string;
     /** 用户标签 */
