@@ -143,6 +143,58 @@
     margin-top: 8px;
 }
 
+.joinSwitchRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0 2px;
+}
+
+.joinSwitchText {
+    font-size: 13px;
+    color: @warm-text;
+}
+
+.memberSearchRow {
+    display: flex;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.memberSearchInput {
+    flex: 1;
+}
+
+.memberSearchButton {
+    min-width: 64px;
+    height: 36px;
+}
+
+.memberSearchList {
+    margin-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.memberSearchItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-radius: @input-radius-sm;
+    background: @google-blue-light;
+}
+
+.memberSearchUser {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    color: @warm-text;
+    font-size: 13px;
+}
+
 .dissolveGroupBtn {
     font-size: 12px;
     color: @warm-text-muted;
@@ -173,6 +225,13 @@
     &:hover {
         color: #b07a4a;
     }
+}
+
+.functionHint {
+    margin: 6px 0 0;
+    color: @warm-text-muted;
+    font-size: 12px;
+    line-height: 1.5;
 }
 
 .avatar {
@@ -218,7 +277,11 @@
 .memberRow {
     margin-bottom: 6px;
     border-radius: @input-radius-sm;
-    padding: 4px 0;
+    padding: 6px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
 
     &:hover {
         background: @google-blue-light;
@@ -236,6 +299,36 @@
     margin-left: 10px;
     flex: 1;
     min-width: 0;
+}
+
+.memberActions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.memberActionButton {
+    border: none;
+    background: rgba(66, 133, 244, 0.12);
+    color: @google-blue;
+    border-radius: 999px;
+    padding: 5px 10px;
+    font-size: 12px;
+    cursor: pointer;
+
+    &:hover {
+        background: rgba(66, 133, 244, 0.2);
+    }
+}
+
+.memberActionDanger {
+    background: rgba(234, 67, 53, 0.1);
+    color: @google-red;
+
+    &:hover {
+        background: rgba(234, 67, 53, 0.16);
+    }
 }
 
 .username {

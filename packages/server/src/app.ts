@@ -25,6 +25,7 @@ import * as systemRoutes from './routes/system';
 import * as notificationRoutes from './routes/notification';
 import * as historyRoutes from './routes/history';
 import registerRoutes from './middlewares/registerRoutes';
+import { setSocketServer } from './utils/socketServer';
 
 const app = new Koa();
 
@@ -49,6 +50,7 @@ const io = new Server(httpServer, {
     pingInterval: 6000000,
     maxHttpBufferSize: 1024 * 1024 * 1024, // 设置为1024MB
 });
+setSocketServer(io);
 
 // serve index.html（不缓存，刷新即获取最新版本）
 app.use(async (ctx, next) => {

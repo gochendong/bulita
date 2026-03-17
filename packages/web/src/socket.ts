@@ -511,6 +511,97 @@ socket.on('deleteGroup', ({ groupId }: { groupId: string }) => {
     });
 });
 
+socket.on('addGroup', ({ group }: { group: Linkman }) => {
+    const state = store.getState();
+    const exists = !!state.linkmans[group._id];
+    if (exists) {
+        dispatch({
+            type: ActionTypes.SetLinkmanProperty,
+            payload: {
+                linkmanId: group._id,
+                key: 'creator',
+                value: group.creator,
+            } as SetLinkmanPropertyPayload,
+        });
+        dispatch({
+            type: ActionTypes.SetLinkmanProperty,
+            payload: {
+                linkmanId: group._id,
+                key: 'membersCount',
+                value: group.membersCount,
+            } as SetLinkmanPropertyPayload,
+        });
+        dispatch({
+            type: ActionTypes.SetLinkmanProperty,
+            payload: {
+                linkmanId: group._id,
+                key: 'allowJoin',
+                value: group.allowJoin,
+            } as SetLinkmanPropertyPayload,
+        });
+        return;
+    }
+    dispatch({
+        type: ActionTypes.AddLinkman,
+        payload: {
+            linkman: {
+                ...group,
+                type: 'group',
+            } as unknown as Linkman,
+            focus: false,
+        },
+    });
+});
+
+socket.on('removeGroup', ({ groupId }: { groupId: string }) => {
+    dispatch({
+        type: ActionTypes.RemoveLinkman,
+        payload: groupId,
+    });
+});
+
+socket.on(
+    'changeGroupCreator',
+    ({ groupId, creator }: { groupId: string; creator: string }) => {
+        dispatch({
+            type: ActionTypes.SetLinkmanProperty,
+            payload: {
+                linkmanId: groupId,
+                key: 'creator',
+                value: creator,
+            } as SetLinkmanPropertyPayload,
+        });
+    },
+);
+
+socket.on(
+    'changeGroupMembersCount',
+    ({ groupId, membersCount }: { groupId: string; membersCount: number }) => {
+        dispatch({
+            type: ActionTypes.SetLinkmanProperty,
+            payload: {
+                linkmanId: groupId,
+                key: 'membersCount',
+                value: membersCount,
+            } as SetLinkmanPropertyPayload,
+        });
+    },
+);
+
+socket.on(
+    'changeGroupAllowJoin',
+    ({ groupId, allowJoin }: { groupId: string; allowJoin: boolean }) => {
+        dispatch({
+            type: ActionTypes.SetLinkmanProperty,
+            payload: {
+                linkmanId: groupId,
+                key: 'allowJoin',
+                value: allowJoin,
+            } as SetLinkmanPropertyPayload,
+        });
+    },
+);
+
 socket.on('changeTag', (tag: string) => {
     dispatch({
         type: ActionTypes.UpdateUserInfo,

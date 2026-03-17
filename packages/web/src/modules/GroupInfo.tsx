@@ -18,6 +18,7 @@ interface GroupInfoProps {
         name: string;
         avatar: string;
         members: number;
+        allowJoin?: boolean;
     };
     onClose: () => void;
 }
@@ -92,6 +93,14 @@ function GroupInfo(props: GroupInfoProps) {
                     </div>
                     {hasLinkman ? (
                         <Button onClick={handleFocusGroup}>发送消息</Button>
+                    ) : group.allowJoin === false ? (
+                        <button
+                            type="button"
+                            className={Style.disabledActionButton}
+                            disabled
+                        >
+                            当前群组禁止加入
+                        </button>
                     ) : (
                         <Button onClick={handleJoinGroup}>加入群组</Button>
                     )}

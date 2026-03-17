@@ -199,6 +199,35 @@ export async function joinGroup(groupId: string) {
     return group;
 }
 
+export async function addGroupMember(groupId: string, userId: string) {
+    const [error, result] = await fetch('addGroupMember', { groupId, userId });
+    if (error) {
+        return null;
+    }
+    return result;
+}
+
+export async function kickGroupMember(groupId: string, userId: string) {
+    const [error, result] = await fetch('kickGroupMember', { groupId, userId });
+    if (error) {
+        return null;
+    }
+    return result;
+}
+
+export async function transferGroupCreator(groupId: string, userId: string) {
+    const [error] = await fetch('transferGroupCreator', { groupId, userId });
+    return !error;
+}
+
+export async function changeGroupAllowJoin(
+    groupId: string,
+    allowJoin: boolean,
+) {
+    const [error] = await fetch('changeGroupAllowJoin', { groupId, allowJoin });
+    return !error;
+}
+
 /**
  * 离开群组
  * @param groupId 群组id

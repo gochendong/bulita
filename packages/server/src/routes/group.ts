@@ -2,14 +2,60 @@ import assert, { AssertionError } from 'assert';
 import { Types } from '@bulita/database/mongoose';
 import stringHash from 'string-hash';
 
-import config from '@bulita/config/server';
 import getRandomAvatar from '@bulita/utils/getRandomAvatar';
 import Group, { GroupDocument } from '@bulita/database/mongoose/models/group';
 import Socket from '@bulita/database/mongoose/models/socket';
 import Message from '@bulita/database/mongoose/models/message';
 import User from '@bulita/database/mongoose/models/user';
+import { getSocketServer } from '../utils/socketServer';
 
 const { isValid } = Types.ObjectId;
+
+function formatGroup(group: GroupDocument) {
+    return {
+        _id: group._id,
+        name: group.name,
+        avatar: group.avatar,
+        announcement: group.announcement || '',
+        allowJoin: group.allowJoin !== false,
+        createTime: group.createTime,
+        creator: group.creator?.toString?.() || '',
+        isDefault: group.isDefault,
+        membersCount: group.members.length,
+    };
+}
+
+function assertGroupOwner(group: GroupDocument, userId: string) {
+    assert(group.creator, '群组未设置群主');
+    assert(
+        group.creator.toString() === userId,
+        '只有群主才能执行该操作',
+    );
+}
+
+function assertManageableGroup(group: GroupDocument) {
+    assert(group.isDefault !== true, '默认群组仅支持转让管理员');
+}
+
+async function syncUserSocketsGroupRoom(
+    userId: string,
+    groupId: string,
+    action: 'join' | 'leave',
+) {
+    const io = getSocketServer();
+    const sockets = await Socket.find({ user: userId });
+    sockets.forEach((socketDoc) => {
+        const socket = io.sockets.sockets.get(socketDoc.id);
+        if (socket) {
+            if (action === 'join') {
+                socket.join(groupId);
+            } else {
+                socket.leave(groupId);
+            }
+        }
+    });
+    return sockets.map((socketDoc) => socketDoc.id);
+}
 
 /**
  * 获取指定群组的在线用户辅助方法
@@ -63,6 +109,7 @@ export async function createGroup(ctx: Context<{ name: string }>) {
         newGroup = await Group.create({
             name,
             avatar: getRandomAvatar(),
+            allowJoin: true,
             creator: ctx.socket.user,
             members: [ctx.socket.user],
         } as GroupDocument);
@@ -75,13 +122,7 @@ export async function createGroup(ctx: Context<{ name: string }>) {
 
     ctx.socket.join(newGroup._id.toString());
     return {
-        _id: newGroup._id,
-        name: newGroup.name,
-        avatar: newGroup.avatar,
-        announcement: newGroup.announcement || '',
-        createTime: newGroup.createTime,
-        creator: newGroup.creator,
-        membersCount: newGroup.members.length,
+        ...formatGroup(newGroup),
     };
 }
 
@@ -97,6 +138,7 @@ export async function joinGroup(ctx: Context<{ groupId: string }>) {
     if (!group) {
         throw new AssertionError({ message: '加入群组失败, 群组不存在' });
     }
+    assert(group.allowJoin !== false, '当前群组不允许加入');
     assert(group.members.indexOf(ctx.socket.user) === -1, '你已经在群组中');
 
     group.members.push(ctx.socket.user);
@@ -117,13 +159,7 @@ export async function joinGroup(ctx: Context<{ groupId: string }>) {
     ctx.socket.join(group._id.toString());
 
     return {
-        _id: group._id,
-        name: group.name,
-        avatar: group.avatar,
-        announcement: group.announcement || '',
-        createTime: group.createTime,
-        creator: group.creator,
-        membersCount: group.members.length,
+        ...formatGroup(group),
         messages,
     };
 }
@@ -402,6 +438,7 @@ export async function getGroupBasicInfo(ctx: Context<{ groupId: string }>) {
         name: group.name,
         avatar: group.avatar,
         announcement: group.announcement || '',
+        allowJoin: group.allowJoin !== false,
         members: group.members.length,
     };
 }
@@ -480,6 +517,174 @@ export async function changeGroupAnnouncement(
     ctx.socket.emit(groupId, 'changeGroupAnnouncement', {
         groupId,
         announcement: announcement || '',
+    });
+
+    return {};
+}
+
+/**
+ * 切换群组是否允许加入，仅群主可修改，默认群组不支持
+ */
+export async function changeGroupAllowJoin(
+    ctx: Context<{ groupId: string; allowJoin: boolean }>,
+) {
+    const { groupId, allowJoin } = ctx.data;
+    assert(isValid(groupId), '无效的群组ID');
+
+    const group = await Group.findOne({ _id: groupId });
+    if (!group) {
+        throw new AssertionError({ message: '群组不存在' });
+    }
+    assertGroupOwner(group, ctx.socket.user.toString());
+    assertManageableGroup(group);
+
+    group.allowJoin = allowJoin !== false;
+    await group.save();
+
+    getSocketServer().to(groupId).emit('changeGroupAllowJoin', {
+        groupId,
+        allowJoin: group.allowJoin !== false,
+    });
+    return {};
+}
+
+/**
+ * 拉人进群，仅群主可操作，默认群组不支持
+ */
+export async function addGroupMember(
+    ctx: Context<{ groupId: string; userId: string }>,
+) {
+    const { groupId, userId } = ctx.data;
+    assert(isValid(groupId), '无效的群组ID');
+    assert(isValid(userId), '无效的用户ID');
+
+    const [group, user] = await Promise.all([
+        Group.findOne({ _id: groupId }),
+        User.findOne(
+            { _id: userId },
+            {
+                _id: 1,
+                username: 1,
+                avatar: 1,
+                createTime: 1,
+                lastLoginTime: 1,
+                tag: 1,
+            },
+        ),
+    ]);
+    if (!group) {
+        throw new AssertionError({ message: '群组不存在' });
+    }
+    if (!user) {
+        throw new AssertionError({ message: '用户不存在' });
+    }
+    assertGroupOwner(group, ctx.socket.user.toString());
+    assertManageableGroup(group);
+    assert(
+        group.members.every((memberId) => memberId.toString() !== userId),
+        '该用户已在群组中',
+    );
+
+    group.members.push(user._id.toString());
+    await group.save();
+
+    const io = getSocketServer();
+    const targetSocketIds = await syncUserSocketsGroupRoom(userId, groupId, 'join');
+    io.to(groupId).emit('changeGroupMembersCount', {
+        groupId,
+        membersCount: group.members.length,
+    });
+    targetSocketIds.forEach((socketId) => {
+        io.to(socketId).emit('addGroup', {
+            group: formatGroup(group),
+        });
+    });
+
+    return {
+        member: {
+            user: {
+                _id: user._id,
+                username: user.username,
+                avatar: user.avatar,
+                createTime: user.createTime,
+                lastLoginTime: user.lastLoginTime,
+                tag: user.tag || '',
+            },
+            isCreator: false,
+            isOnline: targetSocketIds.length > 0,
+        },
+        membersCount: group.members.length,
+    };
+}
+
+/**
+ * 踢人，仅群主可操作，默认群组不支持
+ */
+export async function kickGroupMember(
+    ctx: Context<{ groupId: string; userId: string }>,
+) {
+    const { groupId, userId } = ctx.data;
+    assert(isValid(groupId), '无效的群组ID');
+    assert(isValid(userId), '无效的用户ID');
+
+    const group = await Group.findOne({ _id: groupId });
+    if (!group) {
+        throw new AssertionError({ message: '群组不存在' });
+    }
+    assertGroupOwner(group, ctx.socket.user.toString());
+    assertManageableGroup(group);
+    assert(userId !== ctx.socket.user.toString(), '不能踢出自己');
+
+    const memberIndex = group.members.findIndex(
+        (memberId) => memberId.toString() === userId,
+    );
+    assert(memberIndex !== -1, '目标成员不在群组中');
+
+    group.members.splice(memberIndex, 1);
+    await group.save();
+
+    const io = getSocketServer();
+    const targetSocketIds = await syncUserSocketsGroupRoom(userId, groupId, 'leave');
+    io.to(groupId).emit('changeGroupMembersCount', {
+        groupId,
+        membersCount: group.members.length,
+    });
+    targetSocketIds.forEach((socketId) => {
+        io.to(socketId).emit('removeGroup', { groupId });
+    });
+
+    return {
+        membersCount: group.members.length,
+    };
+}
+
+/**
+ * 转让群主
+ */
+export async function transferGroupCreator(
+    ctx: Context<{ groupId: string; userId: string }>,
+) {
+    const { groupId, userId } = ctx.data;
+    assert(isValid(groupId), '无效的群组ID');
+    assert(isValid(userId), '无效的用户ID');
+
+    const group = await Group.findOne({ _id: groupId });
+    if (!group) {
+        throw new AssertionError({ message: '群组不存在' });
+    }
+    assertGroupOwner(group, ctx.socket.user.toString());
+    assert(userId !== ctx.socket.user.toString(), '无需转让给自己');
+    assert(
+        group.members.some((memberId) => memberId.toString() === userId),
+        '目标成员不在群组中',
+    );
+
+    group.creator = userId;
+    await group.save();
+
+    getSocketServer().to(groupId).emit('changeGroupCreator', {
+        groupId,
+        creator: userId,
     });
 
     return {};

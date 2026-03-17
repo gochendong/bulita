@@ -58,6 +58,7 @@ export interface Group {
     name: string;
     avatar: string;
     announcement?: string;
+    allowJoin?: boolean;
     createTime: string;
     creator: string;
     isDefault?: boolean;
@@ -252,6 +253,7 @@ function initLinkmanFields(linkman: Linkman, type: string) {
 function transformGroup(group: Linkman): Linkman {
     initLinkmanFields(group, 'group');
     group.creator = group.creator || '';
+    group.allowJoin = group.allowJoin !== false;
     group.onlineMembers = [];
     return group;
 }

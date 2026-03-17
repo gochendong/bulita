@@ -2,7 +2,6 @@ import { getAdminConfigKey, Redis } from '@bulita/database/redis/initRedis';
 
 /** 管理员可在控制台修改的配置键，未在此列表的键不允许通过控制台写入 */
 export const ADMIN_CONFIG_KEYS = [
-    'ONLY_SEARCH_DEFAULT_GROUP',
     'DEFAULT_TITLE',
     'OPENAI_BASE_URL',
     'OPENAI_API_KEY',
@@ -20,7 +19,6 @@ export const RESTART_REQUIRED_KEYS: readonly string[] = [];
 
 /** 配置项中文说明（供管理台展示） */
 export const ADMIN_CONFIG_LABELS: Record<string, string> = {
-    ONLY_SEARCH_DEFAULT_GROUP: '仅搜索默认群组',
     DEFAULT_TITLE: '网站标题',
     OPENAI_BASE_URL: '默认 AI Base URL',
     OPENAI_API_KEY: '默认 AI API Key',
@@ -36,7 +34,6 @@ export const ADMIN_CONFIG_LABELS: Record<string, string> = {
 /** 代码内默认值，不依赖 .env */
 export const DEFAULT_ADMIN_CONFIG: Record<string, string> = {
     BOTS: '',
-    ONLY_SEARCH_DEFAULT_GROUP: 'true',
     DEFAULT_TITLE: 'AI聊天室',
     DEFAULT_GROUP_NAME: 'AI聊天室',
     OPENAI_BASE_URL: 'https://api.openai.com/v1',

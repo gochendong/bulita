@@ -67,13 +67,11 @@ export async function search(ctx: Context<{ keywords: string }>) {
                 : null,
         };
     });
-    const onlyDefault = await getConfigWithDefault('ONLY_SEARCH_DEFAULT_GROUP');
     const groups = await Group.find(
         {
             name: { $regex: escapedKeywords, $options: 'i' },
-            isDefault: onlyDefault === 'true',
         },
-        { avatar: 1, name: 1, members: 1 },
+        { avatar: 1, name: 1, members: 1, allowJoin: 1 },
     );
 
     return {
@@ -83,6 +81,7 @@ export async function search(ctx: Context<{ keywords: string }>) {
             avatar: group.avatar,
             name: group.name,
             members: group.members.length,
+            allowJoin: group.allowJoin !== false,
         })),
     };
 }

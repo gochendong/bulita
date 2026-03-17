@@ -228,6 +228,8 @@ function Chat() {
                     name={linkman.name}
                     avatar={linkman.avatar}
                     announcement={linkman.announcement || ''}
+                    allowJoin={linkman.allowJoin !== false}
+                    isDefault={linkman.isDefault === true}
                     creator={linkman.creator}
                     onlineMembers={linkman.onlineMembers}
                 />
