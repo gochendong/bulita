@@ -874,6 +874,12 @@ function ChatInput(props: InputAreaProps) {
         }
     }
 
+    function handlePrepareTextarea() {
+        if (textareaReadonly) {
+            setTextareaReadonly(false);
+        }
+    }
+
     function getSuggestion(): typeof linkman.onlineMembers {
         if (!at.enable || linkman.type !== 'group') {
             return [];
@@ -1088,6 +1094,8 @@ function ChatInput(props: InputAreaProps) {
                     name={chatInputNameRef.current}
                     readOnly={textareaReadonly}
                     ref={$input}
+                    onMouseDown={handlePrepareTextarea}
+                    onTouchStart={handlePrepareTextarea}
                     onBeforeInput={handleBeforeInput}
                     onKeyDown={handleInputKeyDown}
                     onPaste={handlePaste}

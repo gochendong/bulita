@@ -70,11 +70,7 @@ export const Redis = {
     incr,
 };
 
-export const DisableSendMessageKey = `${Prefix}:DisableSendMessage`;
-export const DisableRegisterUserSendMessageKey = `${Prefix}:DisableNoRegisterUserSendMessageKey`;
 export const DisableRegisterUserKey = `${Prefix}:DisableRegisterUserKey`;
-/** 群聊 AI 开关，存在且为 'true' 时开启 */
-export const GroupAISwitchKey = `${Prefix}:GroupAISwitch`;
 
 /** 管理员控制台可编辑的配置项，存在则覆盖 .env */
 export function getAdminConfigKey(key: string) {

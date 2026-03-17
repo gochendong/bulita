@@ -15,7 +15,6 @@ import Socket from '@bulita/database/mongoose/models/socket';
 import {
     getAllSealUser,
     getSealUserKey,
-    DisableSendMessageKey,
     Redis,
 } from '@bulita/database/redis/initRedis';
 import {
@@ -323,18 +322,9 @@ export async function uploadFile(
     }
 }
 
-export async function toggleSendMessage(ctx: Context<{ enable: boolean }>) {
-    const { enable } = ctx.data;
-    await Redis.set(DisableSendMessageKey, (!enable).toString());
-    return {
-        msg: 'ok',
-    };
-}
-
 export async function getSystemConfig() {
     const adminConfig = await getAllAdminConfig();
     return {
-        disableSendMessage: (await Redis.get(DisableSendMessageKey)) === 'true',
         adminConfig,
         adminConfigLabels: ADMIN_CONFIG_LABELS,
         restartRequiredKeys: [...RESTART_REQUIRED_KEYS],

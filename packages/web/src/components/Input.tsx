@@ -73,6 +73,12 @@ function Input(props: InputProps) {
         onBlur();
     }
 
+    function handlePrepareInput() {
+        if (readonlyGuard) {
+            setReadonlyGuard(false);
+        }
+    }
+
     return (
         <div
             className={`${Style.inputContainer} ${className}`}
@@ -84,6 +90,8 @@ function Input(props: InputProps) {
                 value={value}
                 onChange={handleInput}
                 onKeyDown={handleKeyDown}
+                onMouseDown={handlePrepareInput}
+                onTouchStart={handlePrepareInput}
                 onFocus={handleFocus}
                 onBlur={handleBlur}
                 ref={$input}

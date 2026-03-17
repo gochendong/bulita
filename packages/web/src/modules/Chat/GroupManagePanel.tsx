@@ -346,6 +346,12 @@ function GroupManagePanel(props: GroupManagePanelProps) {
         }
     }
 
+    function handlePrepareAnnouncementInput() {
+        if (announcementReadonly) {
+            setAnnouncementReadonly(false);
+        }
+    }
+
     function handleClickMask(e: React.MouseEvent) {
         if (e.target === e.currentTarget) {
             onClose();
@@ -505,6 +511,8 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                                 data-1p-ignore="true"
                                 name={announcementFieldNameRef.current}
                                 readOnly={announcementReadonly}
+                                onMouseDown={handlePrepareAnnouncementInput}
+                                onTouchStart={handlePrepareAnnouncementInput}
                                 rows={4}
                             />
                         </div>

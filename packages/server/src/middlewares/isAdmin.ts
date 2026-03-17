@@ -10,7 +10,6 @@ export default function isAdmin(socket: Socket) {
         'sealUser',
         'unsealUser',
         'getSealList',
-        'toggleSendMessage',
         'getSystemConfig',
         'setSystemConfig',
         'getAdminUserByEmail',

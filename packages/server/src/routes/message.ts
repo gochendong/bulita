@@ -21,9 +21,7 @@ import History, {
 import Socket from '@bulita/database/mongoose/models/socket';
 
 import {
-    DisableSendMessageKey,
     Redis,
-    DisableRegisterUserSendMessageKey,
 } from '@bulita/database/redis/initRedis';
 import { getConfig, getConfigWithDefault } from '../utils/runtimeConfig';
 import Friend, {
@@ -33,7 +31,6 @@ import client from '../../../config/client';
 import config from '@bulita/config/server';
 
 const { isValid } = Types.ObjectId;
-const adminEmails = config.adminEmails.map((email) => email.trim()).filter(Boolean);
 
 /** 初次获取历史消息数 */
 const FirstTimeMessagesCount = 60;
@@ -457,31 +454,6 @@ export async function sendMessage(ctx: Context<SendMessageData>) {
         assert(isValid(userId), '无效的用户ID');
         toUser = await User.findOne({ _id: userId });
         assert(toUser, '用户不存在');
-    }
-
-    // 根据 Redis 中的禁言开关（全员禁言 / 未注册用户禁言）限制发言
-    if (
-        toGroup ||
-        (toUser &&
-            toUser.tag !== 'bot' &&
-            !(toUser.email && adminEmails.includes(toUser.email)))
-    ) {
-        const disableSendMessage = await Redis.get(DisableSendMessageKey);
-        assert(
-            disableSendMessage !== 'true' || ctx.socket.isAdmin,
-            '全员禁言中',
-        );
-        const disableNoRegisterUserSendMessage = await Redis.get(
-            DisableRegisterUserSendMessageKey,
-        );
-        if (disableNoRegisterUserSendMessage === 'true') {
-            const user = await User.findById(ctx.socket.user);
-            const isRegisterUser = user && user.email;
-            assert(
-                ctx.socket.isAdmin || isRegisterUser,
-                '游客禁言中',
-            );
-        }
     }
 
     const user = await User.findOne(

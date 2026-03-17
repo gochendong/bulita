@@ -522,11 +522,6 @@ export async function updateHistory(linkmanId: string, messageId: string) {
     return !!result;
 }
 
-export async function toggleSendMessage(enable: boolean) {
-    const [, result] = await fetch('toggleSendMessage', { enable });
-    return !!result;
-}
-
 /**
  * 管理员按邮箱查找用户（用于删除/封禁前校验）
  * @param email 目标邮箱

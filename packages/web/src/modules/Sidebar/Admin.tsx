@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-import { css } from 'linaria';
 import Switch from 'react-switch';
 import Style from './Admin.less';
 import Common from './Common.less';
@@ -14,22 +13,11 @@ import {
     searchAdminUsers,
     sealUser,
     unsealUser,
-    toggleSendMessage,
     getSystemConfig,
     setSystemConfig as setSystemConfigApi,
 } from '../../service';
 
-const styles = {
-    button: css`
-        min-width: 100px;
-        height: 36px;
-        margin-right: 12px;
-        padding: 0 10px;
-    `,
-};
-
 type SystemConfig = {
-    disableSendMessage: boolean;
     adminConfig?: Record<string, string>;
     adminConfigLabels?: Record<string, string>;
 };
@@ -164,24 +152,6 @@ function Admin(props: AdminProps) {
                 }
             },
         });
-    }
-
-    async function handleDisableSendMessage() {
-        const isSuccess = await toggleSendMessage(false);
-        if (isSuccess) {
-            Message.success('开启禁言成功');
-            handleGetSystemConfig();
-        } else {
-            Message.success('开启禁言失败');
-            handleGetSystemConfig();
-        }
-    }
-    async function handleEnableSendMessage() {
-        const isSuccess = await toggleSendMessage(true);
-        if (isSuccess) {
-            Message.success('关闭禁言成功');
-            handleGetSystemConfig();
-        }
     }
 
     async function handleSetSystemConfig(key: string, value: string) {
@@ -329,26 +299,6 @@ function Admin(props: AdminProps) {
                                     </div>
                                 </div>
                             ) : null}
-                            <div className={Common.block}>
-                                <p className={Common.title}>快捷开关（全局）</p>
-                                <div className={Style.buttonWrap}>
-                                    {!systemConfig?.disableSendMessage ? (
-                                        <Button
-                                            className={styles.button}
-                                            onClick={handleDisableSendMessage}
-                                        >
-                                            开启全局禁言
-                                        </Button>
-                                    ) : (
-                                        <Button
-                                            className={styles.button}
-                                            onClick={handleEnableSendMessage}
-                                        >
-                                            关闭全局禁言
-                                        </Button>
-                                    )}
-                                </div>
-                            </div>
                         </div>
                     </div>
                     <div className={Style.adminCol}>
