@@ -8,7 +8,6 @@ import { search } from '../../service';
 
 import Style from './FunctionBar.less';
 import Input from '../../components/Input';
-import Message from '../../components/Message';
 
 type SearchResult = {
     users: any[];
@@ -26,11 +25,16 @@ function FunctionBar() {
         groups: [],
     });
     const keywordsRef = useRef(keywords);
+    const searchTimerRef = useRef<number | null>(null);
 
     const context = useContext(ShowUserOrGroupInfoContext);
     const placeholder = '';
 
     function resetSearch() {
+        if (searchTimerRef.current) {
+            clearTimeout(searchTimerRef.current);
+            searchTimerRef.current = null;
+        }
         toggleSearchResultVisible(false);
         toggleAddButtonVisible(true);
         setSearchResult({ users: [], groups: [] });
@@ -62,6 +66,33 @@ function FunctionBar() {
     }, [keywords]);
 
     useEffect(() => {
+        if (!searchResultVisible) {
+            return undefined;
+        }
+
+        if (searchTimerRef.current) {
+            clearTimeout(searchTimerRef.current);
+        }
+
+        const valueToSearch = keywords.trim();
+        if (!valueToSearch) {
+            setSearchResult({ users: [], groups: [] });
+            return undefined;
+        }
+
+        searchTimerRef.current = window.setTimeout(async () => {
+            const result = await search(valueToSearch);
+            setSearchResult(result || { users: [], groups: [] });
+        }, 1000);
+
+        return () => {
+            if (searchTimerRef.current) {
+                clearTimeout(searchTimerRef.current);
+            }
+        };
+    }, [keywords, searchResultVisible]);
+
+    useEffect(() => {
         document.body.addEventListener('click', handleBodyClick, false);
         return () => {
             document.body.removeEventListener('click', handleBodyClick, false);
@@ -71,21 +102,6 @@ function FunctionBar() {
     function handleFocus() {
         toggleAddButtonVisible(false);
         toggleSearchResultVisible(true);
-    }
-
-    function handleInputEnter() {
-        const valueToSearch = keywordsRef.current;
-        setTimeout(async () => {
-            if (valueToSearch) {
-                const result = await search(valueToSearch);
-                if (result?.users?.length || result?.groups?.length) {
-                    setSearchResult(result);
-                } else {
-                    Message.warning('没有搜索到内容');
-                    setSearchResult({ users: [], groups: [] });
-                }
-            }
-        }, 0);
     }
 
     function renderSearchUsers(count = 999) {
@@ -165,8 +181,6 @@ function FunctionBar() {
                         setKeywords(v);
                     }}
                     onFocus={handleFocus}
-                    onBlur={handleInputEnter}
-                    onEnter={handleInputEnter}
                 />
             </form>
             <button

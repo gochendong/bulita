@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Loading from 'react-loading';
 
 import expressions from '@bulita/utils/expressions';
@@ -6,9 +6,7 @@ import { addParam } from '@bulita/utils/url';
 import BaiduImage from '@bulita/assets/images/baidu.png';
 import Style from './Expression.less';
 import Input from '../../components/Input';
-import Button from '../../components/Button';
 import { searchExpression } from '../../service';
-import Message from '../../components/Message';
 
 interface ExpressionProps {
     onSelectText: (expression: string) => void;
@@ -22,22 +20,47 @@ function Expression(props: ExpressionProps) {
     const [keywords, setKeywords] = useState('');
     const [searchLoading, toggleSearchLoading] = useState(false);
     const [searchResults, setSearchResults] = useState([]);
+    const searchTimerRef = useRef<number | null>(null);
 
     async function handleSearchExpression() {
-        if (keywords) {
-            toggleSearchLoading(true);
+        const valueToSearch = keywords.trim();
+        if (!valueToSearch) {
             setSearchResults([]);
-            const result = await searchExpression(keywords);
-            if (result) {
-                if (result.length !== 0) {
-                    setSearchResults(result);
-                } else {
-                    Message.info('没有相关表情');
-                }
-            }
             toggleSearchLoading(false);
+            return;
         }
+        toggleSearchLoading(true);
+        setSearchResults([]);
+        const result = await searchExpression(valueToSearch);
+        setSearchResults(result || []);
+        toggleSearchLoading(false);
     }
+
+    useEffect(() => {
+        if (activeTab !== 'search') {
+            return undefined;
+        }
+
+        if (searchTimerRef.current) {
+            clearTimeout(searchTimerRef.current);
+        }
+
+        if (!keywords.trim()) {
+            setSearchResults([]);
+            toggleSearchLoading(false);
+            return undefined;
+        }
+
+        searchTimerRef.current = window.setTimeout(() => {
+            handleSearchExpression();
+        }, 1000);
+
+        return () => {
+            if (searchTimerRef.current) {
+                clearTimeout(searchTimerRef.current);
+            }
+        };
+    }, [activeTab, keywords]);
 
     const renderDefaultExpression = (
         <div className={Style.defaultExpression}>
@@ -73,22 +96,14 @@ function Expression(props: ExpressionProps) {
     }
 
     const renderSearchExpression = (
-        <div className={Style.searchExpression}>
-            <div className={Style.searchExpressionInputBlock}>
-                <Input
-                    className={Style.searchExpressionInput}
-                    value={keywords}
-                    onChange={setKeywords}
-                    onEnter={handleSearchExpression}
-                    placeholder="搜索表情包"
-                />
-                <Button
-                    className={Style.searchExpressionButton}
-                    onClick={handleSearchExpression}
-                >
-                    搜索
-                </Button>
-            </div>
+            <div className={Style.searchExpression}>
+                <div className={Style.searchExpressionInputBlock}>
+                    <Input
+                        className={Style.searchExpressionInput}
+                        value={keywords}
+                        onChange={setKeywords}
+                    />
+                </div>
             <div
                 className={`${Style.loading} ${
                     searchLoading ? 'show' : 'hide'

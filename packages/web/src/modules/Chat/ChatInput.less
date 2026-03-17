@@ -53,6 +53,17 @@
     min-width: 0;
 }
 
+.leftActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+
+    @media @mobile {
+        gap: 4px;
+    }
+}
+
 .pendingAttachments {
     display: flex;
     flex-wrap: wrap;

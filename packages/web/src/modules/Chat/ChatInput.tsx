@@ -861,6 +861,16 @@ function ChatInput(props: InputAreaProps) {
         }
     }
 
+    function handleBeforeInput(e: any) {
+        if (!isMobile) {
+            return;
+        }
+        if (e.inputType === 'insertLineBreak' && !inputIME) {
+            e.preventDefault();
+            sendTextMessage();
+        }
+    }
+
     function getSuggestion(): typeof linkman.onlineMembers {
         if (!at.enable || linkman.type !== 'group') {
             return [];
@@ -921,57 +931,61 @@ function ChatInput(props: InputAreaProps) {
 
     return (
         <div className={Style.chatInput} {...aero}>
-            <Dropdown
-                trigger={['click']}
-                visible={expressionDialog}
-                onVisibleChange={toggleExpressionDialog}
-                overlay={
-                    <div className={Style.expressionDropdown}>
-                        <ExpressionAsync
-                            onSelectText={handleSelectExpression}
-                            onSelectImage={sendImageMessage}
-                        />
-                    </div>
-                }
-                animation="slide-up"
-                placement="topLeft"
-                getPopupContainer={() => document.body}
-            >
-                <IconButton
-                    className={`${Style.iconButton} ${Style.expressionIcon}`}
-                    width={32}
-                    height={32}
-                    icon="expression"
-                    iconSize={25}
-                />
-            </Dropdown>
-            <div className={Style.addMenuWrap} ref={addTriggerRef}>
-                <IconButton
-                    className={`${Style.iconButton} ${Style.addIcon}`}
-                    width={32}
-                    height={32}
-                    icon="add"
-                    iconSize={25}
-                    onClick={() => setAddMenuOpen((v) => !v)}
-                />
-                {addMenuOpen && (
-                    <>
-                        <div
-                            className={Style.addMenuBackdrop}
-                            role="button"
-                            tabIndex={-1}
-                            onClick={() => setAddMenuOpen(false)}
-                            onKeyDown={(e) => e.key === 'Escape' && setAddMenuOpen(false)}
-                            aria-label="关闭"
-                        />
-                        <div className={Style.featureDropdown}>
-                            <Menu onClick={handleFeatureMenuClick}>
-                                <MenuItem key="image">发送图片</MenuItem>
-                                <MenuItem key="file">发送文件</MenuItem>
-                            </Menu>
+            <div className={Style.leftActions}>
+                <Dropdown
+                    trigger={['click']}
+                    visible={expressionDialog}
+                    onVisibleChange={toggleExpressionDialog}
+                    overlay={
+                        <div className={Style.expressionDropdown}>
+                            <ExpressionAsync
+                                onSelectText={handleSelectExpression}
+                                onSelectImage={sendImageMessage}
+                            />
                         </div>
-                    </>
-                )}
+                    }
+                    animation="slide-up"
+                    placement="topLeft"
+                    getPopupContainer={() => document.body}
+                >
+                    <IconButton
+                        className={`${Style.iconButton} ${Style.expressionIcon}`}
+                        width={32}
+                        height={32}
+                        icon="expression"
+                        iconSize={25}
+                    />
+                </Dropdown>
+                <div className={Style.addMenuWrap} ref={addTriggerRef}>
+                    <IconButton
+                        className={`${Style.iconButton} ${Style.addIcon}`}
+                        width={32}
+                        height={32}
+                        icon="add"
+                        iconSize={25}
+                        onClick={() => setAddMenuOpen((v) => !v)}
+                    />
+                    {addMenuOpen && (
+                        <>
+                            <div
+                                className={Style.addMenuBackdrop}
+                                role="button"
+                                tabIndex={-1}
+                                onClick={() => setAddMenuOpen(false)}
+                                onKeyDown={(e) =>
+                                    e.key === 'Escape' && setAddMenuOpen(false)
+                                }
+                                aria-label="关闭"
+                            />
+                            <div className={Style.featureDropdown}>
+                                <Menu onClick={handleFeatureMenuClick}>
+                                    <MenuItem key="image">发送图片</MenuItem>
+                                    <MenuItem key="file">发送文件</MenuItem>
+                                </Menu>
+                            </div>
+                        </>
+                    )}
+                </div>
             </div>
             <form
                 className={Style.form}
@@ -1068,7 +1082,13 @@ function ChatInput(props: InputAreaProps) {
                     className={Style.input}
                     autoFocus={!isMobile}
                     placeholder={isMobile ? "" : "Enter 发送，Shift + Enter 换行"}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck={false}
+                    enterKeyHint={isMobile ? 'send' : 'enter'}
                     ref={$input}
+                    onBeforeInput={handleBeforeInput}
                     onKeyDown={handleInputKeyDown}
                     onPaste={handlePaste}
                     onCompositionStart={() => {

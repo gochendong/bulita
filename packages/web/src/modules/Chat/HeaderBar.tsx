@@ -157,13 +157,10 @@ function HeaderBar(props: Props) {
                     <UserBadge createTime={createTime} />
                 )}
                 {isSelfLinkman && (
-                    <span className={Style.selfTag}>这是自己</span>
+                    <span className={Style.selfTag}>自己</span>
                 )}
                 {tag === 'bot' && (
                     <span className={Style.adminTag}>机器人</span>
-                )}
-                {isSelfLinkman && (
-                    <span className={Style.selfStatusText}>个人会话</span>
                 )}
                 {type === 'friend' &&
                     !isSelfLinkman &&

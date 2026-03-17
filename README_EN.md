@@ -10,10 +10,10 @@
 
 ## Highlights
 
-- Fully open source frontend and backend.
-- Bot auto-replies with per-bot API configuration.
-- Markdown rendering for bot messages.
-- One-step initialization of default groups, contacts, and bots from config.
+- A complete chat stack out of the box: frontend, backend, realtime transport, and storage are all included and can be started directly with Docker.
+- More than basic IM: supports group chat, private chat, self chat, AI chat, image and file sending, quoted replies, and expression search in one product.
+- AI is built in, not bolted on: bot auto-replies, per-bot API settings, Markdown rendering, and group AI switches are already part of the system.
+- Low setup and ops overhead: default groups, contacts, and bots can be bootstrapped from config, while admins can tune key runtime settings from the console.
 
 ## Quick Start
 

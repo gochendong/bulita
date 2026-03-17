@@ -42,7 +42,7 @@ describe('Chat HeaderBar', () => {
             </Provider>,
         );
 
-        expect(screen.getByText('这是自己')).toBeInTheDocument();
-        expect(screen.getByText('个人会话')).toBeInTheDocument();
+        expect(screen.getByText('自己')).toBeInTheDocument();
+        expect(screen.queryByText('个人会话')).not.toBeInTheDocument();
     });
 });

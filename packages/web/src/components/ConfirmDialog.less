@@ -1,0 +1,32 @@
+@import '../styles/variable.less';
+
+.confirmDialog {
+    width: 360px !important;
+    max-width: calc(100vw - 24px);
+
+    :global(.rc-dialog-body) {
+        padding-top: 10px;
+    }
+}
+
+.description {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.7;
+    color: @warm-text;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.actionButton {
+    min-width: 76px;
+    height: 36px;
+    margin: 0;
+}

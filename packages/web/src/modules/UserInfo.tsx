@@ -210,13 +210,13 @@ function UserInfo(props: UserInfoProps) {
                             />
                             <p>{user.username}</p>
                             {isSelfUser ? (
-                                <p className={Style.selfLabel}>这是自己</p>
+                                <p className={Style.selfLabel}>自己</p>
                             ) : null}
                             {(() => {
                                 const isOnline = adminDetails?.isOnline ?? user.isOnline;
                                 const lastLoginTime = adminDetails?.lastLoginTime ?? user.lastLoginTime;
                                 if (isSelfUser) {
-                                    return <p className={Style.onlineStatus}>个人会话</p>;
+                                    return null;
                                 }
                                 if (user.tag === 'bot' || isOnline === true) {
                                     return <p className={Style.onlineStatus}>当前在线</p>;

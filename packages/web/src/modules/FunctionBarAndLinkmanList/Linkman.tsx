@@ -100,16 +100,15 @@ function Linkman(props: LinkmanProps) {
                     <p className={Style.name}>
                         {name}
                         {isSelfLinkman && (
-                            <span className={Style.selfTag}>这是自己</span>
+                            <span className={Style.selfTag}>自己</span>
                         )}
                     </p>
                     <p className={Style.time}>{formatTime()}</p>
                 </div>
-                {(isSelfLinkman || isOnline !== undefined || tag === 'bot') && (
+                {(!isSelfLinkman &&
+                    (isOnline !== undefined || tag === 'bot')) && (
                     <div className={Style.onlineStatus}>
-                        {isSelfLinkman ? (
-                            <span className={Style.selfText}>个人会话</span>
-                        ) : tag === 'bot' || isOnline ? (
+                        {tag === 'bot' || isOnline ? (
                             <span className={Style.onlineText}>在线</span>
                         ) : lastLoginTime != null ? (
                             <span className={Style.offlineText}>
