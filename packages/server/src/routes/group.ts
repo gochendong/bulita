@@ -74,11 +74,36 @@ async function getGroupOnlineMembersHelper(group: GroupDocument) {
             environment: 1,
             user: 1,
         },
-    ).populate('user', { username: 1, avatar: 1 });
+    ).populate('user', { username: 1, avatar: 1, tag: 1 });
     const filterSockets = sockets.reduce((result, socket) => {
         result.set(socket.user._id.toString(), socket);
         return result;
     }, new Map());
+    const botUsers = await User.find(
+        {
+            _id: { $in: group.members },
+            tag: 'bot',
+        },
+        { username: 1, avatar: 1, tag: 1 },
+    );
+
+    botUsers.forEach((bot) => {
+        const botId = bot._id.toString();
+        if (!filterSockets.has(botId)) {
+            filterSockets.set(botId, {
+                os: '',
+                browser: '',
+                environment: '',
+                user: {
+                    _id: bot._id,
+                    username: bot.username,
+                    avatar: bot.avatar,
+                    tag: bot.tag || '',
+                },
+            });
+        }
+    });
+
     return Array.from(filterSockets.values());
 }
 
@@ -584,6 +609,10 @@ export async function addGroupMember(
         group.members.every((memberId) => memberId.toString() !== userId),
         '该用户已在群组中',
     );
+    assert(
+        group.isDefault === true || user.rejectGroupInvite !== true,
+        '对方已拒绝被拉入群聊',
+    );
 
     group.members.push(user._id.toString());
     await group.save();
@@ -668,9 +697,15 @@ export async function transferGroupCreator(
     assert(isValid(groupId), '无效的群组ID');
     assert(isValid(userId), '无效的用户ID');
 
-    const group = await Group.findOne({ _id: groupId });
+    const [group, user] = await Promise.all([
+        Group.findOne({ _id: groupId }),
+        User.findOne({ _id: userId }, { tag: 1 }),
+    ]);
     if (!group) {
         throw new AssertionError({ message: '群组不存在' });
+    }
+    if (!user) {
+        throw new AssertionError({ message: '用户不存在' });
     }
     assertGroupOwner(group, ctx.socket.user.toString());
     assert(userId !== ctx.socket.user.toString(), '无需转让给自己');
@@ -678,6 +713,7 @@ export async function transferGroupCreator(
         group.members.some((memberId) => memberId.toString() === userId),
         '目标成员不在群组中',
     );
+    assert(user.tag !== 'bot', '不能转让管理员给机器人');
 
     group.creator = userId;
     await group.save();

@@ -55,6 +55,8 @@ export type SetUserPayload = {
     aiBaseUrl: string;
     aiModel: string;
     aiContextCount: number | null;
+    rejectPrivateChat: boolean;
+    rejectGroupInvite: boolean;
     groups: Group[];
     friends: Friend[];
     isAdmin: boolean;

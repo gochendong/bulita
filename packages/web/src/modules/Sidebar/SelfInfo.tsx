@@ -5,6 +5,7 @@ import 'cropperjs/dist/cropper.css';
 
 import { useSelector } from 'react-redux';
 import config from '@bulita/config/client';
+import Switch from 'react-switch';
 import readDiskFile from '../../utils/readDiskFile';
 import uploadFile, { getAvatarUrl } from '../../utils/uploadFile';
 import Dialog from '../../components/Dialog';
@@ -18,6 +19,7 @@ import {
     changeSignature,
     changePushToken,
     changeAIConfig,
+    changePrivacySettings,
 } from '../../service';
 import useAction from '../../hooks/useAction';
 
@@ -47,6 +49,12 @@ function SelfInfo(props: SelfInfoProps) {
     const currentAiBaseUrl = useSelector((state: State) => state.user?.aiBaseUrl);
     const currentAiModel = useSelector((state: State) => state.user?.aiModel);
     const currentAiContextCount = useSelector((state: State) => state.user?.aiContextCount);
+    const currentRejectPrivateChat = useSelector(
+        (state: State) => state.user?.rejectPrivateChat,
+    );
+    const currentRejectGroupInvite = useSelector(
+        (state: State) => state.user?.rejectGroupInvite,
+    );
 
     const primaryColor = useSelector(
         (state: State) => state.status.primaryColor,
@@ -126,6 +134,12 @@ function SelfInfo(props: SelfInfoProps) {
     const [aiContextCount, setAiContextCount] = useState(
         currentAiContextCount == null ? '' : currentAiContextCount.toString()
     );
+    const [rejectPrivateChat, setRejectPrivateChat] = useState(
+        currentRejectPrivateChat === true,
+    );
+    const [rejectGroupInvite, setRejectGroupInvite] = useState(
+        currentRejectGroupInvite === true,
+    );
     /**
      * 按 token 长度脱敏：两侧各显示若干字符，中间用 * 填充
      */
@@ -159,6 +173,8 @@ function SelfInfo(props: SelfInfoProps) {
             setAiContextCount(
                 currentAiContextCount == null ? '' : `${currentAiContextCount}`,
             );
+            setRejectPrivateChat(currentRejectPrivateChat === true);
+            setRejectGroupInvite(currentRejectGroupInvite === true);
         }
     }, [
         visible,
@@ -167,6 +183,8 @@ function SelfInfo(props: SelfInfoProps) {
         currentAiBaseUrl,
         currentAiModel,
         currentAiContextCount,
+        currentRejectPrivateChat,
+        currentRejectGroupInvite,
     ]);
 
     useEffect(() => {
@@ -277,6 +295,27 @@ function SelfInfo(props: SelfInfoProps) {
             );
             Message.success('AI 配置已更新');
         }
+    }
+
+    async function handleSavePrivacySettings(nextSettings: {
+        rejectPrivateChat: boolean;
+        rejectGroupInvite: boolean;
+    }) {
+        const data = await changePrivacySettings(
+            nextSettings.rejectPrivateChat,
+            nextSettings.rejectGroupInvite,
+        );
+        if (!data) {
+            return false;
+        }
+        dispatch({
+            type: ActionTypes.UpdateUserInfo,
+            payload: data,
+        });
+        setRejectPrivateChat(data.rejectPrivateChat === true);
+        setRejectGroupInvite(data.rejectGroupInvite === true);
+        Message.success('隐私设置已更新');
+        return true;
     }
 
     function handleCloseDialog(event: any) {
@@ -448,6 +487,59 @@ function SelfInfo(props: SelfInfoProps) {
                             onBlur={handleChangeAIConfig}
                             type="number"
                             placeholder="上下文数量，留空跟随管理员"
+                        />
+                    </div>
+                </div>
+                <div className={Common.block}>
+                    <p className={Common.title}>隐私设置</p>
+                    <div className={Style.settingRow}>
+                        <div className={Style.settingInfo}>
+                            <p className={Style.settingLabel}>拒绝私聊</p>
+                            <p className={Style.settingDesc}>
+                                开启后，其他用户不能主动和你开始私聊，自己对话不受影响
+                            </p>
+                        </div>
+                        <Switch
+                            onColor="#52d88a"
+                            offColor="#d4d4d8"
+                            uncheckedIcon={false}
+                            checkedIcon={false}
+                            checked={rejectPrivateChat}
+                            onChange={async (checked) => {
+                                setRejectPrivateChat(checked);
+                                const success = await handleSavePrivacySettings({
+                                    rejectPrivateChat: checked,
+                                    rejectGroupInvite,
+                                });
+                                if (!success) {
+                                    setRejectPrivateChat(!checked);
+                                }
+                            }}
+                        />
+                    </div>
+                    <div className={Style.settingRow}>
+                        <div className={Style.settingInfo}>
+                            <p className={Style.settingLabel}>拒绝被拉入群聊</p>
+                            <p className={Style.settingDesc}>
+                                开启后，其他人不能把你拉进普通群聊，默认群不受影响
+                            </p>
+                        </div>
+                        <Switch
+                            onColor="#52d88a"
+                            offColor="#d4d4d8"
+                            uncheckedIcon={false}
+                            checkedIcon={false}
+                            checked={rejectGroupInvite}
+                            onChange={async (checked) => {
+                                setRejectGroupInvite(checked);
+                                const success = await handleSavePrivacySettings({
+                                    rejectPrivateChat,
+                                    rejectGroupInvite: checked,
+                                });
+                                if (!success) {
+                                    setRejectGroupInvite(!checked);
+                                }
+                            }}
                         />
                     </div>
                 </div>

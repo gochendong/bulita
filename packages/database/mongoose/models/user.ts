@@ -32,6 +32,14 @@ const UserSchema = new Schema({
     aiBaseUrl: String,
     aiModel: String,
     aiContextCount: Number,
+    rejectPrivateChat: {
+        type: Boolean,
+        default: false,
+    },
+    rejectGroupInvite: {
+        type: Boolean,
+        default: false,
+    },
     avatar: String,
     tag: {
         type: String,
@@ -70,6 +78,10 @@ export interface UserDocument extends Document {
     aiModel: string;
     /** AI Context Count */
     aiContextCount?: number | null;
+    /** 拒绝私聊 */
+    rejectPrivateChat?: boolean;
+    /** 拒绝被拉入群聊 */
+    rejectGroupInvite?: boolean;
     /** 头像 */
     avatar: string;
     /** 用户标签 */

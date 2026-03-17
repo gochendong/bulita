@@ -230,6 +230,8 @@ async function getLoginPayload(
         aiBaseUrl: user.aiBaseUrl || '',
         aiModel: user.aiModel || '',
         aiContextCount: user.aiContextCount ?? null,
+        rejectPrivateChat: user.rejectPrivateChat === true,
+        rejectGroupInvite: user.rejectGroupInvite === true,
         tag: user.tag,
         createTime: user.createTime,
         groups: groups.map((g: GroupDocument) => ({
@@ -506,6 +508,10 @@ export async function addFriend(ctx: Context<{ userId: string }>) {
     if (!user) {
         throw new AssertionError({ message: '添加好友失败, 用户不存在' });
     }
+    assert(
+        userId === ctx.socket.user.toString() || user.rejectPrivateChat !== true,
+        '对方已拒绝私聊',
+    );
 
     const friend = await Friend.find({ from: ctx.socket.user, to: user._id });
 
@@ -661,6 +667,31 @@ export async function changeAIConfig(
         aiBaseUrl,
         aiModel,
         aiContextCount: aiContextCount ?? null,
+    };
+}
+
+/**
+ * 修改隐私设置
+ * @param ctx Context
+ */
+export async function changePrivacySettings(
+    ctx: Context<{
+        rejectPrivateChat: boolean;
+        rejectGroupInvite: boolean;
+    }>,
+) {
+    const self = await User.findOne({ _id: ctx.socket.user });
+    if (!self) {
+        throw new AssertionError({ message: '用户不存在' });
+    }
+
+    self.rejectPrivateChat = ctx.data.rejectPrivateChat === true;
+    self.rejectGroupInvite = ctx.data.rejectGroupInvite === true;
+    await self.save();
+
+    return {
+        rejectPrivateChat: self.rejectPrivateChat === true,
+        rejectGroupInvite: self.rejectGroupInvite === true,
     };
 }
 

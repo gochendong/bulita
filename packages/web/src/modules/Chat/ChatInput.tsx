@@ -22,7 +22,7 @@ import useIsLogin from '../../hooks/useIsLogin';
 import useAction from '../../hooks/useAction';
 import Dropdown from '../../components/Dropdown';
 import IconButton from '../../components/IconButton';
-import Avatar, { aiAvatar, avatarFailback } from '../../components/Avatar';
+import Avatar, { avatarFailback } from '../../components/Avatar';
 import Message from '../../components/Message';
 import { Menu, MenuItem } from '../../components/Menu';
 import { State } from '../../state/reducer';
@@ -880,23 +880,11 @@ function ChatInput(props: InputAreaProps) {
         const filtered = (linkman.onlineMembers || []).filter((member) =>
             regex.test(member.user.username),
         );
-        const hasBot = botName && filtered.some((m) => m.user.username === botName);
         const botFirst = [...filtered].sort((a, b) => {
             if (a.user.username === botName) return -1;
             if (b.user.username === botName) return 1;
             return 0;
         });
-        if (groupAISwitch && botName && !hasBot && regex.test(botName)) {
-            return [
-                {
-                    user: { _id: `bot-${botName}`, username: botName, avatar: aiAvatar },
-                    os: '',
-                    browser: '',
-                    environment: '',
-                },
-                ...botFirst,
-            ];
-        }
         return botFirst;
     }
 

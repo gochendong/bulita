@@ -74,3 +74,35 @@
     width: 100px;
     height: 36px;
 }
+
+.settingRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 0;
+    border-top: 1px solid fade(@warm-border, 60%);
+
+    &:first-of-type {
+        border-top: none;
+        padding-top: 2px;
+    }
+}
+
+.settingInfo {
+    min-width: 0;
+    flex: 1;
+}
+
+.settingLabel {
+    margin: 0;
+    font-size: 14px;
+    color: @warm-text;
+}
+
+.settingDesc {
+    margin: 4px 0 0;
+    font-size: 12px;
+    line-height: 1.6;
+    color: @warm-text-muted;
+}

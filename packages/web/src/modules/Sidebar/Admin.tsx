@@ -5,6 +5,7 @@ import Switch from 'react-switch';
 import Style from './Admin.less';
 import Common from './Common.less';
 import Dialog from '../../components/Dialog';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import Input from '../../components/Input';
 import Button from '../../components/Button';
 import Message from '../../components/Message';
@@ -55,6 +56,13 @@ function Admin(props: AdminProps) {
     const [adminConfigValues, setAdminConfigValues] = useState<Record<string, string>>({});
     const adminConfigValuesRef = useRef<Record<string, string>>({});
     adminConfigValuesRef.current = adminConfigValues;
+    const [confirmDialog, setConfirmDialog] = useState<{
+        title: string;
+        description?: string;
+        confirmText?: string;
+        confirmType?: string;
+        onConfirm: () => Promise<void> | void;
+    } | null>(null);
 
     async function handleGetSealList() {
         const sealListRes = await getSealList();
@@ -92,31 +100,38 @@ function Admin(props: AdminProps) {
             Message.warning('用户不存在');
             return;
         }
-        // eslint-disable-next-line no-restricted-globals
-        if (!confirm(`确定要封禁 ${target.username} <${target.email || email}> 吗？`)) {
-            return;
-        }
-        const isSuccess = await sealUser(email);
-        if (isSuccess) {
-            Message.success('封禁用户成功');
-            setSealEmail('');
-            handleGetSealList();
-        }
+        setConfirmDialog({
+            title: '确认封禁用户',
+            description: `将封禁 ${target.username} <${target.email || email}>，封禁后该账号将无法继续使用聊天服务。`,
+            confirmText: '确认封禁',
+            onConfirm: async () => {
+                const isSuccess = await sealUser(email);
+                if (isSuccess) {
+                    Message.success('封禁用户成功');
+                    setSealEmail('');
+                    handleGetSealList();
+                }
+            },
+        });
     }
 
     async function handleUnseal(email: string) {
         if (!email) {
             return;
         }
-        // eslint-disable-next-line no-restricted-globals
-        if (!confirm(`确定要解除封禁 ${email} 吗？`)) {
-            return;
-        }
-        const isSuccess = await unsealUser(email);
-        if (isSuccess) {
-            Message.success('解除封禁成功');
-            handleGetSealList();
-        }
+        setConfirmDialog({
+            title: '确认解除封禁',
+            description: `解除封禁后，${email} 将可以重新登录和使用聊天服务。`,
+            confirmText: '确认解除',
+            confirmType: 'primary',
+            onConfirm: async () => {
+                const isSuccess = await unsealUser(email);
+                if (isSuccess) {
+                    Message.success('解除封禁成功');
+                    handleGetSealList();
+                }
+            },
+        });
     }
 
     async function handleDisableSendMessage() {
@@ -184,214 +199,272 @@ function Admin(props: AdminProps) {
             Message.warning('用户不存在');
             return;
         }
-        // eslint-disable-next-line no-restricted-globals
-        if (!confirm(`确定要删除用户 ${target.username} <${target.email || email}> 吗？此操作不可恢复！`)) {
-            return;
-        }
-        const isSuccess = await deleteUser(email);
-        if (isSuccess) {
-            Message.success(`用户 ${target.email || email} 已被删除`);
-            setDeleteEmail('');
+        setConfirmDialog({
+            title: '确认删除用户',
+            description: `将删除用户 ${target.username} <${target.email || email}>，此操作不可恢复。`,
+            confirmText: '确认删除',
+            onConfirm: async () => {
+                const isSuccess = await deleteUser(email);
+                if (isSuccess) {
+                    Message.success(`用户 ${target.email || email} 已被删除`);
+                    setDeleteEmail('');
+                }
+            },
+        });
+    }
+
+    async function handleConfirmAction() {
+        const currentAction = confirmDialog?.onConfirm;
+        setConfirmDialog(null);
+        if (currentAction) {
+            await currentAction();
         }
     }
 
     return (
-        <Dialog
-            className={Style.admin}
-            visible={visible}
-            title="管理员控制台"
-            onClose={onClose}
-        >
-            <div className={Style.adminColumns}>
-                <div className={Style.adminCol}>
-                    <div className={Common.container}>
-                        {systemConfig?.adminConfig && systemConfig?.adminConfigLabels && (
-                            <div className={Common.block}>
-                                <p className={Common.title}>系统配置</p>
-                                <p className={Style.configTip}>以下配置优先写入 Redis。输入框留空表示该项设为空（不会使用 .env）。点击输入框外即保存。</p>
-                                <div className={Style.configList}>
-                                    {Object.keys(systemConfig.adminConfig).map((key) => {
-                                        const label =
-                                            systemConfig.adminConfigLabels[key] || key;
-                                        const isBoolConfig =
-                                            ['ONLY_SEARCH_DEFAULT_GROUP'].includes(
-                                                key,
-                                            );
-                                        const isSecretConfig =
-                                            key === 'OPENAI_API_KEY';
-                                        const rawValue =
-                                            adminConfigValues[key] ??
-                                            systemConfig.adminConfig[key] ??
-                                            '';
-                                        const boolValue =
-                                            rawValue === 'true' || rawValue === true;
+        <>
+            <Dialog
+                className={Style.admin}
+                visible={visible}
+                title="管理员控制台"
+                onClose={onClose}
+            >
+                <div className={Style.adminColumns}>
+                    <div className={Style.adminCol}>
+                        <div className={Common.container}>
+                            {systemConfig?.adminConfig &&
+                            systemConfig?.adminConfigLabels ? (
+                                <div className={Common.block}>
+                                    <p className={Common.title}>系统配置</p>
+                                    <p className={Style.configTip}>
+                                        以下配置优先写入 Redis。输入框留空表示该项设为空（不会使用
+                                        .env）。点击输入框外即保存。
+                                    </p>
+                                    <div className={Style.configList}>
+                                        {Object.keys(systemConfig.adminConfig).map(
+                                            (key) => {
+                                                const label =
+                                                    systemConfig.adminConfigLabels[
+                                                        key
+                                                    ] || key;
+                                                const isBoolConfig =
+                                                    ['ONLY_SEARCH_DEFAULT_GROUP'].includes(
+                                                        key,
+                                                    );
+                                                const isSecretConfig =
+                                                    key === 'OPENAI_API_KEY';
+                                                const rawValue =
+                                                    adminConfigValues[key] ??
+                                                    systemConfig.adminConfig[key] ??
+                                                    '';
+                                                const boolValue =
+                                                    rawValue === 'true' ||
+                                                    rawValue === true;
 
-                                        return (
-                                            <div key={key} className={Style.configRow}>
-                                                <label className={Style.configLabel}>
-                                                    {label}
-                                                </label>
-                                                {isBoolConfig ? (
-                                                    <div className={Style.configSwitch}>
-                                                        <Switch
-                                                            onColor="#52d88a"
-                                                            offColor="#d4d4d8"
-                                                            uncheckedIcon={false}
-                                                            checkedIcon={false}
-                                                            onChange={(value: boolean) => {
-                                                                const strVal = value
-                                                                    ? 'true'
-                                                                    : 'false';
-                                                                setAdminConfigValues(
-                                                                    (prev) => ({
-                                                                        ...prev,
-                                                                        [key]: strVal,
-                                                                    }),
-                                                                );
-                                                                handleSetSystemConfig(
-                                                                    key,
-                                                                    strVal,
-                                                                );
-                                                            }}
-                                                            checked={boolValue}
-                                                        />
+                                                return (
+                                                    <div
+                                                        key={key}
+                                                        className={Style.configRow}
+                                                    >
+                                                        <label
+                                                            className={Style.configLabel}
+                                                        >
+                                                            {label}
+                                                        </label>
+                                                        {isBoolConfig ? (
+                                                            <div
+                                                                className={
+                                                                    Style.configSwitch
+                                                                }
+                                                            >
+                                                                <Switch
+                                                                    onColor="#52d88a"
+                                                                    offColor="#d4d4d8"
+                                                                    uncheckedIcon={false}
+                                                                    checkedIcon={false}
+                                                                    onChange={(
+                                                                        value: boolean,
+                                                                    ) => {
+                                                                        const strVal =
+                                                                            value
+                                                                                ? 'true'
+                                                                                : 'false';
+                                                                        setAdminConfigValues(
+                                                                            (
+                                                                                prev,
+                                                                            ) => ({
+                                                                                ...prev,
+                                                                                [key]: strVal,
+                                                                            }),
+                                                                        );
+                                                                        handleSetSystemConfig(
+                                                                            key,
+                                                                            strVal,
+                                                                        );
+                                                                    }}
+                                                                    checked={boolValue}
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <Input
+                                                                className={
+                                                                    Style.configInput
+                                                                }
+                                                                value={String(rawValue)}
+                                                                onChange={(v) =>
+                                                                    setAdminConfigValues(
+                                                                        (prev) => ({
+                                                                            ...prev,
+                                                                            [key]: v,
+                                                                        }),
+                                                                    )
+                                                                }
+                                                                onBlur={() =>
+                                                                    handleSetSystemConfig(
+                                                                        key,
+                                                                        adminConfigValuesRef
+                                                                            .current[
+                                                                            key
+                                                                        ] ?? '',
+                                                                    )
+                                                                }
+                                                                type={
+                                                                    isSecretConfig
+                                                                        ? 'password'
+                                                                        : 'text'
+                                                                }
+                                                                placeholder="留空表示该项为空"
+                                                                autoComplete={
+                                                                    isSecretConfig
+                                                                        ? 'new-password'
+                                                                        : 'off'
+                                                                }
+                                                            />
+                                                        )}
                                                     </div>
-                                                ) : (
-                                                    <Input
-                                                        className={Style.configInput}
-                                                        value={String(rawValue)}
-                                                        onChange={(v) =>
-                                                            setAdminConfigValues(
-                                                                (prev) => ({
-                                                                    ...prev,
-                                                                    [key]: v,
-                                                                }),
-                                                            )
-                                                        }
-                                                        onBlur={() =>
-                                                            handleSetSystemConfig(
-                                                                key,
-                                                                adminConfigValuesRef
-                                                                    .current[key] ?? '',
-                                                            )
-                                                        }
-                                                        type={
-                                                            isSecretConfig
-                                                                ? 'password'
-                                                                : 'text'
-                                                        }
-                                                        placeholder="留空表示该项为空"
-                                                        autoComplete={
-                                                            isSecretConfig
-                                                                ? 'new-password'
-                                                                : 'off'
-                                                        }
-                                                    />
-                                                )}
-                                            </div>
-                                        );
-                                    })}
+                                                );
+                                            },
+                                        )}
+                                    </div>
+                                </div>
+                            ) : null}
+                            <div className={Common.block}>
+                                <p className={Common.title}>快捷开关（全局）</p>
+                                <div className={Style.buttonWrap}>
+                                    {!systemConfig?.disableSendMessage ? (
+                                        <Button
+                                            className={styles.button}
+                                            onClick={handleDisableSendMessage}
+                                        >
+                                            开启全局禁言
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            className={styles.button}
+                                            onClick={handleEnableSendMessage}
+                                        >
+                                            关闭全局禁言
+                                        </Button>
+                                    )}
+                                    {!systemConfig?.groupAISwitch ? (
+                                        <Button
+                                            className={`${Style.groupAIButton}`}
+                                            onClick={() =>
+                                                handleToggleGroupAI(true)
+                                            }
+                                        >
+                                            开启群聊 AI
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            className={`${Style.groupAIButton} ${Style.groupAIButtonOff}`}
+                                            onClick={() =>
+                                                handleToggleGroupAI(false)
+                                            }
+                                        >
+                                            关闭群聊 AI
+                                        </Button>
+                                    )}
                                 </div>
                             </div>
-                        )}
-                <div className={Common.block}>
-                    <p className={Common.title}>快捷开关（全局）</p>
-                    <div className={Style.buttonWrap}>
-                            {!systemConfig?.disableSendMessage ? (
-                                <Button
-                                    className={styles.button}
-                                    onClick={handleDisableSendMessage}
-                                >
-                                    开启全局禁言
-                                </Button>
-                            ) : (
-                                <Button
-                                    className={styles.button}
-                                    onClick={handleEnableSendMessage}
-                                >
-                                    关闭全局禁言
-                                </Button>
-                            )}
-                            {!systemConfig?.groupAISwitch ? (
-                                <Button
-                                    className={`${Style.groupAIButton}`}
-                                    onClick={() => handleToggleGroupAI(true)}
-                                >
-                                    开启群聊 AI
-                                </Button>
-                            ) : (
-                                <Button
-                                    className={`${Style.groupAIButton} ${Style.groupAIButtonOff}`}
-                                    onClick={() => handleToggleGroupAI(false)}
-                                >
-                                    关闭群聊 AI
-                                </Button>
-                            )}
                         </div>
                     </div>
-                </div>
-                </div>
-                <div className={Style.adminCol}>
-                    <div className={Common.container}>
-                        <div className={Common.block}>
-                            <p className={Common.title}>删除用户</p>
-                            <div className={Style.inputBlock}>
-                                <Input
-                                    className={Style.input}
-                                    value={deleteEmail}
-                                    onChange={setDeleteEmail}
-                                    onBlur={() => handleLookupDeleteUser()}
-                                    placeholder="要删除的邮箱"
-                                />
-                                <Button
-                                    className={Style.button}
-                                    type="danger"
-                                    onClick={handleDeleteUser}
-                                >
-                                    确认删除
-                                </Button>
+                    <div className={Style.adminCol}>
+                        <div className={Common.container}>
+                            <div className={Common.block}>
+                                <p className={Common.title}>删除用户</p>
+                                <div className={Style.inputBlock}>
+                                    <Input
+                                        className={Style.input}
+                                        value={deleteEmail}
+                                        onChange={setDeleteEmail}
+                                        onBlur={() => handleLookupDeleteUser()}
+                                        placeholder="要删除的邮箱"
+                                    />
+                                    <Button
+                                        className={Style.button}
+                                        type="danger"
+                                        onClick={handleDeleteUser}
+                                    >
+                                        确认删除
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
-                        <div className={Common.block}>
-                            <p className={Common.title}>封禁用户</p>
-                            <div className={Style.inputBlock}>
-                                <Input
-                                    className={Style.input}
-                                    value={sealEmail}
-                                    onChange={setSealEmail}
-                                    placeholder="要封禁的邮箱"
-                                />
-                                <Button
-                                    className={Style.button}
-                                    type="danger"
-                                    onClick={handleSeal}
-                                >
-                                    确认封禁
-                                </Button>
+                            <div className={Common.block}>
+                                <p className={Common.title}>封禁用户</p>
+                                <div className={Style.inputBlock}>
+                                    <Input
+                                        className={Style.input}
+                                        value={sealEmail}
+                                        onChange={setSealEmail}
+                                        placeholder="要封禁的邮箱"
+                                    />
+                                    <Button
+                                        className={Style.button}
+                                        type="danger"
+                                        onClick={handleSeal}
+                                    >
+                                        确认封禁
+                                    </Button>
+                                </div>
                             </div>
-                        </div>
-                        <div className={Common.block}>
-                            <p className={Common.title}>封禁用户列表</p>
-                            <div className={Style.sealList}>
-                                {sealList.users.map((email) => (
-                                    <div className={Style.sealUserItem} key={email}>
-                                        <span className={Style.sealUsername}>
-                                            {email}
-                                        </span>
-                                        <Button
-                                            className={Style.unsealButton}
-                                            onClick={() => handleUnseal(email)}
+                            <div className={Common.block}>
+                                <p className={Common.title}>封禁用户列表</p>
+                                <div className={Style.sealList}>
+                                    {sealList.users.map((email) => (
+                                        <div
+                                            className={Style.sealUserItem}
+                                            key={email}
                                         >
-                                            解除封禁
-                                        </Button>
-                                    </div>
-                                ))}
+                                            <span className={Style.sealUsername}>
+                                                {email}
+                                            </span>
+                                            <Button
+                                                className={Style.unsealButton}
+                                                onClick={() =>
+                                                    handleUnseal(email)
+                                                }
+                                            >
+                                                解除封禁
+                                            </Button>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </Dialog>
+            </Dialog>
+            <ConfirmDialog
+                visible={!!confirmDialog}
+                title={confirmDialog?.title || ''}
+                description={confirmDialog?.description}
+                confirmText={confirmDialog?.confirmText}
+                confirmType={confirmDialog?.confirmType}
+                onConfirm={handleConfirmAction}
+                onClose={() => setConfirmDialog(null)}
+            />
+        </>
     );
 }
 

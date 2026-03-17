@@ -136,6 +136,20 @@ export async function changeAIConfig(
     return data;
 }
 
+export async function changePrivacySettings(
+    rejectPrivateChat: boolean,
+    rejectGroupInvite: boolean,
+) {
+    const [error, data] = await fetch('changePrivacySettings', {
+        rejectPrivateChat,
+        rejectGroupInvite,
+    });
+    if (error) {
+        return null;
+    }
+    return data;
+}
+
 /**
  * 修改群组名
  * @param groupId 目标群组

@@ -5,6 +5,7 @@ import getFriendId from '@bulita/utils/getFriendId';
 import { getAvatarUrl } from '../utils/uploadFile';
 import Style from './InfoDialog.less';
 import Dialog from '../components/Dialog';
+import ConfirmDialog from '../components/ConfirmDialog';
 import Avatar from '../components/Avatar';
 import Button from '../components/Button';
 import Message from '../components/Message';
@@ -65,6 +66,8 @@ function UserInfo(props: UserInfoProps) {
         isOnline: boolean;
         lastLoginTime: string | null;
     } | null>(null);
+    const [sealConfirmVisible, setSealConfirmVisible] = useState(false);
+    const [pendingSealEmail, setPendingSealEmail] = useState('');
 
     useEffect(() => {
         if (!visible || !user || !isAdmin) {
@@ -148,20 +151,26 @@ function UserInfo(props: UserInfoProps) {
         }
     }
 
-    async function handleSeal() {
+    function handleOpenSealConfirm() {
         const email = (adminDetails?.email || user.email || '').trim();
         if (!email) {
             Message.warning('该用户没有可用邮箱');
             return;
         }
-        // eslint-disable-next-line no-restricted-globals
-        if (!confirm(`确定要封禁 ${email} 吗？`)) {
+        setPendingSealEmail(email);
+        setSealConfirmVisible(true);
+    }
+
+    async function handleSeal() {
+        if (!pendingSealEmail) {
             return;
         }
         // @ts-ignore
-        const isSuccess = await sealUser(email);
+        const isSuccess = await sealUser(pendingSealEmail);
         if (isSuccess) {
             Message.success('封禁用户成功');
+            setSealConfirmVisible(false);
+            setPendingSealEmail('');
         }
     }
 
@@ -182,88 +191,118 @@ function UserInfo(props: UserInfoProps) {
 
     function handleClose() {
         toggleLargetAvatar(false);
+        setSealConfirmVisible(false);
+        setPendingSealEmail('');
         onClose();
     }
 
     return (
-        <Dialog
-            className={Style.infoDialog}
-            visible={visible}
-            onClose={handleClose}
-        >
-            <div>
-                {visible && user ? (
-                    <div className={Style.coantainer}>
-                        <div className={Style.header}>
-                            <Avatar
-                                size={60}
-                                src={user.avatar}
-                                onMouseEnter={() => toggleLargetAvatar(true)}
-                                onMouseLeave={() => toggleLargetAvatar(false)}
-                            />
-                            <img
-                                className={`${Style.largeAvatar} ${
-                                    largerAvatar ? 'show' : 'hide'
-                                }`}
-                                src={getAvatarUrl(user.avatar)}
-                                alt="用户头像"
-                            />
-                            <p>{user.username}</p>
-                            {isSelfUser ? (
-                                <p className={Style.selfLabel}>自己</p>
-                            ) : null}
-                            {(() => {
-                                const isOnline = adminDetails?.isOnline ?? user.isOnline;
-                                const lastLoginTime = adminDetails?.lastLoginTime ?? user.lastLoginTime;
-                                if (isSelfUser) {
+        <>
+            <Dialog
+                className={Style.infoDialog}
+                visible={visible}
+                onClose={handleClose}
+            >
+                <div>
+                    {visible && user ? (
+                        <div className={Style.coantainer}>
+                            <div className={Style.header}>
+                                <Avatar
+                                    size={60}
+                                    src={user.avatar}
+                                    onMouseEnter={() => toggleLargetAvatar(true)}
+                                    onMouseLeave={() => toggleLargetAvatar(false)}
+                                />
+                                <img
+                                    className={`${Style.largeAvatar} ${
+                                        largerAvatar ? 'show' : 'hide'
+                                    }`}
+                                    src={getAvatarUrl(user.avatar)}
+                                    alt="用户头像"
+                                />
+                                <p>{user.username}</p>
+                                {isSelfUser ? (
+                                    <p className={Style.selfLabel}>自己</p>
+                                ) : null}
+                                {(() => {
+                                    const isOnline =
+                                        adminDetails?.isOnline ?? user.isOnline;
+                                    const lastLoginTime =
+                                        adminDetails?.lastLoginTime ??
+                                        user.lastLoginTime;
+                                    if (isSelfUser) {
+                                        return null;
+                                    }
+                                    if (user.tag === 'bot' || isOnline === true) {
+                                        return (
+                                            <p className={Style.onlineStatus}>
+                                                当前在线
+                                            </p>
+                                        );
+                                    }
+                                    if (lastLoginTime != null) {
+                                        return (
+                                            <p className={Style.lastOnline}>
+                                                最后在线：
+                                                {formatLastOnline(lastLoginTime)}
+                                            </p>
+                                        );
+                                    }
                                     return null;
-                                }
-                                if (user.tag === 'bot' || isOnline === true) {
-                                    return <p className={Style.onlineStatus}>当前在线</p>;
-                                }
-                                if (lastLoginTime != null) {
-                                    return (
-                                        <p className={Style.lastOnline}>
-                                            最后在线：{formatLastOnline(lastLoginTime)}
-                                        </p>
-                                    );
-                                }
-                                return null;
-                            })()}
-                            {isAdmin && (adminDetails?.email || user.email) ? (
-                                <p className={Style.metaLine}>
-                                    {adminDetails?.email || user.email}
-                                </p>
-                            ) : null}
+                                })()}
+                                {isAdmin && (adminDetails?.email || user.email) ? (
+                                    <p className={Style.metaLine}>
+                                        {adminDetails?.email || user.email}
+                                    </p>
+                                ) : null}
+                            </div>
+                            <div className={Style.info}>
+                                {isFriend ? (
+                                    <Button onClick={handleFocusUser}>
+                                        发送消息
+                                    </Button>
+                                ) : null}
+                                {isFriend && !isSelfUser ? (
+                                    <Button
+                                        type="danger"
+                                        onClick={handleDeleteFriend}
+                                    >
+                                        删除聊天
+                                    </Button>
+                                ) : !isFriend ? (
+                                    <Button onClick={handleAddFriend}>
+                                        开始聊天
+                                    </Button>
+                                ) : null}
+                                {isAdmin && !isSelfUser ? (
+                                    <Button
+                                        type="danger"
+                                        onClick={handleOpenSealConfirm}
+                                    >
+                                        封禁用户
+                                    </Button>
+                                ) : null}
+                            </div>
                         </div>
-                        <div className={Style.info}>
-                            {isFriend ? (
-                                <Button onClick={handleFocusUser}>
-                                    发送消息
-                                </Button>
-                            ) : null}
-                            {isFriend && !isSelfUser ? (
-                                <Button
-                                    type="danger"
-                                    onClick={handleDeleteFriend}
-                                >
-                                    删除聊天
-                                </Button>
-                            ) : !isFriend ? (
-                                <Button onClick={handleAddFriend}>
-                                    开始聊天
-                                </Button>
-                            ) : null}
-                            {isAdmin && !isSelfUser ? (
-                                <Button type="danger" onClick={handleSeal}>
-                                    封禁用户
-                                </Button>
-                            ) : null}
-                        </div>
-                    </div>
-                ) : null}
-            </div>
-        </Dialog>
+                    ) : null}
+                </div>
+            </Dialog>
+            <ConfirmDialog
+                visible={sealConfirmVisible}
+                title="确认封禁用户"
+                description={
+                    pendingSealEmail
+                        ? `将封禁 ${pendingSealEmail}，封禁后该账号将无法继续使用聊天服务。`
+                        : ''
+                }
+                confirmText="确认封禁"
+                onConfirm={handleSeal}
+                onClose={() => {
+                    setSealConfirmVisible(false);
+                    setPendingSealEmail('');
+                }}
+            />
+        </>
     );
 }
 

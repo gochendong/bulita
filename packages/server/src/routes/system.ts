@@ -49,7 +49,12 @@ export async function search(ctx: Context<{ keywords: string }>) {
 
     const escapedKeywords = RegexEscape(keywords);
     const users = await User.find(
-        { username: { $regex: escapedKeywords, $options: 'i' } },
+        {
+            $or: [
+                { username: { $regex: escapedKeywords, $options: 'i' } },
+                { email: { $regex: escapedKeywords, $options: 'i' } },
+            ],
+        },
         { avatar: 1, username: 1, lastLoginTime: 1 },
     );
     const userIds = users.map((u) => u._id.toString());

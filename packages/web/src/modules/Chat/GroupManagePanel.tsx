@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import Switch from 'react-switch';
 
@@ -7,13 +7,12 @@ import uploadFile, { getAvatarUrl } from '../../utils/uploadFile';
 import Style from './GroupManagePanel.less';
 import useIsLogin from '../../hooks/useIsLogin';
 import { State, GroupMember } from '../../state/reducer';
-import Button from '../../components/Button';
 import Input from '../../components/Input';
 import Message from '../../components/Message';
 import Avatar from '../../components/Avatar';
 import LinkifyText from '../../components/LinkifyText';
 import UserBadge from '../../components/UserBadge';
-import Dialog from '../../components/Dialog';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import {
     changeGroupName,
     changeGroupAvatar,
@@ -62,13 +61,21 @@ function GroupManagePanel(props: GroupManagePanelProps) {
     const action = useAction();
     const isLogin = useIsLogin();
     const selfId = useSelector((state: State) => state.user?._id);
-    const [deleteConfirmDialog, setDialogStatus] = useState(false);
+    const [confirmDialog, setConfirmDialog] = useState<{
+        title: string;
+        description?: string;
+        confirmText?: string;
+        confirmType?: string;
+        onConfirm: () => Promise<void> | void;
+    } | null>(null);
     const [groupName, setGroupName] = useState(name);
     const [groupAnnouncement, setGroupAnnouncement] = useState(announcement);
     const [groupAllowJoin, setGroupAllowJoin] = useState(allowJoin);
     const [allMembers, setAllMembers] = useState<GroupAllMemberItem[]>([]);
     const [memberKeywords, setMemberKeywords] = useState('');
     const [memberSearchResult, setMemberSearchResult] = useState<any[]>([]);
+    const memberKeywordsRef = useRef(memberKeywords);
+    const memberSearchTimerRef = useRef<number | null>(null);
     const context = useContext(ShowUserOrGroupInfoContext);
     const isOwner = isLogin && !!selfId && selfId === creator;
     const canManageMembers = isOwner && !isDefault;
@@ -107,6 +114,45 @@ function GroupManagePanel(props: GroupManagePanelProps) {
             loadMembers();
         }
     }, [visible, name, announcement, allowJoin, groupId]);
+
+    useEffect(() => {
+        memberKeywordsRef.current = memberKeywords;
+    }, [memberKeywords]);
+
+    useEffect(() => {
+        if (!visible || !canManageMembers) {
+            return undefined;
+        }
+
+        if (memberSearchTimerRef.current) {
+            clearTimeout(memberSearchTimerRef.current);
+        }
+
+        const keywords = memberKeywords.trim();
+        if (!keywords) {
+            setMemberSearchResult([]);
+            return undefined;
+        }
+
+        memberSearchTimerRef.current = window.setTimeout(async () => {
+            const result = await search(keywords);
+            if (memberKeywordsRef.current.trim() !== keywords) {
+                return;
+            }
+
+            const memberIds = new Set(allMembers.map((item) => item.user._id));
+            const users = (result?.users || []).filter(
+                (item: any) => !memberIds.has(item._id),
+            );
+            setMemberSearchResult(users);
+        }, 1000);
+
+        return () => {
+            if (memberSearchTimerRef.current) {
+                clearTimeout(memberSearchTimerRef.current);
+            }
+        };
+    }, [memberKeywords, visible, canManageMembers, allMembers]);
 
     async function handleChangeGroupName() {
         if (!groupName.trim()) {
@@ -177,7 +223,6 @@ function GroupManagePanel(props: GroupManagePanelProps) {
     async function handleDeleteGroup() {
         const isSuccess = await deleteGroup(groupId);
         if (isSuccess) {
-            setDialogStatus(false);
             onClose();
             action.removeLinkman(groupId);
             Message.success('解散群组成功');
@@ -191,20 +236,6 @@ function GroupManagePanel(props: GroupManagePanelProps) {
             action.removeLinkman(groupId);
             Message.success('退出群组成功');
         }
-    }
-
-    async function handleSearchUsers() {
-        const keywords = memberKeywords.trim();
-        if (!keywords) {
-            setMemberSearchResult([]);
-            return;
-        }
-        const result = await search(keywords);
-        const memberIds = new Set(allMembers.map((item) => item.user._id));
-        const users = (result?.users || []).filter(
-            (item: any) => !memberIds.has(item._id),
-        );
-        setMemberSearchResult(users);
     }
 
     async function handleAddMember(user: any) {
@@ -222,29 +253,51 @@ function GroupManagePanel(props: GroupManagePanelProps) {
 
     async function handleKickMember(member: GroupAllMemberItem) {
         const username = member.user.username || '该成员';
-        // eslint-disable-next-line no-restricted-globals
-        if (!confirm(`确定要将 ${username} 移出群组吗？`)) {
-            return;
-        }
-        const result = await kickGroupMember(groupId, member.user._id);
-        if (result) {
-            action.setLinkmanProperty(groupId, 'membersCount', result.membersCount);
-            Message.success(`已将 ${username} 移出群组`);
-            loadMembers();
-        }
+        setConfirmDialog({
+            title: '确认移出成员',
+            description: `将 ${username} 移出当前群组后，对方会立即失去该群访问权限。`,
+            confirmText: '确认移出',
+            onConfirm: async () => {
+                const result = await kickGroupMember(groupId, member.user._id);
+                if (result) {
+                    action.setLinkmanProperty(
+                        groupId,
+                        'membersCount',
+                        result.membersCount,
+                    );
+                    Message.success(`已将 ${username} 移出群组`);
+                    loadMembers();
+                }
+            },
+        });
     }
 
     async function handleTransferCreator(member: GroupAllMemberItem) {
         const username = member.user.username || '该成员';
-        // eslint-disable-next-line no-restricted-globals
-        if (!confirm(`确定要将管理员转让给 ${username} 吗？`)) {
-            return;
-        }
-        const isSuccess = await transferGroupCreator(groupId, member.user._id);
-        if (isSuccess) {
-            action.setLinkmanProperty(groupId, 'creator', member.user._id);
-            Message.success(`已将管理员转让给 ${username}`);
-            loadMembers();
+        setConfirmDialog({
+            title: '确认转让管理员',
+            description: `转让后 ${username} 将成为新的管理员，你将失去当前群组的管理权限。`,
+            confirmText: '确认转让',
+            confirmType: 'primary',
+            onConfirm: async () => {
+                const isSuccess = await transferGroupCreator(
+                    groupId,
+                    member.user._id,
+                );
+                if (isSuccess) {
+                    action.setLinkmanProperty(groupId, 'creator', member.user._id);
+                    Message.success(`已将管理员转让给 ${username}`);
+                    loadMembers();
+                }
+            },
+        });
+    }
+
+    async function handleConfirmAction() {
+        const currentAction = confirmDialog?.onConfirm;
+        setConfirmDialog(null);
+        if (currentAction) {
+            await currentAction();
         }
     }
 
@@ -285,7 +338,10 @@ function GroupManagePanel(props: GroupManagePanelProps) {
     function renderMemberRow(member: GroupAllMemberItem) {
         const { user: u } = member;
         const isOnline = member.isOnline || u.tag === 'bot';
-        const showTransferButton = canTransferOwner && !member.isCreator;
+        const showTransferButton =
+            canTransferOwner &&
+            !member.isCreator &&
+            u.tag !== 'bot';
         const showKickButton =
             canManageMembers &&
             !member.isCreator &&
@@ -441,16 +497,8 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                                     className={Style.memberSearchInput}
                                     value={memberKeywords}
                                     onChange={setMemberKeywords}
-                                    onEnter={handleSearchUsers}
-                                    onBlur={handleSearchUsers}
-                                    placeholder="搜索用户名"
+                                    placeholder="搜索邮箱或用户名"
                                 />
-                                <Button
-                                    className={Style.memberSearchButton}
-                                    onClick={handleSearchUsers}
-                                >
-                                    搜索
-                                </Button>
                             </div>
                             {memberSearchResult.length > 0 && (
                                 <div className={Style.memberSearchList}>
@@ -487,7 +535,15 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                             <button
                                 type="button"
                                 className={Style.dissolveGroupBtn}
-                                onClick={() => setDialogStatus(true)}
+                                onClick={() =>
+                                    setConfirmDialog({
+                                        title: '确认解散群组',
+                                        description:
+                                            '解散后群消息和成员关系将被移除，该操作不可恢复。',
+                                        confirmText: '确认解散',
+                                        onConfirm: handleDeleteGroup,
+                                    })
+                                }
                             >
                                 解散群组
                             </button>
@@ -530,26 +586,15 @@ function GroupManagePanel(props: GroupManagePanelProps) {
                             )}
                         </div>
                     </div>
-                    <Dialog
-                        className={Style.deleteGroupConfirmDialog}
-                        title="再次确认是否解散群组?"
-                        visible={deleteConfirmDialog}
-                        onClose={() => setDialogStatus(false)}
-                    >
-                        <Button
-                            className={Style.deleteGroupConfirmButton}
-                            type="danger"
-                            onClick={handleDeleteGroup}
-                        >
-                            确认
-                        </Button>
-                        <Button
-                            className={Style.deleteGroupConfirmButton}
-                            onClick={() => setDialogStatus(false)}
-                        >
-                            取消
-                        </Button>
-                    </Dialog>
+                    <ConfirmDialog
+                        visible={!!confirmDialog}
+                        title={confirmDialog?.title || ''}
+                        description={confirmDialog?.description}
+                        confirmText={confirmDialog?.confirmText}
+                        confirmType={confirmDialog?.confirmType}
+                        onConfirm={handleConfirmAction}
+                        onClose={() => setConfirmDialog(null)}
+                    />
                 </div>
             </div>
         </div>

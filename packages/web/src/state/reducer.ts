@@ -46,6 +46,7 @@ export interface GroupMember {
         _id: string;
         username: string;
         avatar: string;
+        tag?: string;
     };
     os: string;
     browser: string;
@@ -104,6 +105,8 @@ export interface User {
     aiBaseUrl: string;
     aiModel: string;
     aiContextCount: number | null;
+    rejectPrivateChat: boolean;
+    rejectGroupInvite: boolean;
     tag: string;
 }
 
@@ -124,6 +127,8 @@ export interface State {
         aiBaseUrl: string;
         aiModel: string;
         aiContextCount: number | null;
+        rejectPrivateChat: boolean;
+        rejectGroupInvite: boolean;
     } | null;
     linkmans: LinkmansMap;
     /** 聚焦的联系人 */
@@ -379,6 +384,8 @@ function reducer(state: State = initialState, action: Action): State {
                     aiBaseUrl: '',
                     aiModel: '',
                     aiContextCount: null,
+                    rejectPrivateChat: false,
+                    rejectGroupInvite: false,
                 },
                 linkmans: {
                     [group._id]: group,
@@ -401,6 +408,8 @@ function reducer(state: State = initialState, action: Action): State {
                 aiBaseUrl,
                 aiModel,
                 aiContextCount,
+                rejectPrivateChat,
+                rejectGroupInvite,
                 groups,
                 friends,
                 isAdmin,
@@ -441,6 +450,8 @@ function reducer(state: State = initialState, action: Action): State {
                     aiBaseUrl,
                     aiModel,
                     aiContextCount,
+                    rejectPrivateChat,
+                    rejectGroupInvite,
                     tag,
                     isAdmin,
                 },
